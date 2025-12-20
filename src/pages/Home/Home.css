@@ -1,0 +1,884 @@
+﻿/* ========================================
+   HOME PAGE - MODERN MOBILE-FIRST DESIGN
+   ======================================== */
+
+.home-page-modern {
+    background: #f8f9fa;
+    min-height: 100vh;
+}
+
+/* Container Utilities */
+.container-fluid {
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 16px;
+}
+
+/* ========================================
+   HERO SECTION - COMPACT
+   ======================================== */
+.hero-compact {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 40px 16px 50px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+}
+
+.hero-compact::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: 500px;
+    height: 500px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    z-index: 0;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.hero-text {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.hero-title {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+}
+
+.hero-subtitle {
+    font-size: 15px;
+    opacity: 0.95;
+    font-weight: 400;
+    line-height: 1.5;
+}
+
+/* Search Bar in Hero */
+.search-bar-hero {
+    display: flex;
+    align-items: center;
+    background: white;
+    border-radius: 12px;
+    padding: 4px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.search-icon {
+    color: #6c757d;
+    font-size: 20px;
+    margin: 0 12px;
+    flex-shrink: 0;
+}
+
+.search-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 15px;
+    padding: 10px 8px;
+    background: transparent;
+    color: #333;
+}
+
+.search-input::placeholder {
+    color: #adb5bd;
+}
+
+.search-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    white-space: nowrap;
+}
+
+.search-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* ========================================
+   SECTION HEADERS - COMPACT
+   ======================================== */
+.section-header-compact {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding: 16px 0 8px;
+}
+
+.section-title-small {
+    font-size: 18px;
+    font-weight: 700;
+    color: #212529;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+
+.title-icon {
+    font-size: 20px;
+    color: #667eea;
+}
+
+.view-all-link {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #667eea;
+    font-size: 14px;
+    font-weight: 600;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: gap 0.3s;
+}
+
+.view-all-link:hover {
+    gap: 8px;
+}
+
+/* ========================================
+   QUICK CATEGORIES GRID
+   ======================================== */
+.categories-quick {
+    padding: 20px 0;
+    background: white;
+    width: 100%;
+}
+
+.categories-grid-compact {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 12px;
+    margin-bottom: 8px;
+    width: 100%;
+}
+
+.category-card-compact {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 16px 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.category-card-compact:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    border-color: #667eea;
+}
+
+.category-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+}
+
+.category-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #495057;
+    line-height: 1.3;
+    word-break: break-word;
+    text-align: center;
+    width: 100%;
+}
+
+/* ========================================
+   FLASH DEALS SECTION
+   ======================================== */
+.flash-deals {
+    padding: 24px 0;
+    background: white;
+    margin-top: 12px;
+    width: 100%;
+}
+
+.flash-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.flash-title-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.flash-icon {
+    font-size: 22px;
+    color: #fd7e14;
+}
+
+.flash-timer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.timer-icon {
+    font-size: 14px;
+}
+
+.flash-deals-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.flash-nav-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    flex-shrink: 0;
+    z-index: 10;
+    color: #667eea;
+    font-size: 20px;
+}
+
+.flash-nav-btn:hover {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+    transform: scale(1.1);
+}
+
+.flash-nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.flash-nav-btn:disabled:hover {
+    background: white;
+    color: #667eea;
+    transform: scale(1);
+}
+
+.flash-deals-slider {
+    flex: 1;
+    width: 100%;
+    overflow: hidden;
+}
+
+.flash-deals-slider .swiper-wrapper {
+    display: flex;
+    align-items: stretch;
+}
+
+.flash-deals-slider .swiper-slide {
+    height: auto;
+    width: auto !important;
+    max-width: 180px;
+}
+
+/* ========================================
+   FEATURED PRODUCTS
+   ======================================== */
+.featured-products {
+    padding: 24px 0;
+    background: #f8f9fa;
+    width: 100%;
+}
+
+.products-grid-compact {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    width: 100%;
+}
+
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    gap: 16px;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e9ecef;
+    border-top-color: #667eea;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loading-state p {
+    color: #6c757d;
+    font-size: 14px;
+}
+
+/* ========================================
+   PROMOTIONAL BANNER MODERN
+   ======================================== */
+.promo-banner-section {
+    padding: 20px 0;
+    background: #f8f9fa;
+    width: 100%;
+}
+
+.promo-banner-modern {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    border-radius: 16px;
+    padding: 32px 24px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 180px;
+}
+
+.promo-content {
+    position: relative;
+    z-index: 2;
+    max-width: 60%;
+}
+
+.promo-badge {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+}
+
+.promo-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 8px;
+    line-height: 1.3;
+}
+
+.promo-text {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.95);
+    margin-bottom: 16px;
+}
+
+.promo-btn {
+    background: white;
+    color: #f5576c;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.promo-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.promo-visual {
+    position: absolute;
+    right: -40px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1;
+}
+
+.promo-circle {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+}
+
+/* ========================================
+   FEATURES COMPACT
+   ======================================== */
+.features-compact {
+    padding: 24px 0 32px;
+    background: white;
+    width: 100%;
+}
+
+.features-grid-modern {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.feature-card-modern {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.3s;
+}
+
+.feature-card-modern:hover {
+    background: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+}
+
+.feature-icon-modern {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.feature-content {
+    flex: 1;
+}
+
+.feature-title-modern {
+    font-size: 14px;
+    font-weight: 700;
+    color: #212529;
+    margin: 0 0 2px 0;
+}
+
+.feature-desc-modern {
+    font-size: 12px;
+    color: #6c757d;
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* ========================================
+   RESPONSIVE - TABLET
+   ======================================== */
+@media (min-width: 768px) {
+    .container-fluid {
+        padding: 0 20px;
+    }
+
+    .hero-compact {
+        padding: 60px 20px 70px;
+    }
+
+    .hero-title {
+        font-size: 42px;
+    }
+
+    .hero-subtitle {
+        font-size: 17px;
+    }
+
+    .section-title-small {
+        font-size: 22px;
+    }
+
+    .categories-grid-compact {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 16px;
+    }
+
+    .products-grid-compact {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+    }
+
+    .features-grid-modern {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+    }
+
+    .promo-banner-modern {
+        padding: 40px 48px;
+        min-height: 200px;
+    }
+
+    .promo-title {
+        font-size: 28px;
+    }
+
+    .promo-text {
+        font-size: 15px;
+    }
+}
+
+/* ========================================
+   RESPONSIVE - DESKTOP
+   ======================================== */
+@media (min-width: 1024px) {
+    .container-fluid {
+        padding: 0 24px;
+    }
+
+    .hero-compact {
+        padding: 80px 24px 90px;
+    }
+
+    .hero-title {
+        font-size: 48px;
+    }
+
+    .hero-subtitle {
+        font-size: 18px;
+    }
+
+    .section-title-small {
+        font-size: 24px;
+    }
+
+    .categories-grid-compact {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 20px;
+        max-width: 100%;
+    }
+
+    .products-grid-compact {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+    }
+
+    .category-icon-wrapper {
+        width: 56px;
+        height: 56px;
+        font-size: 28px;
+    }
+
+    .category-name {
+        font-size: 14px;
+    }
+
+    .promo-banner-modern {
+        padding: 48px 56px;
+        min-height: 220px;
+    }
+
+    .promo-title {
+        font-size: 32px;
+    }
+}
+
+/* ========================================
+   MOBILE OPTIMIZATIONS
+   ======================================== */
+@media (max-width: 480px) {
+    .hero-title {
+        font-size: 28px;
+    }
+
+    .hero-subtitle {
+        font-size: 14px;
+    }
+
+    .search-btn {
+        padding: 10px 16px;
+        font-size: 13px;
+    }
+
+    .categories-grid-compact {
+        grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+        gap: 10px;
+    }
+
+    .category-card-compact {
+        padding: 12px 6px;
+    }
+
+    .category-icon-wrapper {
+        width: 42px;
+        height: 42px;
+        font-size: 20px;
+    }
+
+    .category-name {
+        font-size: 12px;
+    }
+
+    .section-title-small {
+        font-size: 16px;
+    }
+
+    .view-all-link {
+        font-size: 13px;
+    }
+
+    .promo-banner-modern {
+        padding: 24px 20px;
+        min-height: 160px;
+    }
+
+    .promo-content {
+        max-width: 65%;
+    }
+
+    .promo-title {
+        font-size: 20px;
+    }
+
+    .promo-text {
+        font-size: 13px;
+    }
+
+    .promo-btn {
+        padding: 10px 20px;
+        font-size: 13px;
+    }
+
+    .feature-card-modern {
+        padding: 12px;
+        gap: 10px;
+    }
+
+    .feature-icon-modern {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+    }
+
+    .feature-title-modern {
+        font-size: 13px;
+    }
+
+    .feature-desc-modern {
+        font-size: 11px;
+    }
+}
+
+/* ========================================
+   SMOOTH ANIMATIONS
+   ======================================== */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.home-page-modern>section {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.home-page-modern>section:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+.home-page-modern>section:nth-child(3) {
+    animation-delay: 0.2s;
+}
+
+.home-page-modern>section:nth-child(4) {
+    animation-delay: 0.3s;
+}
+
+/* ========================================
+   FINAL WIDTH AND SPACING FIXES
+   ======================================== */
+
+/* Ensure compact cards in slider have consistent width */
+.flash-deals-slider .product-card-compact {
+    width: 160px;
+    min-width: 160px;
+    max-width: 160px;
+    flex-shrink: 0;
+}
+
+/* Better mobile category layout */
+@media (max-width: 767px) {
+    .category-card-compact {
+        min-width: 75px;
+    }
+
+    .category-name {
+        font-size: 11px;
+        padding: 0 2px;
+    }
+}
+
+/* Tablet adjustments */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .flash-deals-slider .product-card-compact {
+        width: 170px;
+        min-width: 170px;
+        max-width: 170px;
+    }
+}
+
+/* Desktop adjustments */
+@media (min-width: 1024px) {
+    .flash-deals-slider .product-card-compact {
+        width: 180px;
+        min-width: 180px;
+        max-width: 180px;
+    }
+}
+
+/* Optional: Max width for very large screens */
+@media (min-width: 1600px) {
+    .container-fluid {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+}
+
+/* ========================================
+   FLASH DEALS NAVIGATION ARROWS
+   ======================================== */
+
+.flash-deals-slider-wrapper {
+    position: relative;
+    padding: 0 40px;
+}
+
+.flash-deals-prev,
+.flash-deals-next {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: white;
+    border: 1px solid #e9ecef;
+    color: #667eea;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.flash-deals-prev:hover,
+.flash-deals-next:hover {
+    background: #667eea;
+    color: white;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.flash-deals-prev.swiper-button-disabled,
+.flash-deals-next.swiper-button-disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.flash-deals-prev {
+    left: 0;
+}
+
+.flash-deals-next {
+    right: 0;
+}
+
+/* Default Swiper arrow styles */
+.flash-deals-prev::after,
+.flash-deals-next::after {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+/* Hide navigation on mobile */
+@media (max-width: 767px) {
+    .flash-deals-slider-wrapper {
+        padding: 0;
+    }
+
+    .flash-deals-prev,
+    .flash-deals-next {
+        display: none;
+    }
+}
+
+/* Adjust navigation for tablet */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .flash-deals-slider-wrapper {
+        padding: 0 30px;
+    }
+
+    .flash-deals-prev,
+    .flash-deals-next {
+        width: 32px;
+        height: 32px;
+    }
+}
+/* Flash Deals Navigation - Mobile Responsive */
+@media (max-width: 767px) {
+    .flash-nav-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 16px;
+    }
+    
+    .flash-deals-container {
+        gap: 8px;
+    }
+}

@@ -1,0 +1,463 @@
+/* Quick View Modal Overlay */
+.quick-view-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 20px;
+    animation: fadeIn 0.2s ease;
+    backdrop-filter: blur(2px);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Quick View Modal */
+.quick-view-modal {
+    background: white;
+    border-radius: 4px;
+    /* Sharper corners for Flipkart style */
+    max-width: 900px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    animation: slideUp 0.3s ease;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Close Button */
+.quick-view-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: transparent;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.2s ease;
+    color: #878787;
+}
+
+.quick-view-close:hover {
+    background: #f0f0f0;
+    color: #212121;
+}
+
+.quick-view-close svg {
+    width: 24px;
+    height: 24px;
+}
+
+/* Quick View Content */
+.quick-view-content {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 0;
+}
+
+/* Product Image */
+.quick-view-image {
+    position: relative;
+    background: #fff;
+    border-right: 1px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    min-height: 400px;
+}
+
+.quick-view-image img {
+    width: 100%;
+    height: auto;
+    max-height: 350px;
+    object-fit: contain;
+}
+
+.quick-view-discount {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    background: #388e3c;
+    /* Flipkart Green */
+    color: white;
+    padding: 4px 8px;
+    border-radius: 2px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+/* Product Details */
+.quick-view-details {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 32px;
+}
+
+.quick-view-category {
+    color: #878787;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.quick-view-title {
+    font-size: 20px;
+    font-weight: 500;
+    color: #212121;
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* Rating */
+.quick-view-rating {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.quick-view-rating .star {
+    color: #e0e0e0;
+    font-size: 14px;
+}
+
+.quick-view-rating .star.filled {
+    color: #388e3c;
+    /* Flipkart Green for stars usually or yellow */
+}
+
+/* Flipkart uses a green badge for rating */
+.rating-badge {
+    background-color: #388e3c;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.rating-badge .star {
+    color: white;
+    font-size: 10px;
+}
+
+.review-count {
+    color: #878787;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* Price */
+.quick-view-price {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 8px 0;
+}
+
+.quick-view-price .current-price {
+    font-size: 28px;
+    font-weight: 500;
+    color: #212121;
+}
+
+.quick-view-price .original-price {
+    font-size: 16px;
+    color: #878787;
+    text-decoration: line-through;
+}
+
+/* Stock Status */
+.quick-view-stock {
+    margin: 4px 0;
+}
+
+.quick-view-stock .in-stock {
+    color: #388e3c;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.quick-view-stock .out-of-stock {
+    color: #ff6161;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+/* Description */
+.quick-view-description {
+    color: #212121;
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 8px 0;
+}
+
+/* Packing Sizes */
+.quick-view-sizes {
+    margin: 16px 0;
+}
+
+.quick-view-sizes label {
+    display: block;
+    font-weight: 500;
+    color: #878787;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.size-options {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.size-option {
+    padding: 8px 16px;
+    border: 1px solid #e0e0e0;
+    background: white;
+    border-radius: 2px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    color: #212121;
+}
+
+.size-option:hover {
+    border-color: #2874f0;
+    color: #2874f0;
+}
+
+.size-option.active {
+    border-color: #2874f0;
+    background: #f5faff;
+    /* Light blue tint */
+    color: #2874f0;
+}
+
+/* Quantity Selector */
+.quick-view-quantity {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    width: fit-content;
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 16px 0;
+}
+
+.quantity-btn {
+    background: white;
+    border: none;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.quantity-btn:hover:not(:disabled) {
+    background: #f0f0f0;
+}
+
+.quantity-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.quantity-input {
+    width: 50px;
+    height: 36px;
+    border: none;
+    border-left: 1px solid #e0e0e0;
+    border-right: 1px solid #e0e0e0;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: #212121;
+}
+
+.quantity-input:focus {
+    outline: none;
+}
+
+/* Action Buttons */
+.quick-view-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.btn-add-to-cart {
+    flex: 1;
+    background: #ff9f00;
+    /* Flipkart Orange for Add to Cart */
+    color: white;
+    border: none;
+    padding: 16px 24px;
+    border-radius: 2px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: box-shadow 0.2s ease;
+    text-transform: uppercase;
+}
+
+.btn-add-to-cart:hover:not(:disabled) {
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, .2);
+}
+
+.btn-add-to-cart:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.btn-add-to-wishlist {
+    background: #fb641b;
+    /* Flipkart Orange/Red for Buy Now usually, but here using for Wishlist as secondary action or white */
+    /* Let's keep wishlist white/gray */
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    width: 54px;
+    height: 54px;
+    /* Match height of cart button approx */
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-add-to-wishlist:hover {
+    border-color: #d7d7d7;
+    background: #f9f9f9;
+}
+
+.btn-add-to-wishlist svg {
+    width: 24px;
+    height: 24px;
+    color: #878787;
+}
+
+/* Product Meta */
+.quick-view-meta {
+    border-top: 1px solid #f0f0f0;
+    padding-top: 16px;
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.meta-item {
+    display: flex;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.meta-label {
+    font-weight: 500;
+    color: #878787;
+    min-width: 60px;
+}
+
+.meta-value {
+    color: #212121;
+    font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .quick-view-content {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .quick-view-image {
+        border-right: none;
+        border-bottom: 1px solid #f0f0f0;
+        padding: 20px;
+        min-height: 300px;
+    }
+
+    .quick-view-details {
+        padding: 20px;
+    }
+
+    .quick-view-modal {
+        margin: 16px;
+        max-height: calc(100vh - 32px);
+    }
+
+    .quick-view-title {
+        font-size: 18px;
+    }
+
+    .quick-view-price .current-price {
+        font-size: 24px;
+    }
+
+    .quick-view-actions {
+        flex-direction: row;
+        /* Keep side by side on mobile if possible */
+    }
+}
+
+/* Scrollbar Styling */
+.quick-view-modal::-webkit-scrollbar {
+    width: 6px;
+}
+
+.quick-view-modal::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.quick-view-modal::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}

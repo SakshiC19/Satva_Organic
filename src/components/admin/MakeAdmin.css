@@ -1,0 +1,255 @@
+.make-admin-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.make-admin-card {
+    background: white;
+    border-radius: 12px;
+    padding: 40px;
+    max-width: 600px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.make-admin-card h2 {
+    margin: 0 0 16px 0;
+    color: #1f2937;
+    font-size: 1.8rem;
+}
+
+.make-admin-description {
+    color: #6b7280;
+    margin-bottom: 24px;
+    line-height: 1.6;
+}
+
+.current-user-info {
+    background: #f3f4f6;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+}
+
+.current-user-info h3 {
+    margin: 0 0 12px 0;
+    color: #1f2937;
+    font-size: 1.1rem;
+}
+
+.current-user-info p {
+    margin: 8px 0;
+    color: #4b5563;
+}
+
+.btn-make-admin {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    margin-top: 16px;
+}
+
+.btn-make-admin:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-make-admin:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.success-message {
+    background: #d1fae5;
+    color: #065f46;
+    padding: 16px;
+    border-radius: 8px;
+    margin-top: 16px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.success-message a {
+    color: #059669;
+    text-decoration: underline;
+    font-weight: 700;
+}
+
+.warning-message {
+    background: #fef3c7;
+    color: #92400e;
+    padding: 16px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.warning-message a {
+    color: #d97706;
+    text-decoration: underline;
+    font-weight: 600;
+}
+
+.divider {
+    text-align: center;
+    margin: 24px 0;
+    color: #9ca3af;
+    font-weight: 600;
+    position: relative;
+}
+
+.divider::before,
+.divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 40%;
+    height: 1px;
+    background: #e5e7eb;
+}
+
+.divider::before {
+    left: 0;
+}
+
+.divider::after {
+    right: 0;
+}
+
+.email-form {
+    margin-bottom: 24px;
+}
+
+.email-form h3 {
+    margin: 0 0 16px 0;
+    color: #1f2937;
+    font-size: 1.1rem;
+}
+
+.email-input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 1rem;
+    margin-bottom: 12px;
+    transition: border-color 0.2s;
+}
+
+.email-input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.btn-submit {
+    width: 100%;
+    padding: 12px;
+    background: #059669;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-submit:hover:not(:disabled) {
+    background: #047857;
+}
+
+.btn-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.message {
+    padding: 16px;
+    border-radius: 8px;
+    margin-top: 16px;
+    white-space: pre-line;
+}
+
+.message.success {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.message.error {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.message.info {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.instructions {
+    background: #f9fafb;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 24px;
+}
+
+.instructions h3 {
+    margin: 0 0 16px 0;
+    color: #1f2937;
+    font-size: 1.1rem;
+}
+
+.instructions ol {
+    margin: 0;
+    padding-left: 20px;
+    color: #4b5563;
+    line-height: 1.8;
+}
+
+.instructions a {
+    color: #2563eb;
+    text-decoration: underline;
+}
+
+.instructions code {
+    background: #e5e7eb;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    color: #dc2626;
+}
+
+.warning-box {
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    padding: 16px;
+    margin-top: 24px;
+    border-radius: 4px;
+    color: #92400e;
+}
+
+.warning-box strong {
+    display: block;
+    margin-bottom: 8px;
+    color: #78350f;
+}
+
+@media (max-width: 640px) {
+    .make-admin-card {
+        padding: 24px;
+    }
+
+    .make-admin-card h2 {
+        font-size: 1.5rem;
+    }
+}

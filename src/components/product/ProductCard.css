@@ -1,0 +1,308 @@
+/* ProductCard.css */
+.product-card {
+    background: #fff;
+    border-radius: 4px;
+    /* Flatter look like reference */
+    overflow: hidden;
+    transition: box-shadow 0.2s ease;
+    border: 1px solid #f0f0f0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    cursor: pointer;
+}
+
+.product-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Image Section */
+.product-card-image {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    /* Square image */
+    background: #fff;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.product-card-image img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    transition: transform 0.2s;
+}
+
+.product-card:hover .product-card-image img {
+    transform: scale(1.03);
+}
+
+/* Wishlist Icon */
+.wishlist-icon-container {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 2;
+}
+
+.wishlist-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #c2c2c2;
+    transition: color 0.2s;
+}
+
+.wishlist-btn:hover {
+    color: #ff4343;
+}
+
+.heart-icon {
+    font-size: 18px;
+    fill: currentColor;
+    /* Allows filling on active state if needed */
+}
+
+/* Info Section */
+.product-card-info {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    text-align: left;
+}
+
+.product-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #212121;
+    margin: 0;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.product-variant {
+    font-size: 12px;
+    color: #878787;
+    margin-top: 2px;
+}
+
+/* Rating Row */
+.rating-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.product-rating-badge {
+    background-color: #388e3c;
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    line-height: 1;
+}
+
+.product-rating-badge .star {
+    font-size: 10px;
+}
+
+.review-count {
+    color: #878787;
+    font-weight: 500;
+    font-size: 13px;
+}
+
+.organic-assured-badge {
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+    /* Push to right or keep near? Reference has it near */
+    /* margin-left: 8px; */
+}
+
+.organic-assured-badge span {
+    font-size: 14px;
+    /* Larger font for emphasis */
+    font-weight: 700;
+    color: #2874f0;
+    /* Flipkart blue-ish or custom organic green? User said "Assured" style but "Organic" text. */
+    color: #16a34a;
+    /* Organic Green */
+    font-style: italic;
+}
+
+/* Price Row */
+.product-price {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+.current-price {
+    font-size: 16px;
+    font-weight: 600;
+    color: #212121;
+}
+
+.original-price {
+    font-size: 14px;
+    color: #878787;
+    text-decoration: line-through;
+}
+
+.discount-text {
+    font-size: 13px;
+    color: #388e3c;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+}
+
+/* Stock Status */
+.few-left-text {
+    font-size: 12px;
+    color: #b12704;
+    /* Amazon/Flipkart urgency red */
+    font-weight: 500;
+    margin-top: 4px;
+}
+
+.out-of-stock {
+    font-size: 14px;
+    color: #ff6161;
+    font-weight: 500;
+    margin-top: 4px;
+}
+
+/* Action Buttons */
+.product-card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.card-btn {
+    flex: 1;
+    padding: 8px 4px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+}
+
+.add-cart-btn {
+    background-color: #ff9f00;
+    color: white;
+}
+
+.add-cart-btn:hover {
+    background-color: #f39400;
+}
+
+.buy-now-btn {
+    background-color: #fb641b;
+    color: white;
+}
+
+.buy-now-btn:hover {
+    background-color: #f4511e;
+}
+/* ========================================
+   COMPACT PRODUCT CARD (for sliders)
+   ======================================== */
+.product-card-compact {
+    min-width: 160px;
+    max-width: 180px;
+}
+
+.product-card-compact .product-card-image {
+    padding: 12px;
+}
+
+.product-card-compact .product-card-info {
+    padding: 10px;
+    gap: 3px;
+}
+
+.product-card-compact .product-name {
+    font-size: 13px;
+    -webkit-line-clamp: 2;
+}
+
+.product-card-compact .product-variant {
+    font-size: 11px;
+}
+
+.product-card-compact .rating-row {
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.product-card-compact .product-rating-badge {
+    font-size: 11px;
+    padding: 2px 5px;
+}
+
+.product-card-compact .review-count {
+    font-size: 11px;
+}
+
+.product-card-compact .organic-assured-badge {
+    display: none;
+}
+
+.product-card-compact .product-price {
+    margin-top: 6px;
+    gap: 6px;
+}
+
+.product-card-compact .current-price {
+    font-size: 14px;
+}
+
+.product-card-compact .original-price {
+    font-size: 12px;
+}
+
+.product-card-compact .discount-text {
+    font-size: 11px;
+}
+
+.product-card-compact .product-card-actions {
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.product-card-compact .card-btn {
+    padding: 6px 8px;
+    font-size: 12px;
+}
+
+.product-card-compact .few-left-text,
+.product-card-compact .out-of-stock {
+    font-size: 11px;
+}
