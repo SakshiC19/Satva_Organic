@@ -97,7 +97,7 @@ const Header = () => {
   // Static categories for the secondary nav
   const navItems = [
     { 
-      name: 'Organic Exotic Products', 
+      name: 'Organic Exotic', 
       path: '/shop?category=organic-exotic-products',
       subcategories: [
         'Broccoli', 'Cherry Tomato', 'Red Cabbage', 'Yellow Zucchini', 'Lettuce Leaf', 

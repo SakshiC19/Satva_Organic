@@ -30,7 +30,7 @@ const AddProduct = () => {
 
   const { categories: contextCategories, loading: categoriesLoading } = useCategories();
   
-  // Use context categories if available, otherwise empty array (or handle loading)
+  // Uses context categories if available, otherwise empty array (or handle loading)
   const categories = contextCategories.map(cat => cat.name);
 
   const handleInputChange = (e) => {
