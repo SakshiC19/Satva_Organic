@@ -241,11 +241,7 @@ const Home = () => {
           <div className="promo-banner-modern">
             <div className="promo-content">
               <span className="promo-badge">SPECIAL OFFER</span>
-              <h3 className="pr
-      <section className="features-compact">
-        <div className="container-fluid">
-          <div className="features-grid-modern">
-            {features.map((featomo-title">Get 30% Off on First Order</h3>
+              <h3 className="promo-title">Get 30% Off on First Order</h3>
               <p className="promo-text">Download our app and get exclusive deals</p>
               <button 
                 className="promo-btn"
@@ -261,7 +257,11 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Features Compacts */}ure, index) => (
+      {/* Features Compact */}
+      <section className="features-compact">
+        <div className="container-fluid">
+          <div className="features-grid-modern">
+            {features.map((feature, index) => (
               <div key={index} className="feature-card-modern">
                 <div className="feature-icon-modern">{feature.icon}</div>
                 <div className="feature-content">
