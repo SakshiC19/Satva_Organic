@@ -23,7 +23,7 @@ export const CategoryProvider = ({ children }) => {
       }));
       
       if (cats.length === 0) {
-        // Fallback to default categories if none in DB
+        // Fallback to default categorie if none in DB
         setCategories(defaultCategories);
       } else {
         setCategories(cats);
