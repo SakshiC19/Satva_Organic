@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  FiTruck, 
-  FiShield, 
-  FiHeart, 
-  FiSearch, 
+import {
+  FiTruck,
+  FiShield,
+  FiHeart,
+  FiSearch,
   FiTag,
   FiClock,
   FiStar,
@@ -59,7 +59,23 @@ const Home = () => {
     default: <FiPackage />
   };
 
-  const handleSearch = (e) => {
+  // Category images mapping (fallback/override)
+  const categoryImages = {
+    'organic-exotic-products': 'https://placehold.co/150/e2e8f0/1e293b?text=Exotic',
+    'organic-wood-cold-press-oils': 'https://placehold.co/150/fef3c7/92400e?text=Oils',
+    'millets-of-india': 'https://placehold.co/150/fee2e2/991b1b?text=Millets',
+    'organic-items': 'https://placehold.co/150/dcfce7/166534?text=Organic',
+    'seeds-and-nuts': 'https://placehold.co/150/ffedd5/9a3412?text=Seeds',
+    'organic-powder': 'https://placehold.co/150/f3e8ff/6b21a8?text=Powder',
+  };
+
+  const getCategoryImage = (category) => {
+    if (category.image) return category.image;
+    const slug = category.slug || category.name.toLowerCase().replace(/\s+/g, '-');
+    return categoryImages[slug];
+  };
+
+  const handlesearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/shop?search=${encodeURIComponent(searchQuery)}`);
@@ -100,9 +116,9 @@ const Home = () => {
             <h1 className="hero-title">Fresh & Organic.</h1>
             <p className="hero-subtitle">Premium quality products delivered to your doorstep</p>
           </div>
-          
+
           {/* Search Bar */}
-          <form className="search-bar-hero" onSubmit={handleSearch}>
+          <form className="search-bar-hero" onSubmit={handlesearch}>
             <FiSearch className="search-icon" />
             <input
               type="text"
@@ -124,27 +140,49 @@ const Home = () => {
               <FiGrid className="title-icon" />
               Shop by Category
             </h2>
-            <button 
+            <button
               className="view-all-link"
               onClick={() => navigate('/shop')}
             >
               View All <FiChevronRight />
             </button>
           </div>
-          
+
           <div className="categories-grid-compact">
-            {quickCategories.map((category, index) => (
-              <div
-                key={index}
-                className="category-card-compact"
-                onClick={() => navigate(`/shop?category=${category.slug || category.name.toLowerCase().replace(/\s+/g, '-')}`)}
-              >
-                <div className="category-icon-wrapper">
-                  {categoryIcons[category.name.toLowerCase()] || categoryIcons.default}
+            {quickCategories.map((category, index) => {
+              const imageUrl = getCategoryImage(category);
+              return (
+                <div
+                  key={index}
+                  className="category-card-compact"
+                  onClick={() => navigate(`/shop?category=${category.slug || category.name.toLowerCase().replace(/\s+/g, '-')}`)}
+                >
+                  <div className="category-image-wrapper">
+                    {imageUrl ? (
+                      <img
+                        src={imageUrl}
+                        alt={category.name}
+                        className="category-img"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.parentElement.classList.add('fallback-icon');
+                        }}
+                      />
+                    ) : (
+                      categoryIcons[category.name.toLowerCase()] || categoryIcons.default
+                    )}
+                  </div>
+                  <div className="category-name-container">
+                    <div className="category-name-scroll">
+                      <span>{category.name}</span>
+                      <span className="separator">&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+                      <span>{category.name}</span>
+                      <span className="separator">&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+                    </div>
+                  </div>
                 </div>
-                <span className="category-name">{category.name}</span>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </section>
@@ -161,7 +199,7 @@ const Home = () => {
                 <span>Ends in 2h 30m</span>
               </div>
             </div>
-            <button 
+            <button
               className="view-all-link"
               onClick={() => navigate('/shop')}
             >
@@ -212,7 +250,7 @@ const Home = () => {
               <FiStar className="title-icon" />
               Featured Products
             </h2>
-            <button 
+            <button
               className="view-all-link"
               onClick={() => navigate('/shop')}
             >
@@ -243,7 +281,7 @@ const Home = () => {
               <span className="promo-badge">SPECIAL OFFER</span>
               <h3 className="promo-title">Get 30% Off on First Order</h3>
               <p className="promo-text">Download our app and get exclusive deals</p>
-              <button 
+              <button
                 className="promo-btn"
                 onClick={() => navigate('/shop')}
               >

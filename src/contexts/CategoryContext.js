@@ -81,6 +81,7 @@ const defaultCategories = [
     id: 1,
     name: 'Organic Exotic Products',
     slug: 'organic-exotic-products',
+    image: 'https://placehold.co/150/e2e8f0/1e293b?text=Exotic',
     subcategories: [
       'Broccoli',
       'Cherry Tomato',
@@ -99,6 +100,7 @@ const defaultCategories = [
     id: 2,
     name: 'Organic Wood Cold Press Oils Products',
     slug: 'organic-wood-cold-press-oils',
+    image: 'https://placehold.co/150/fef3c7/92400e?text=Oils',
     subcategories: [
       'Coconut Oil',
       'Groundnuts Oil',
@@ -110,6 +112,7 @@ const defaultCategories = [
     id: 3,
     name: 'Millets Of India',
     slug: 'millets-of-india',
+    image: 'https://placehold.co/150/fee2e2/991b1b?text=Millets',
     subcategories: [
       'Sorghum (Jowar)',
       'Pearl Millet (Bajra)',
@@ -120,6 +123,7 @@ const defaultCategories = [
     id: 4,
     name: 'Organic Items',
     slug: 'organic-items',
+    image: 'https://placehold.co/150/dcfce7/166534?text=Organic',
     subcategories: [
       'Fresh Turmeric',
       'Organic Jaggery',
@@ -130,6 +134,7 @@ const defaultCategories = [
     id: 5,
     name: 'Seeds And Nuts',
     slug: 'seeds-and-nuts',
+    image: 'https://placehold.co/150/ffedd5/9a3412?text=Seeds',
     subcategories: [
       'Pumpkin Seeds',
       'Sunflower Seeds',
@@ -143,6 +148,7 @@ const defaultCategories = [
     id: 6,
     name: 'Organic Powder',
     slug: 'organic-powder',
+    image: 'https://placehold.co/150/f3e8ff/6b21a8?text=Powder',
     subcategories: [
       'Moringa Leaf Powder',
       'Neem Powder',
