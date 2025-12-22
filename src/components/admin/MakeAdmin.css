@@ -4,7 +4,7 @@
     align-items: center;
     justify-content: center;
     padding: 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #27ae60 0%, #0D6E4F 100%);
 }
 
 .make-admin-card {
@@ -49,7 +49,7 @@
 .btn-make-admin {
     width: 100%;
     padding: 14px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #27ae60 0%, #0D6E4F 100%);
     color: white;
     border: none;
     border-radius: 8px;
@@ -62,7 +62,7 @@
 
 .btn-make-admin:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 8px 20px rgba(39, 174, 96, 0.4);
 }
 
 .btn-make-admin:disabled {
@@ -148,7 +148,7 @@
 
 .email-input:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #27ae60;
 }
 
 .btn-submit {
@@ -216,7 +216,7 @@
 }
 
 .instructions a {
-    color: #2563eb;
+    color: #27ae60;
     text-decoration: underline;
 }
 
