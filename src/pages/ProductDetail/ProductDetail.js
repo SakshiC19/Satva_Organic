@@ -4,8 +4,8 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { FiHeart, FiMinus, FiPlus, FiCheck } from 'react-icons/fi';
 import { useCart } from '../../contexts/CartContext';
+import Recommendations from '../../components/product/Recommendations';
 import './ProductDetail.css';
-
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -26,7 +26,6 @@ const ProductDetail = () => {
           const productData = { id: productDoc.id, ...productDoc.data() };
           setProduct(productData);
           
-          // Set default selections
           if (productData.brands && productData.brands.length > 0) {
             setSelectedBrand(productData.brands[0]);
           }
@@ -55,8 +54,6 @@ const ProductDetail = () => {
   };
 
   const { addToCart, openCart } = useCart();
-
-  // ... (existing code)
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -99,7 +96,6 @@ const ProductDetail = () => {
   return (
     <div className="product-detail-page">
       <div className="container">
-        {/* Breadcrumb */}
         <nav className="breadcrumb">
           <Link to="/">HOME</Link>
           <span className="separator">›</span>
@@ -108,9 +104,7 @@ const ProductDetail = () => {
           <span className="current">{product.name?.toUpperCase()}</span>
         </nav>
 
-        {/* Product Main Section */}
         <div className="product-detail-main">
-          {/* Left: Product Images */}
           <div className="product-images">
             <div className="main-image">
               <img src={currentImage} alt={product.name} />
@@ -130,11 +124,9 @@ const ProductDetail = () => {
             )}
           </div>
 
-          {/* Right: Product Info */}
           <div className="product-info">
             <h1 className="product-title">{product.name}</h1>
 
-            {/* Meta Info */}
             <div className="product-meta">
               {product.brands && product.brands.length > 0 && (
                 <div className="meta-item">
@@ -162,7 +154,6 @@ const ProductDetail = () => {
               </div>
             </div>
 
-            {/* Price */}
             <div className="product-price">
               <span className="current-price">${product.price}</span>
               {product.originalPrice && (
@@ -170,15 +161,12 @@ const ProductDetail = () => {
               )}
             </div>
 
-            {/* Stock Status */}
             <div className={`stock-status ${product.stock > 0 ? 'in-stock' : 'out-of-stock'}`}>
               {product.stock > 0 ? 'IN STOCK' : 'OUT OF STOCK'}
             </div>
 
-            {/* Description */}
             <p className="product-description">{product.description}</p>
 
-            {/* Brand Selection */}
             {product.brands && product.brands.length > 0 && (
               <div className="product-option">
                 <label className="option-label">Brands</label>
@@ -196,7 +184,6 @@ const ProductDetail = () => {
               </div>
             )}
 
-            {/* Size/Amount Selection */}
             {product.packingSizes && product.packingSizes.length > 0 && (
               <div className="product-option">
                 <label className="option-label">Amount</label>
@@ -214,7 +201,6 @@ const ProductDetail = () => {
               </div>
             )}
 
-            {/* Quantity & Add to Cart */}
             <div className="product-actions">
               <div className="quantity-selector">
                 <button 
@@ -253,16 +239,14 @@ const ProductDetail = () => {
               >
                 Buy Now
               </button>
+
+              <div className="secondary-actions">
+                <button className="secondary-btn">
+                  <FiHeart /> <span className="wishlist-text">ADD TO WISHLIST</span>
+                </button>
+              </div>
             </div>
 
-            {/* Wishlist & Compare */}
-            <div className="secondary-actions">
-              <button className="secondary-btn">
-                <FiHeart /> ADD TO WISHLIST
-              </button>
-            </div>
-
-            {/* Product Features */}
             <div className="product-features">
               <div className="feature-item">
                 <FiCheck className="feature-icon" />
@@ -284,7 +268,6 @@ const ProductDetail = () => {
           </div>
         </div>
 
-        {/* Product Tabs */}
         <div className="product-tabs">
           <div className="tabs-header">
             <button
@@ -347,7 +330,6 @@ const ProductDetail = () => {
             {activeTab === 'reviews' && (
               <div className="tab-pane">
                 <h3>Customer Reviews</h3>
-                {/* Review Form */}
                 <div className="review-form-container">
                   <h4>Write a Review</h4>
                   <form className="review-form" onSubmit={(e) => e.preventDefault()}>
@@ -374,6 +356,12 @@ const ProductDetail = () => {
             )}
           </div>
         </div>
+
+        <Recommendations 
+          title="Similar Products" 
+          category={product.category} 
+          currentProductId={product.id} 
+        />
       </div>
     </div>
   );

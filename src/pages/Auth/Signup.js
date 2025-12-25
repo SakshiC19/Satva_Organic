@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiMail, FiLock, FiUser, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiEye, FiEyeOff } from 'react-icons/fi';
 import { FaGoogle } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 import './Auth.css';
@@ -90,7 +90,7 @@ const Signup = () => {
             <div className="form-group">
               <label htmlFor="displayName" className="form-label">Full Name</label>
               <div className="input-wrapper">
-                <FiUser className="input-icon" />
+                <i className='bx bx-user input-icon'></i>
                 <input
                   type="text"
                   id="displayName"
@@ -107,7 +107,7 @@ const Signup = () => {
             <div className="form-group">
               <label htmlFor="email" className="form-label">Email Address</label>
               <div className="input-wrapper">
-                <FiMail className="input-icon" />
+                <i className='bx bx-envelope input-icon'></i>
                 <input
                   type="email"
                   id="email"
@@ -124,7 +124,7 @@ const Signup = () => {
             <div className="form-group">
               <label htmlFor="password" className="form-label">Password</label>
               <div className="input-wrapper">
-                <FiLock className="input-icon" />
+                <i className='bx bx-lock input-icon'></i>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   id="password"
@@ -148,7 +148,7 @@ const Signup = () => {
             <div className="form-group">
               <label htmlFor="confirmPassword" className="form-label">Confirm Password</label>
               <div className="input-wrapper">
-                <FiLock className="input-icon" />
+                <i className='bx bx-lock input-icon'></i>
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   id="confirmPassword"

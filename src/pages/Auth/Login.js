@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiEye, FiEyeOff } from 'react-icons/fi';
 import { FaGoogle } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 import './Auth.css';
@@ -64,7 +64,7 @@ const Login = () => {
             <div className="form-group">
               <label htmlFor="email" className="form-label">Email Address</label>
               <div className="input-wrapper">
-                <FiMail className="input-icon" />
+                <i className='bx bx-envelope input-icon'></i>
                 <input
                   type="email"
                   id="email"
@@ -80,7 +80,7 @@ const Login = () => {
             <div className="form-group">
               <label htmlFor="password" className="form-label">Password</label>
               <div className="input-wrapper">
-                <FiLock className="input-icon" />
+                <i className='bx bx-lock input-icon'></i>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   id="password"

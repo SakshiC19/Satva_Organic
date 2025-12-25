@@ -1,8 +1,14 @@
 import React from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { FiUser, FiPackage, FiHeart, FiMapPin, FiLogOut } from 'react-icons/fi';
-import Breadcrumbs from '../../components/common/Breadcrumbs';
+import { 
+  FiUser, 
+  FiShoppingBag, 
+  FiHeart, 
+  FiMapPin, 
+  FiCreditCard, 
+  FiLogOut 
+} from 'react-icons/fi';
 import './Account.css';
 
 const AccountLayout = () => {
@@ -18,48 +24,40 @@ const AccountLayout = () => {
     }
   };
 
-  const menuItems = [
-    { path: '/account/profile', icon: <FiUser />, label: 'Profile' },
-    { path: '/account/orders', icon: <FiPackage />, label: 'Orders' },
-    { path: '/account/wishlist', icon: <FiHeart />, label: 'Wishlist' },
-    { path: '/account/addresses', icon: <FiMapPin />, label: 'Addresses' },
+  const navItems = [
+    { path: 'profile', icon: <FiUser />, label: 'My Profile' },
+    { path: 'orders', icon: <FiShoppingBag />, label: 'My Orders' },
+    { path: 'wishlist', icon: <FiHeart />, label: 'Wishlist' },
+    { path: 'addresses', icon: <FiMapPin />, label: 'Addresses' },
+    { path: 'payments', icon: <FiCreditCard />, label: 'Payments' },
   ];
 
   return (
-    <>
-      <Breadcrumbs />
-      <div className="account-page">
-        <div className="container">
-        <div className="account-layout">
-          {/* Sidebar */}
-          <aside className="account-sidebar">
-            <div className="account-menu">
-              {menuItems.map((item) => (
-                <NavLink 
-                  key={item.path} 
-                  to={item.path} 
-                  className={({ isActive }) => `account-menu-item ${isActive ? 'active' : ''}`}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </NavLink>
-              ))}
-              <button onClick={handleLogout} className="account-menu-item logout-btn">
-                <FiLogOut />
-                <span>Logout</span>
-              </button>
-            </div>
-          </aside>
-
-          {/* Content Area */}
-          <main className="account-content">
-            <Outlet />
-          </main>
-          </div>
-        </div>
+    <div className="account-layout container">
+      <aside className="account-sidebar">
+        <nav className="account-nav">
+          {navItems.map((item) => (
+            <NavLink 
+              key={item.path} 
+              to={item.path} 
+              className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+            >
+              <span className="nav-icon">{item.icon}</span>
+              <span className="nav-label">{item.label}</span>
+            </NavLink>
+          ))}
+          <button onClick={handleLogout} className="nav-item logout-btn">
+            <span className="nav-icon"><FiLogOut /></span>
+            <span className="nav-label">Logout</span>
+          </button>
+        </nav>
+      </aside>
+      <div className="account-content">
+        <Outlet />
       </div>
-    </>
+    </div>
   );
 };
 
 export default AccountLayout;
+

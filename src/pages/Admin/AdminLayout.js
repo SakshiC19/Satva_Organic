@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
   FiGrid, FiBox, FiPackage, FiImage, FiList, 
-  FiUsers, FiHome, FiLogOut, FiSearch, FiBell 
+  FiUsers, FiHome, FiLogOut, FiSearch, FiBell, FiTag 
 } from 'react-icons/fi';
 import './Admin.css';
 
@@ -25,7 +25,7 @@ const AdminLayout = () => {
     { path: '/admin/products', icon: <FiBox />, label: 'Products' },
     { path: '/admin/orders', icon: <FiPackage />, label: 'Orders' },
     { path: '/admin/banners', icon: <FiImage />, label: 'Hero Banners' },
-    { path: '/admin/promo-banners', icon: <FiImage />, label: 'Promo Banners' },
+    { path: '/admin/special-offer', icon: <FiTag />, label: 'Special Offer' },
     { path: '/admin/categories', icon: <FiList />, label: 'Categories' },
     { path: '/admin/users', icon: <FiUsers />, label: 'Users' },
   ];

@@ -1,104 +1,147 @@
 /* ProductCard.css */
 .product-card {
     background: #fff;
-    border-radius: 4px;
-    /* Flatter look like reference */
+    border-radius: 14px;
     overflow: hidden;
-    transition: box-shadow 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border: 1px solid #f0f0f0;
-    height: 100%;
+    width: 100%;
+    max-width: 280px;
+    height: 440px;
+    /* Fixed height as recommended */
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
     position: relative;
     cursor: pointer;
+    padding: 14px;
 }
 
 .product-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+    border-color: #27ae60;
 }
 
 /* Image Section */
 .product-card-image {
     position: relative;
     width: 100%;
-    aspect-ratio: 1;
-    /* Square image */
+    height: 170px;
+    /* Fixed image height as recommended */
     background: #fff;
     overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 16px;
+    margin-bottom: 8px;
 }
 
 .product-card-image img {
-    max-width: 100%;
-    max-height: 100%;
+    width: 100%;
+    height: 100%;
     object-fit: contain;
-    transition: transform 0.2s;
+    /* Recommended for consistent look */
+    transition: transform 0.5s ease;
 }
 
 .product-card:hover .product-card-image img {
-    transform: scale(1.03);
+    transform: scale(1.05);
+}
+
+.out-of-stock-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #dc2626;
+    font-weight: 800;
+    font-size: 1rem;
+    text-transform: uppercase;
+    z-index: 5;
 }
 
 /* Wishlist Icon */
 .wishlist-icon-container {
     position: absolute;
-    top: 12px;
-    right: 12px;
-    z-index: 2;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
 }
 
 .wishlist-btn {
-    background: none;
+    background: white;
     border: none;
     cursor: pointer;
-    padding: 4px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #c2c2c2;
-    transition: color 0.2s;
+    color: #64748b;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s;
 }
 
 .wishlist-btn:hover {
-    color: #ff4343;
+    transform: scale(1.1);
+    color: #ef4444;
 }
 
-.heart-icon {
-    font-size: 18px;
+.wishlist-btn.active {
+    color: #ef4444;
+}
+
+.heart-icon.filled {
     fill: currentColor;
-    /* Allows filling on active state if needed */
 }
 
 /* Info Section */
 .product-card-info {
-    padding: 12px;
+    padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 0;
     flex: 1;
-    text-align: left;
+}
+
+.product-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    margin: 4px 0;
+}
+
+.product-variant {
+    font-size: 10px;
+    color: #64748b;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.product-weight {
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 600;
 }
 
 .product-name {
-    font-size: 14px;
-    font-weight: 500;
-    color: #212121;
-    margin: 0;
-    line-height: 1.4;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 6px 0;
+    line-height: 1.3;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-}
-
-.product-variant {
-    font-size: 12px;
-    color: #878787;
-    margin-top: 2px;
+    height: 40px;
 }
 
 /* Rating Row */
@@ -106,203 +149,202 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-top: 6px;
+    margin: 4px 0;
 }
 
 .product-rating-badge {
-    background-color: #388e3c;
+    background: #27ae60;
     color: white;
-    font-size: 12px;
-    font-weight: 700;
     padding: 2px 6px;
-    border-radius: 3px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
     display: flex;
     align-items: center;
     gap: 2px;
-    line-height: 1;
 }
 
-.product-rating-badge .star {
+.star {
     font-size: 10px;
 }
 
 .review-count {
-    color: #878787;
+    color: #94a3b8;
+    font-size: 11px;
     font-weight: 500;
-    font-size: 13px;
 }
 
 .organic-assured-badge {
     display: flex;
     align-items: center;
-    margin-left: auto;
-    /* Push to right or keep near? Reference has it near */
-    /* margin-left: 8px; */
-}
-
-.organic-assured-badge span {
-    font-size: 14px;
-    /* Larger font for emphasis */
+    font-size: 10px;
+    color: #059669;
     font-weight: 700;
-    color: #2874f0;
-    /* Flipkart blue-ish or custom organic green? User said "Assured" style but "Organic" text. */
-    color: #16a34a;
-    /* Organic Green */
-    font-style: italic;
+    background: #f0fdf4;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: auto;
 }
 
-/* Price Row */
+.shield-icon {
+    filter: invert(36%) sepia(85%) saturate(445%) hue-rotate(105deg) brightness(92%) contrast(98%);
+}
+
+/* Price Section */
+.product-price-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
 .product-price {
     display: flex;
     align-items: baseline;
     gap: 8px;
-    margin-top: 8px;
-    flex-wrap: wrap;
+    margin: 6px 0;
 }
 
 .current-price {
-    font-size: 16px;
-    font-weight: 600;
-    color: #212121;
+    font-size: 20px;
+    font-weight: 800;
+    color: #1e293b;
 }
 
 .original-price {
     font-size: 14px;
-    color: #878787;
+    color: #94a3b8;
     text-decoration: line-through;
+    font-weight: 500;
 }
 
 .discount-text {
-    font-size: 13px;
-    color: #388e3c;
+    font-size: 12px;
+    color: #27ae60;
     font-weight: 700;
-    letter-spacing: -0.2px;
+}
+
+.price-alert {
+    font-size: 10px;
+    color: #f59e0b;
+    font-weight: 600;
+    background: #fffbeb;
+    padding: 2px 6px;
+    border-radius: 4px;
+    width: fit-content;
+}
+
+/* Delivery Info */
+.delivery-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #64748b;
+    margin: 4px 0;
 }
 
 /* Stock Status */
-.few-left-text {
-    font-size: 12px;
-    color: #b12704;
-    /* Amazon/Flipkart urgency red */
-    font-weight: 500;
-    margin-top: 4px;
+.stock-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0;
 }
 
-.out-of-stock {
-    font-size: 14px;
-    color: #ff6161;
-    font-weight: 500;
-    margin-top: 4px;
+.in-stock-text {
+    font-size: 11px;
+    font-weight: 600;
+    color: #059669;
+}
+
+.out-of-stock-text {
+    font-size: 11px;
+    font-weight: 600;
+    color: #dc2626;
+}
+
+.few-left-text {
+    font-size: 10px;
+    color: #dc2626;
+    font-weight: 700;
+    background: #fef2f2;
+    padding: 1px 6px;
+    border-radius: 4px;
 }
 
 /* Action Buttons */
 .product-card-actions {
     display: flex;
+    flex-direction: row;
     gap: 8px;
-    margin-top: 12px;
+    margin-top: auto;
+    padding-top: 10px;
 }
 
 .card-btn {
     flex: 1;
-    padding: 8px 4px;
-    border-radius: 4px;
-    font-size: 13px;
-    font-weight: 600;
+    height: 40px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     border: none;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .add-cart-btn {
-    background-color: #ff9f00;
+    background-color: #27ae60;
     color: white;
 }
 
-.add-cart-btn:hover {
-    background-color: #f39400;
+.add-cart-btn:hover:not(:disabled) {
+    background-color: #1e8449;
+    transform: translateY(-2px);
 }
 
 .buy-now-btn {
-    background-color: #fb641b;
+    background-color: #1e293b;
     color: white;
 }
 
-.buy-now-btn:hover {
-    background-color: #f4511e;
+.buy-now-btn:hover:not(:disabled) {
+    background-color: #0f172a;
+    transform: translateY(-2px);
 }
-/* ========================================
-   COMPACT PRODUCT CARD (for sliders)
-   ======================================== */
+
+.card-btn:disabled {
+    background-color: #e2e8f0;
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+
+/* Compact Mode */
 .product-card-compact {
-    min-width: 160px;
-    max-width: 180px;
+    max-width: 200px;
+    height: auto;
+    padding: 10px;
 }
 
 .product-card-compact .product-card-image {
-    padding: 12px;
-}
-
-.product-card-compact .product-card-info {
-    padding: 10px;
-    gap: 3px;
+    height: 120px;
 }
 
 .product-card-compact .product-name {
     font-size: 13px;
-    -webkit-line-clamp: 2;
-}
-
-.product-card-compact .product-variant {
-    font-size: 11px;
-}
-
-.product-card-compact .rating-row {
-    gap: 6px;
-    margin-top: 4px;
-}
-
-.product-card-compact .product-rating-badge {
-    font-size: 11px;
-    padding: 2px 5px;
-}
-
-.product-card-compact .review-count {
-    font-size: 11px;
-}
-
-.product-card-compact .organic-assured-badge {
-    display: none;
-}
-
-.product-card-compact .product-price {
-    margin-top: 6px;
-    gap: 6px;
-}
-
-.product-card-compact .current-price {
-    font-size: 14px;
-}
-
-.product-card-compact .original-price {
-    font-size: 12px;
-}
-
-.product-card-compact .discount-text {
-    font-size: 11px;
-}
-
-.product-card-compact .product-card-actions {
-    flex-direction: column;
-    gap: 6px;
-    margin-top: 8px;
+    height: 34px;
 }
 
 .product-card-compact .card-btn {
-    padding: 6px 8px;
+    height: 34px;
     font-size: 12px;
 }
 
-.product-card-compact .few-left-text,
-.product-card-compact .out-of-stock {
-    font-size: 11px;
+.product-card-compact .delivery-info,
+.product-card-compact .stock-status,
+.product-card-compact .price-alert {
+    display: none;
 }

@@ -50,31 +50,7 @@
     color: var(--text-secondary);
 }
 
-/* Shop Header Mobile */
-.shop-header-mobile {
-    display: none;
-}
-
-.mobile-filter-btn {
-    display: none;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    background: white;
-    border: 1px solid var(--color-gray-300);
-    border-radius: var(--radius-md);
-    font-weight: 500;
-    color: var(--text-primary);
-    cursor: pointer;
-}
-
-.mobile-filters-header,
-.mobile-filters-footer,
-.mobile-filter-overlay {
-    display: none;
-}
-
-/* Toolbar Filters (Now in Breadcrumbs) */
+/* Toolbar Filters */
 .toolbar-filters {
     display: flex;
     gap: var(--spacing-4);
@@ -123,21 +99,6 @@
     gap: var(--spacing-1);
 }
 
-.dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-2);
-    padding: var(--spacing-2);
-    cursor: pointer;
-    font-size: var(--font-size-sm);
-    color: var(--text-primary);
-    border-radius: var(--radius-sm);
-}
-
-.dropdown-item:hover {
-    background: var(--color-gray-50);
-}
-
 .dropdown-item-btn {
     text-align: left;
     background: none;
@@ -156,7 +117,7 @@
     color: var(--color-primary-600);
 }
 
-/* Shop Results Header (Count & View Modes) */
+/* Results Header */
 .shop-results-header {
     display: flex;
     justify-content: space-between;
@@ -169,37 +130,13 @@
     font-size: var(--font-size-sm);
 }
 
-.view-modes {
-    display: flex;
-    gap: var(--spacing-2);
-}
-
-.view-mode-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border: 1px solid var(--color-gray-300);
-    border-radius: var(--radius-md);
-    background: transparent;
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-}
-
-.view-mode-btn:hover,
-.view-mode-btn.active {
-    background: var(--color-primary-600);
-    border-color: var(--color-primary-600);
-    color: var(--text-on-primary);
-}
-
-/* Products Grid */
+/* Products Grid - Recommended Layout */
 .products-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: var(--spacing-6);
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 20px;
+    justify-items: center;
+    /* Center cards in their grid cells */
 }
 
 .products-grid.list-view {
@@ -207,8 +144,8 @@
 }
 
 .products-grid.compact-view {
-    grid-template-columns: repeat(5, 1fr);
-    gap: var(--spacing-4);
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
 }
 
 /* Pagination */
@@ -242,16 +179,6 @@
 }
 
 /* Mobile Responsive */
-@media (max-width: 1024px) {
-    .products-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-
-    .products-grid.compact-view {
-        grid-template-columns: repeat(4, 1fr);
-    }
-}
-
 @media (max-width: 768px) {
     .shop-header-mobile {
         display: flex;
@@ -261,138 +188,31 @@
         gap: var(--spacing-4);
     }
 
-    .shop-header-mobile .breadcrumbs {
-        margin-bottom: 0;
-        padding: 0;
-    }
-
     .mobile-filter-btn {
         display: flex;
-        width: auto;
-        white-space: nowrap;
-        background: white;
+        align-items: center;
+        gap: 8px;
         padding: 8px 16px;
+        background: white;
         border: 1px solid var(--color-gray-300);
         border-radius: var(--radius-md);
-    }
-
-    /* Mobile Sidebar Filters */
-    .mobile-sidebar-filters {
-        position: fixed;
-        top: 0;
-        left: -100%;
-        width: 80%;
-        max-width: 300px;
-        height: 100%;
-        background: white;
-        z-index: 3000;
-        flex-direction: column;
-        padding: 0;
-        transition: left 0.3s ease;
-        box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
-        overflow-y: auto;
-        flex-wrap: nowrap;
-    }
-
-    .mobile-sidebar-filters.mobile-open {
-        left: 0;
-    }
-
-    .mobile-filters-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 16px;
-        border-bottom: 1px solid #eee;
-    }
-
-    .mobile-filters-header h3 {
-        margin: 0;
-        font-size: 18px;
-    }
-
-    .mobile-filters-header button {
-        background: none;
-        border: none;
-        font-size: 24px;
+        font-weight: 500;
         cursor: pointer;
     }
 
-    .mobile-filters-footer {
-        display: block;
-        padding: 16px;
-        border-top: 1px solid #eee;
-        margin-top: auto;
-    }
-
-    .mobile-filters-footer .apply-btn {
-        width: 100%;
-    }
-
-    .mobile-filter-overlay {
-        display: block;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 2999;
-    }
-
-    /* Hide desktop filters in breadcrumbs on mobile if needed, 
-       but for now we keep them or let them wrap. 
-       If we want to hide them: */
-    .breadcrumbs-actions .toolbar-filters {
-        display: none;
-    }
-
-    .filter-dropdown-container {
-        width: 100%;
-        border-bottom: 1px solid #f0f0f0;
-    }
-
-    .filter-dropdown-btn {
-        width: 100%;
-        justify-content: space-between;
-        border: none;
-        padding: 16px;
-        border-radius: 0;
-    }
-
-    .filter-dropdown-menu {
-        position: static;
-        box-shadow: none;
-        border: none;
-        padding: 0 16px 16px 16px;
-        width: 100%;
-        margin: 0;
-        display: block;
-    }
-
-    .view-mode-btn {
-        pointer-events: auto;
-        position: relative;
-        z-index: 1;
-    }
-
     .products-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: var(--spacing-4);
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 12px;
     }
 
     .products-grid.compact-view {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     }
 }
 
 @media (max-width: 480px) {
     .products-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .products-grid.compact-view {
         grid-template-columns: repeat(2, 1fr);
-        gap: var(--spacing-2);
+        gap: 8px;
     }
 }

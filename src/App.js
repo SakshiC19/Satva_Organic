@@ -23,13 +23,15 @@ import AddProduct from './pages/Admin/AddProduct';
 import EditProduct from './pages/Admin/EditProduct';
 import AdminOrders from './pages/Admin/Orders';
 import HeroBanners from './pages/Admin/HeroBanners';
-import PromotionalBannersAdmin from './pages/Admin/PromotionalBanners';
+import SpecialOffer from './pages/Admin/SpecialOffer';
+import Categories from './pages/Admin/Categories';
 import Users from './pages/Admin/Users';
 import MakeAdmin from './components/admin/MakeAdmin';
 import ProductDetail from './pages/ProductDetail/ProductDetail';
 import Checkout from './pages/Checkout/Checkout';
 import CartDrawer from './components/cart/CartDrawer';
 import { CategoryProvider } from './contexts/CategoryContext';
+import { WishlistProvider } from './contexts/WishlistContext';
 import './styles/index.css';
 
 // Layout component to wrap pages that need Header and Footer
@@ -49,62 +51,64 @@ function App() {
   return (
     <AuthProvider>
       <CategoryProvider>
-        <CartProvider>
-          <Router>
-          <div className="app">
-            <CartDrawer />
-            <Routes>
-              {/* Public Routes with Layout */}
-              <Route path="/" element={<Layout><Home /></Layout>} />
-              <Route path="/shop/*" element={<Layout><Shop /></Layout>} />
-              <Route path="/product/:id" element={<Layout><ProductDetail /></Layout>} />
-              <Route path="/contact" element={<Layout><Contact /></Layout>} />
-              
-              {/* Auth Routes (Standalone) */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/make-admin" element={<MakeAdmin />} />
-              <Route path="/checkout" element={<Layout><Checkout /></Layout>} />
-              
-              {/* Protected User Dashboard Routes */}
-              <Route path="/account" element={
-                <ProtectedRoute>
-                  <Layout>
-                    <AccountLayout />
-                  </Layout>
-                </ProtectedRoute>
-              }>
-                <Route index element={<Navigate to="profile" replace />} />
-                <Route path="profile" element={<Profile />} />
-                <Route path="orders" element={<UserOrders />} />
-                <Route path="wishlist" element={<Wishlist />} />
-                <Route path="addresses" element={<Addresses />} />
-              </Route>
-
-              {/* Protected Admin Routes */}
-              <Route path="/admin" element={
-                <AdminRoute>
-                  <AdminLayout />
-                </AdminRoute>
-              }>
-                <Route index element={<Navigate to="dashboard" replace />} />
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="products" element={<Products />} />
-                <Route path="products/add" element={<AddProduct />} />
-                <Route path="products/edit/:id" element={<EditProduct />} />
-                <Route path="products/edit/:id" element={<EditProduct />} />
-                <Route path="orders" element={<AdminOrders />} />
-                <Route path="banners" element={<HeroBanners />} />
-                <Route path="promo-banners" element={<PromotionalBannersAdmin />} />
-                <Route path="users" element={<Users />} />
-              </Route>
-
-              {/* Fallback for other routes */}
-              <Route path="*" element={<Layout><Home /></Layout>} />
-            </Routes>
-          </div>
-        </Router>
-        </CartProvider>
+        <WishlistProvider>
+          <CartProvider>
+            <Router>
+            <div className="app">
+              <CartDrawer />
+              <Routes>
+                {/* Public Routes with Layout */}
+                <Route path="/" element={<Layout><Home /></Layout>} />
+                <Route path="/shop/*" element={<Layout><Shop /></Layout>} />
+                <Route path="/product/:id" element={<Layout><ProductDetail /></Layout>} />
+                <Route path="/contact" element={<Layout><Contact /></Layout>} />
+                
+                {/* Auth Routes (Standalone) */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/make-admin" element={<MakeAdmin />} />
+                <Route path="/checkout" element={<Layout><Checkout /></Layout>} />
+                
+                {/* Protected User Dashboard Routes */}
+                <Route path="/account" element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <AccountLayout />
+                    </Layout>
+                  </ProtectedRoute>
+                }>
+                  <Route index element={<Navigate to="profile" replace />} />
+                  <Route path="profile" element={<Profile />} />
+                  <Route path="orders" element={<UserOrders />} />
+                  <Route path="wishlist" element={<Wishlist />} />
+                  <Route path="addresses" element={<Addresses />} />
+                </Route>
+  
+                {/* Protected Admin Routes */}
+                <Route path="/admin" element={
+                  <AdminRoute>
+                    <AdminLayout />
+                  </AdminRoute>
+                }>
+                  <Route index element={<Navigate to="dashboard" replace />} />
+                  <Route path="dashboard" element={<Dashboard />} />
+                  <Route path="products" element={<Products />} />
+                  <Route path="products/add" element={<AddProduct />} />
+                  <Route path="products/edit/:id" element={<EditProduct />} />
+                  <Route path="orders" element={<AdminOrders />} />
+                  <Route path="banners" element={<HeroBanners />} />
+                  <Route path="special-offer" element={<SpecialOffer />} />
+                  <Route path="categories" element={<Categories />} />
+                  <Route path="users" element={<Users />} />
+                </Route>
+  
+                {/* Fallback for other routes */}
+                <Route path="*" element={<Layout><Home /></Layout>} />
+              </Routes>
+            </div>
+          </Router>
+          </CartProvider>
+        </WishlistProvider>
       </CategoryProvider>
     </AuthProvider>
   );

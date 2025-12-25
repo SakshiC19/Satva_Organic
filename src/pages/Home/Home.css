@@ -15,104 +15,100 @@
 }
 
 /* ========================================
-   HERO SECTION - COMPACT
+   HERO SLIDER SECTION
    ======================================== */
-.hero-compact {
-    background: linear-gradient(135deg, #27ae60 0%, #0D6E4F 100%);
-    padding: 40px 16px 50px;
-    color: white;
+.hero-slider-section {
+    width: 100%;
+    height: 400px;
+    /* Default height for desktop */
     position: relative;
     overflow: hidden;
+}
+
+.hero-swiper {
     width: 100%;
+    height: 100%;
 }
 
-.hero-compact::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    right: -10%;
-    width: 500px;
-    height: 500px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 50%;
-    z-index: 0;
-}
-
-.hero-content {
+.hero-slide {
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
     position: relative;
-    z-index: 1;
-    max-width: 600px;
-    margin: 0 auto;
-}
-
-.hero-text {
-    text-align: center;
-    margin-bottom: 24px;
-}
-
-.hero-title {
-    font-size: 32px;
-    font-weight: 700;
-    margin-bottom: 8px;
-    letter-spacing: -0.5px;
-}
-
-.hero-subtitle {
-    font-size: 15px;
-    opacity: 0.95;
-    font-weight: 400;
-    line-height: 1.5;
-}
-
-/* Search Bar in Hero */
-.search-bar-hero {
     display: flex;
     align-items: center;
-    background: white;
-    border-radius: 12px;
-    padding: 4px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-    max-width: 500px;
-    margin: 0 auto;
+    justify-content: center;
 }
 
-.search-icon {
-    color: #6c757d;
-    font-size: 20px;
-    margin: 0 12px;
-    flex-shrink: 0;
+.hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    /* Dark overlay for text readability */
+    z-index: 1;
 }
 
-.search-input {
-    flex: 1;
-    border: none;
-    outline: none;
-    font-size: 15px;
-    padding: 10px 8px;
-    background: transparent;
-    color: #333;
+.hero-content-slider {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    color: white;
+    padding: 20px;
+    max-width: 800px;
+    animation: fadeInUp 0.8s ease-out;
 }
 
-.search-input::placeholder {
-    color: #adb5bd;
+.hero-title-slider {
+    font-size: 48px;
+    font-weight: 800;
+    margin-bottom: 16px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    letter-spacing: -1px;
 }
 
-.search-btn {
-    background: linear-gradient(135deg, #27ae60 0%, #0D6E4F 100%);
+.hero-subtitle-slider {
+    font-size: 18px;
+    margin-bottom: 32px;
+    opacity: 0.95;
+    line-height: 1.6;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.hero-btn-slider {
+    background: #27ae60;
     color: white;
     border: none;
-    padding: 10px 20px;
-    border-radius: 8px;
+    padding: 14px 32px;
+    border-radius: 50px;
+    font-size: 16px;
     font-weight: 600;
-    font-size: 14px;
     cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-    white-space: nowrap;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(39, 174, 96, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
-.search-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.4);
+.hero-btn-slider:hover {
+    background: #219150;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(39, 174, 96, 0.6);
+}
+
+/* Swiper Pagination Customization */
+.hero-swiper .swiper-pagination-bullet {
+    background: white;
+    opacity: 0.5;
+    width: 10px;
+    height: 10px;
+}
+
+.hero-swiper .swiper-pagination-bullet-active {
+    opacity: 1;
+    background: #27ae60;
+    width: 24px;
+    border-radius: 5px;
 }
 
 /* ========================================
@@ -167,20 +163,49 @@
     width: 100%;
 }
 
-.categories-grid-compact {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 20px;
-    margin-bottom: 8px;
+.categories-slider-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
     width: 100%;
+}
+
+.categories-slider {
+    flex: 1;
+    width: 100%;
+    overflow: hidden;
+}
+
+.cat-nav-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    flex-shrink: 0;
+    z-index: 10;
+    color: #27ae60;
+    font-size: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.cat-nav-btn:hover {
+    background: #27ae60;
+    color: white;
+    border-color: #27ae60;
+    transform: scale(1.1);
 }
 
 .category-card-compact {
     background: white;
     border: 2px solid #f0f0f0;
     border-radius: 16px;
-    padding: 20px 8px;
-    /* Reduced vertical padding slightly */
     text-align: center;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -188,15 +213,11 @@
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    /* Align to top */
     gap: 12px;
     position: relative;
     overflow: hidden;
-    /* Kept for border radius, but flex should handle height */
-    height: 100%;
-    /* Ensure full height in grid */
-    min-height: 180px;
-    /* Minimum height to ensure space */
+    height: 180px;
+    width: 100%;
 }
 
 .category-card-compact::before {
@@ -273,7 +294,6 @@
     transform: scale(1.15);
 }
 
-/* Fallback icon style */
 .category-image-wrapper.fallback-icon {
     background: linear-gradient(135deg, #27ae60 0%, #0D6E4F 100%);
     color: white;
@@ -281,13 +301,11 @@
     border: none;
 }
 
-/* Scrolling Category Name */
 .category-name-container {
     width: 100%;
     overflow: hidden;
     position: relative;
     padding: 4px 0;
-    /* Fade edges */
     -webkit-mask: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent);
     mask: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent);
 }
@@ -317,7 +335,6 @@
     color: #27ae60;
 }
 
-/* Pause on hover for readability */
 .category-card-compact:hover .category-name-scroll {
     animation-play-state: paused;
 }
@@ -637,25 +654,20 @@
         padding: 0 20px;
     }
 
-    .hero-compact {
-        padding: 60px 20px 70px;
+    .hero-slider-section {
+        height: 400px;
     }
 
-    .hero-title {
-        font-size: 42px;
+    .hero-title-slider {
+        font-size: 48px;
     }
 
-    .hero-subtitle {
-        font-size: 17px;
+    .hero-subtitle-slider {
+        font-size: 18px;
     }
 
     .section-title-small {
         font-size: 22px;
-    }
-
-    .categories-grid-compact {
-        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-        gap: 16px;
     }
 
     .products-grid-compact {
@@ -690,26 +702,12 @@
         padding: 0 24px;
     }
 
-    .hero-compact {
-        padding: 80px 24px 90px;
-    }
-
-    .hero-title {
-        font-size: 48px;
-    }
-
-    .hero-subtitle {
-        font-size: 18px;
+    .hero-slider-section {
+        height: 500px;
     }
 
     .section-title-small {
         font-size: 24px;
-    }
-
-    .categories-grid-compact {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 24px;
-        max-width: 100%;
     }
 
     .products-grid-compact {
@@ -720,10 +718,6 @@
     .category-image-wrapper {
         width: 100px;
         height: 100px;
-    }
-
-    .category-name {
-        font-size: 15px;
     }
 
     .promo-banner-modern {
@@ -740,22 +734,22 @@
    MOBILE OPTIMIZATIONS
    ======================================== */
 @media (max-width: 480px) {
-    .hero-title {
+    .hero-slider-section {
+        height: 300px;
+    }
+
+    .hero-title-slider {
         font-size: 28px;
     }
 
-    .hero-subtitle {
+    .hero-subtitle-slider {
         font-size: 14px;
+        margin-bottom: 20px;
     }
 
-    .search-btn {
-        padding: 10px 16px;
-        font-size: 13px;
-    }
-
-    .categories-grid-compact {
-        grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
-        gap: 10px;
+    .hero-btn-slider {
+        padding: 10px 24px;
+        font-size: 14px;
     }
 
     .category-card-compact {
@@ -765,10 +759,6 @@
     .category-image-wrapper {
         width: 60px;
         height: 60px;
-    }
-
-    .category-name {
-        font-size: 12px;
     }
 
     .section-title-small {
@@ -869,11 +859,6 @@
     .category-card-compact {
         min-width: 75px;
     }
-
-    .category-name {
-        font-size: 11px;
-        padding: 0 2px;
-    }
 }
 
 /* Tablet adjustments */
@@ -899,100 +884,5 @@
     .container-fluid {
         max-width: 1400px;
         margin: 0 auto;
-    }
-}
-
-/* ========================================
-   FLASH DEALS NAVIGATION ARROWS
-   ======================================== */
-
-.flash-deals-slider-wrapper {
-    position: relative;
-    padding: 0 40px;
-}
-
-.flash-deals-prev,
-.flash-deals-next {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: white;
-    border: 1px solid #e9ecef;
-    color: #27ae60;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 10;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.flash-deals-prev:hover,
-.flash-deals-next:hover {
-    background: #27ae60;
-    color: white;
-    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
-}
-
-.flash-deals-prev.swiper-button-disabled,
-.flash-deals-next.swiper-button-disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-}
-
-.flash-deals-prev {
-    left: 0;
-}
-
-.flash-deals-next {
-    right: 0;
-}
-
-/* Default Swiper arrow styles */
-.flash-deals-prev::after,
-.flash-deals-next::after {
-    font-size: 16px;
-    font-weight: bold;
-}
-
-/* Hide navigation on mobile */
-@media (max-width: 767px) {
-    .flash-deals-slider-wrapper {
-        padding: 0;
-    }
-
-    .flash-deals-prev,
-    .flash-deals-next {
-        display: none;
-    }
-}
-
-/* Adjust navigation for tablet */
-@media (min-width: 768px) and (max-width: 1023px) {
-    .flash-deals-slider-wrapper {
-        padding: 0 30px;
-    }
-
-    .flash-deals-prev,
-    .flash-deals-next {
-        width: 32px;
-        height: 32px;
-    }
-}
-
-/* Flash Deals Navigation - Mobile Responsive */
-@media (max-width: 767px) {
-    .flash-nav-btn {
-        width: 32px;
-        height: 32px;
-        font-size: 16px;
-    }
-
-    .flash-deals-container {
-        gap: 8px;
     }
 }

@@ -1,59 +1,90 @@
-import React from 'react';
-import { FiX, FiPlus } from 'react-icons/fi';
-import './ProductSelectionModal.css';
+import React, { useState } from 'react';
+import ReactDOM from 'react-dom';
+import { FiX, FiShoppingCart, FiMinus, FiPlus } from 'react-icons/fi';
 import { useCart } from '../../contexts/CartContext';
+import './ProductSelectionModal.css';
 
 const ProductSelectionModal = ({ product, isOpen, onClose }) => {
   const { addToCart, openCart } = useCart();
+  const [selectedWeight, setSelectedWeight] = useState(product.weight || '500g');
+  const [quantity, setQuantity] = useState(1);
 
   if (!isOpen || !product) return null;
 
-  const { name, images, image, price, packingSizes = [] } = product;
-  const productImage = images && images.length > 0 ? (images[0].url || images[0]) : image;
+  const {
+    name,
+    image,
+    images,
+    price,
+    originalPrice,
+    discount,
+    weightOptions = ['250g', '500g', '1kg'],
+    stock = 10
+  } = product;
 
-  const handleAddVariant = (size) => {
+  const productImage = images && images.length > 0 
+    ? (images[0].url || images[0]) 
+    : image;
+
+  const handleAddToCart = () => {
     addToCart({
       ...product,
-      selectedSize: size,
-      quantity: 1
+      selectedWeight,
+      quantity
     });
     onClose();
     openCart();
   };
 
-  // If no packing sizes, we can just show the main price as one option
-  const variants = packingSizes.length > 0 ? packingSizes : ['Standard'];
-
-  return (
+  return ReactDOM.createPortal(
     <div className="selection-modal-overlay" onClick={onClose}>
-      <div className="selection-modal-container" onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close-btn" onClick={onClose}>
-          <FiX />
-        </button>
+      <div className="selection-modal-content" onClick={e => e.stopPropagation()}>
+        <button className="close-btn" onClick={onClose}><FiX /></button>
         
-        <h2 className="modal-title">{name}</h2>
-        
-        <div className="variants-list">
-          {variants.map((size, index) => (
-            <div key={index} className="variant-item">
-              <div className="variant-image">
-                <img src={productImage} alt={name} />
-              </div>
-              <div className="variant-info">
-                <span className="variant-size">{size}</span>
-                <span className="variant-price">₹{price}</span>
-              </div>
-              <button 
-                className="variant-add-btn"
-                onClick={() => handleAddVariant(size)}
-              >
-                ADD
-              </button>
+        <div className="modal-body">
+          <div className="product-preview">
+            <img src={productImage} alt={name} />
+          </div>
+          
+          <div className="product-details">
+            <h3>{name}</h3>
+            <div className="modal-price">
+              <span className="current">₹{price}</span>
+              {originalPrice && <span className="original">₹{originalPrice}</span>}
             </div>
-          ))}
+
+            <div className="selection-group">
+              <label>Select Weight</label>
+              <div className="weight-options">
+                {weightOptions.map(w => (
+                  <button 
+                    key={w}
+                    className={`weight-btn ${selectedWeight === w ? 'active' : ''}`}
+                    onClick={() => setSelectedWeight(w)}
+                  >
+                    {w}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="selection-group">
+              <label>Quantity</label>
+              <div className="quantity-selector">
+                <button onClick={() => setQuantity(Math.max(1, quantity - 1))}><FiMinus /></button>
+                <span>{quantity}</span>
+                <button onClick={() => setQuantity(Math.min(stock, quantity + 1))}><FiPlus /></button>
+              </div>
+            </div>
+
+            <button className="modal-add-btn" onClick={handleAddToCart}>
+              <FiShoppingCart /> Add to Cart
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

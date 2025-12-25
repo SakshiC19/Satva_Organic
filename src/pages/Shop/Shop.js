@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { FiGrid, FiList, FiChevronDown, FiFilter, FiX } from 'react-icons/fi';
+import { FiGrid, FiList, FiChevronDown, FiX } from 'react-icons/fi';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import ProductCard from '../../components/product/ProductCard';
+import Recommendations from '../../components/product/Recommendations';
 import Breadcrumbs from '../../components/common/Breadcrumbs';
 import './Shop.css';
 
@@ -11,7 +12,7 @@ const Shop = () => {
   const [searchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState('grid');
   const [activeDropdown, setActiveDropdown] = useState(null);
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
+
   const [filters, setFilters] = useState({
     availability: [],
     priceSort: null,
@@ -81,7 +82,6 @@ const Shop = () => {
     if (categoryParam) {
       filtered = filtered.filter(product => {
         if (!product.category) return false;
-        // Normalize product category to slug for comparison
         const productCatSlug = product.category.toLowerCase().replace(/\s+/g, '-');
         return productCatSlug === categoryParam;
       });
@@ -246,42 +246,7 @@ const Shop = () => {
       </Breadcrumbs>
 
       <div className="container">
-        {/* Mobile Filter Button (only visible on mobile) */}
-        <div className="shop-header-mobile">
-          <button 
-            className="mobile-filter-btn"
-            onClick={() => setShowMobileFilters(true)}
-          >
-            <FiFilter /> Filters
-          </button>
-        </div>
-
         <div className="shop-layout-full">
-          {/* Mobile Filter Overlay & Sidebar */}
-          <div className={`toolbar-filters mobile-sidebar-filters ${showMobileFilters ? 'mobile-open' : ''}`}>
-             <div className="mobile-filters-header">
-                <h3>Filters</h3>
-                <button onClick={() => setShowMobileFilters(false)}>
-                  <FiX />
-                </button>
-              </div>
-              {/* Mobile versions of filters could go here if needed, or reuse the same structure but styled differently */}
-              {/* For now, we'll keep the desktop dropdowns in the breadcrumbs and maybe hide them on mobile if desired, 
-                  or let them stack. The user asked to move them to breadcrumbs. */}
-              
-              <div className="mobile-filters-footer">
-                <button 
-                  className="btn btn-primary apply-btn"
-                  onClick={() => setShowMobileFilters(false)}
-                >
-                  Apply Filters
-                </button>
-              </div>
-          </div>
-          
-          {showMobileFilters && (
-              <div className="mobile-filter-overlay" onClick={() => setShowMobileFilters(false)} />
-          )}
 
           <div className="shop-results-header">
              <div className="results-count">
@@ -306,7 +271,6 @@ const Shop = () => {
               </div>
           </div>
 
-          {/* Products Grid */}
           {filteredProducts.length === 0 ? (
             <div className="shop-empty-state">
               <p>No products found matching your filters.</p>
@@ -319,13 +283,14 @@ const Shop = () => {
             </div>
           )}
 
-          {/* Pagination */}
           <div className="pagination">
             <button className="pagination-btn" aria-label="Previous page">«</button>
             <button className="pagination-btn active">1</button>
             <button className="pagination-btn">2</button>
             <button className="pagination-btn" aria-label="Next page">»</button>
           </div>
+
+          <Recommendations title="Recently Viewed & Similar Products" />
         </div>
       </div>
     </div>
