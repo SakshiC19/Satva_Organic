@@ -1,9 +1,9 @@
 import React from 'react';
 import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { 
-  FiGrid, FiBox, FiPackage, FiImage, FiList, 
-  FiUsers, FiHome, FiLogOut, FiSearch, FiBell, FiTag 
+import {
+  FiGrid, FiBox, FiPackage, FiImage, FiList,
+  FiUsers, FiHome, FiLogOut, FiSearch, FiBell, FiTag
 } from 'react-icons/fi';
 import './Admin.css';
 
@@ -27,7 +27,7 @@ const AdminLayout = () => {
     { path: '/admin/banners', icon: <FiImage />, label: 'Hero Banners' },
     { path: '/admin/special-offer', icon: <FiTag />, label: 'Special Offer' },
     { path: '/admin/categories', icon: <FiList />, label: 'Categories' },
-    { path: '/admin/users', icon: <FiUsers />, label: 'Users' },
+    { path: '/admin/users', icon: <FiUsers />, label: 'Total Customers' },
   ];
 
   return (
@@ -37,26 +37,26 @@ const AdminLayout = () => {
         <div className="admin-sidebar-header">
           <h2>Admin Panel</h2>
         </div>
-        
+
         <nav className="admin-nav">
           {menuItems.map((item) => (
-            <NavLink 
-              key={item.path} 
-              to={item.path} 
+            <NavLink
+              key={item.path}
+              to={item.path}
               className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
             >
               {item.icon}
               <span>{item.label}</span>
             </NavLink>
           ))}
-          
+
           <div className="admin-nav-divider"></div>
-          
+
           <Link to="/" className="admin-nav-item">
             <FiHome />
             <span>View Website</span>
           </Link>
-          
+
           <button onClick={handleLogout} className="admin-nav-item logout-btn">
             <FiLogOut />
             <span>Logout</span>
@@ -80,9 +80,9 @@ const AdminLayout = () => {
             </button>
 
             <div className="admin-profile-pill">
-              <img 
-                src={currentUser?.photoURL || "https://ui-avatars.com/api/?name=Admin+User&background=059669&color=fff"} 
-                alt="Profile" 
+              <img
+                src={currentUser?.photoURL || "https://ui-avatars.com/api/?name=Admin+User&background=059669&color=fff"}
+                alt="Profile"
                 className="admin-avatar"
               />
               <div className="admin-profile-info">

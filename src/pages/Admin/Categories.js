@@ -163,8 +163,8 @@ const Categories = () => {
       <div className="categories-header">
         <h1>Categories</h1>
         <div className="header-actions-group">
-          <button 
-            className="btn-reset" 
+          <button
+            className="btn-reset"
             onClick={handleResetToDefaults}
             disabled={isResetting}
           >
@@ -181,7 +181,15 @@ const Categories = () => {
           <div key={category.id} className="category-card">
             <div className="category-image-wrapper">
               {category.image ? (
-                <img src={category.image} alt={category.name} className="category-image" />
+                <img
+                  src={category.image}
+                  alt={category.name}
+                  className="category-image"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = 'https://via.placeholder.com/400x200?text=No+Image';
+                  }}
+                />
               ) : (
                 <div className="category-placeholder">📦</div>
               )}
@@ -190,22 +198,22 @@ const Categories = () => {
               <div className="category-card-header">
                 <h3 className="category-title">{category.name}</h3>
                 <div className="category-actions">
-                  <button 
-                    className="action-btn" 
+                  <button
+                    className="action-btn"
                     onClick={() => handleOpenModal(category)}
                     title="Edit Category"
                   >
                     <FiEdit2 size={16} />
                   </button>
-                  <button 
-                    className="action-btn delete" 
+                  <button
+                    className="action-btn delete"
                     onClick={() => handleDelete(category.id)}
                     title="Delete Category"
                   >
                     <FiTrash2 size={16} />
                   </button>
-                  <button 
-                    className="action-btn view" 
+                  <button
+                    className="action-btn view"
                     onClick={() => navigate(`/shop?category=${category.slug}`)}
                     title="View Products"
                   >
@@ -213,7 +221,7 @@ const Categories = () => {
                   </button>
                 </div>
               </div>
-              
+
               {/* Category Health Stats */}
               <div className="category-stats">
                 <div className="stat-item">
@@ -229,16 +237,16 @@ const Categories = () => {
               </div>
 
               <div className="category-card-footer">
-                <button 
+                <button
                   className="footer-badge-container green"
                   onClick={() => toggleCategory(index)}
                 >
-                  <FiChevronDown 
-                    size={14} 
-                    style={{ 
+                  <FiChevronDown
+                    size={14}
+                    style={{
                       transform: expandedCategories[index] ? 'rotate(180deg)' : 'rotate(0deg)',
                       transition: 'transform 0.3s ease'
-                    }} 
+                    }}
                   />
                   <span>{category.subcategories?.length || 0} Subcategories</span>
                 </button>
@@ -275,41 +283,41 @@ const Categories = () => {
               <div className="modal-body">
                 <div className="form-group">
                   <label>Category Name</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={formData.name} 
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={formData.name}
                     onChange={handleNameChange}
-                    required 
+                    required
                   />
                 </div>
                 <div className="form-group">
                   <label>Slug (URL Path)</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={formData.slug} 
-                    onChange={(e) => setFormData({...formData, slug: e.target.value})}
-                    required 
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={formData.slug}
+                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                    required
                   />
                 </div>
                 <div className="form-group">
                   <label>Image URL</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={formData.image} 
-                    onChange={(e) => setFormData({...formData, image: e.target.value})}
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={formData.image}
+                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
                     placeholder="https://..."
                   />
                 </div>
                 <div className="form-group">
                   <label>Subcategories</label>
                   <div className="subcategory-input-group">
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      value={newSubcategory} 
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={newSubcategory}
                       onChange={(e) => setNewSubcategory(e.target.value)}
                       placeholder="Add subcategory..."
                       onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSubcategory())}

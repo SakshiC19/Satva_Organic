@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { FiSave, FiInfo, FiEye, FiEyeOff } from 'react-icons/fi';
 import './Admin.css';
@@ -8,31 +8,57 @@ const SpecialOffer = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+
+  // Data for selection dropdowns
+  const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState([]);
+
   const [offerData, setOfferData] = useState({
     badge: 'SPECIAL OFFER',
     title: 'Get 30% Off on First Order',
     description: 'Download our app and get exclusive deals',
     buttonText: 'Shop Now',
     buttonLink: '/shop',
-    isActive: true
+    isActive: true,
+    scope: 'all', // 'all', 'category', 'product'
+    targetId: '' // ID of the selected category or product
   });
 
   useEffect(() => {
-    fetchOfferData();
+    fetchInitialData();
   }, []);
 
-  const fetchOfferData = async () => {
+  const fetchInitialData = async () => {
     try {
       setLoading(true);
+
+      // Fetch Offer Settings
       const offerRef = doc(db, 'settings', 'specialOffer');
       const offerSnap = await getDoc(offerRef);
-      
       if (offerSnap.exists()) {
-        setOfferData(offerSnap.data());
+        const data = offerSnap.data();
+        setOfferData(prev => ({ ...prev, ...data }));
       }
+
+      // Fetch Categories
+      const categoriesSnap = await getDocs(collection(db, 'categories'));
+      const cats = categoriesSnap.docs.map(doc => ({
+        id: doc.id,
+        name: doc.data().name
+      }));
+      setCategories(cats);
+
+      // Fetch Products
+      const productsSnap = await getDocs(collection(db, 'products'));
+      const prods = productsSnap.docs.map(doc => ({
+        id: doc.id,
+        name: doc.data().name
+      }));
+      setProducts(prods);
+
     } catch (error) {
-      console.error('Error fetching offer data:', error);
-      setMessage({ type: 'error', text: 'Failed to load offer data' });
+      console.error('Error fetching data:', error);
+      setMessage({ type: 'error', text: 'Failed to load settings' });
     } finally {
       setLoading(false);
     }
@@ -51,10 +77,10 @@ const SpecialOffer = () => {
     try {
       setSaving(true);
       setMessage({ type: '', text: '' });
-      
+
       const offerRef = doc(db, 'settings', 'specialOffer');
       await setDoc(offerRef, offerData);
-      
+
       setMessage({ type: 'success', text: 'Special offer updated successfully!' });
       setTimeout(() => setMessage({ type: '', text: '' }), 3000);
     } catch (error) {
@@ -91,16 +117,16 @@ const SpecialOffer = () => {
         <form onSubmit={handleSubmit} className="admin-form">
           <div className="form-section">
             <h3 className="section-title">Banner Content</h3>
-            
+
             <div className="form-group">
               <label>Status</label>
               <div className="toggle-container">
                 <label className="switch">
-                  <input 
-                    type="checkbox" 
-                    name="isActive" 
-                    checked={offerData.isActive} 
-                    onChange={handleInputChange} 
+                  <input
+                    type="checkbox"
+                    name="isActive"
+                    checked={offerData.isActive}
+                    onChange={handleInputChange}
                   />
                   <span className="slider round"></span>
                 </label>
@@ -113,6 +139,62 @@ const SpecialOffer = () => {
                 </span>
               </div>
             </div>
+
+            <div className="form-section-divider"></div>
+
+            {/* Target Selection */}
+            <div className="form-group">
+              <label htmlFor="scope">Apply Offer To</label>
+              <select
+                id="scope"
+                name="scope"
+                value={offerData.scope}
+                onChange={handleInputChange}
+                className="form-select"
+              >
+                <option value="all">Global (All Products - Link Manually)</option>
+                <option value="category">Specific Category</option>
+                <option value="product">Specific Product</option>
+              </select>
+            </div>
+
+            {offerData.scope === 'category' && (
+              <div className="form-group">
+                <label htmlFor="targetId">Select Category</label>
+                <select
+                  id="targetId"
+                  name="targetId"
+                  value={offerData.targetId}
+                  onChange={handleInputChange}
+                  className="form-select"
+                  required
+                >
+                  <option value="">-- Choose a Category --</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {offerData.scope === 'product' && (
+              <div className="form-group">
+                <label htmlFor="targetId">Select Product</label>
+                <select
+                  id="targetId"
+                  name="targetId"
+                  value={offerData.targetId}
+                  onChange={handleInputChange}
+                  className="form-select"
+                  required
+                >
+                  <option value="">-- Choose a Product --</option>
+                  {products.map(prod => (
+                    <option key={prod.id} value={prod.id}>{prod.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="form-grid">
               <div className="form-group">
@@ -170,16 +252,27 @@ const SpecialOffer = () => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="buttonLink">Button Link</label>
+                <label htmlFor="buttonLink">Button Link (Auto-generated for Category/Product)</label>
                 <input
                   type="text"
                   id="buttonLink"
                   name="buttonLink"
-                  value={offerData.buttonLink}
+                  value={
+                    offerData.scope === 'category'
+                      ? `/shop?category=${categories.find(c => c.id === offerData.targetId)?.name || ''}`
+                      : offerData.scope === 'product'
+                        ? `/product/${offerData.targetId}`
+                        : offerData.buttonLink
+                  }
                   onChange={handleInputChange}
                   placeholder="e.g. /shop"
                   required
+                  readOnly={offerData.scope !== 'all'}
+                  className={offerData.scope !== 'all' ? 'read-only-input' : ''}
                 />
+                {offerData.scope !== 'all' && (
+                  <small className="form-help-text">Link is automatically set based on your selection.</small>
+                )}
               </div>
             </div>
           </div>

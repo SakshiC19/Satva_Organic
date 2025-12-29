@@ -32,16 +32,12 @@ const EditProduct = () => {
   });
 
   const categories = [
-    'Fruits & Vegetables',
-    'Dairy Products',
-    'Grains & Cereals',
-    'Pulses & Legumes',
-    'Spices & Herbs',
-    'Oils & Ghee',
-    'Dry Fruits & Nuts',
-    'Beverages',
-    'Snacks & Sweets',
-    'Personal Care'
+    'Organic Items',
+    'Millets Of India',
+    'Organic Exotic Products',
+    'Organic Powder',
+    'Organic Wood Cold Press Oils Products',
+    'Seeds And Nuts'
   ];
 
   useEffect(() => {
@@ -134,7 +130,7 @@ const EditProduct = () => {
         const pathsToDelete = imagesToDelete
           .map(img => getPathFromURL(img.url || img))
           .filter(path => path !== null);
-        
+
         for (const path of pathsToDelete) {
           try {
             await deleteImage(path);
@@ -198,7 +194,7 @@ const EditProduct = () => {
     <div className="admin-edit-product">
       <div className="admin-page-header">
         <h1 className="admin-page-title">Edit Product</h1>
-        <button 
+        <button
           onClick={() => navigate('/admin/products')}
           className="btn btn-secondary"
         >
@@ -419,8 +415,8 @@ const EditProduct = () => {
                 <div key={index} className="upload-progress-item">
                   <span>Image {parseInt(index) + 1}</span>
                   <div className="progress-bar">
-                    <div 
-                      className="progress-fill" 
+                    <div
+                      className="progress-fill"
                       style={{ width: `${progress}%` }}
                     />
                   </div>

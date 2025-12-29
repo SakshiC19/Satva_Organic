@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { FiSearch, FiUser, FiMail, FiCalendar, FiShield } from 'react-icons/fi';
+import { FiSearch, FiUser, FiMail, FiCalendar, FiShield, FiPhone } from 'react-icons/fi';
 import './Users.css';
 
 const Users = () => {
@@ -30,9 +30,21 @@ const Users = () => {
     }
   };
 
-  const filteredUsers = users.filter(user => 
-    user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  // Sort users by mobile number (if available) - putting those with numbers first
+  const sortedUsers = [...users].sort((a, b) => {
+    const phoneA = a.phoneNumber || a.mobile || '';
+    const phoneB = b.phoneNumber || b.mobile || '';
+    if (phoneA && !phoneB) return -1;
+    if (!phoneA && phoneB) return 1;
+    return phoneA.localeCompare(phoneB);
+  });
+
+  const filteredUsers = sortedUsers.filter(user =>
+    user.role !== 'admin' && (
+      user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.phoneNumber && user.phoneNumber.includes(searchTerm))
+    )
   );
 
   const formatDate = (date) => {
@@ -48,12 +60,12 @@ const Users = () => {
   return (
     <div className="admin-users-page">
       <div className="page-header">
-        <h2>User Management</h2>
+        <h2>Total Customers</h2>
         <div className="search-bar">
           <FiSearch />
-          <input 
-            type="text" 
-            placeholder="Search users..." 
+          <input
+            type="text"
+            placeholder="Search users..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -69,6 +81,7 @@ const Users = () => {
               <tr>
                 <th>User</th>
                 <th>Email</th>
+                <th>Mobile Number</th>
                 <th>Role</th>
                 <th>Joined Date</th>
                 <th>Status</th>
@@ -94,6 +107,12 @@ const Users = () => {
                       <div className="email-cell">
                         <FiMail className="cell-icon" />
                         {user.email}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="phone-cell">
+                        <FiPhone className="cell-icon" />
+                        {user.phoneNumber || user.mobile || 'N/A'}
                       </div>
                     </td>
                     <td>
