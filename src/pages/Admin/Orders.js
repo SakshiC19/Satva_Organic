@@ -3,6 +3,7 @@ import { collection, query, orderBy, getDocs, doc, updateDoc } from 'firebase/fi
 import { db } from '../../config/firebase';
 import { FiSearch, FiFilter, FiMoreVertical, FiEdit, FiStar, FiTrash2 } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
+import { generateInvoice } from '../../utils/invoiceGenerator';
 import './Orders.css';
 
 const Orders = () => {
@@ -398,6 +399,13 @@ const Orders = () => {
                               </button>
                               <button className="dropdown-item danger" onClick={() => updateOrderStatus(order.id, 'cancelled')}>
                                 <FiTrash2 /> Delete
+                              </button>
+                              <button className="dropdown-item" onClick={() => generateInvoice(order)}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
+                                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                  <polyline points="7 10 12 15 17 10"></polyline>
+                                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg> Invoice
                               </button>
                             </div>
                           )}

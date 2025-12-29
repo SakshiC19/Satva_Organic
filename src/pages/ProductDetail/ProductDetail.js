@@ -108,6 +108,9 @@ const ProductDetail = () => {
           <div className="product-images">
             <div className="main-image">
               <img src={currentImage} alt={product.name} />
+              <button className="mobile-wishlist-btn" title="Add to Wishlist">
+                <FiHeart />
+              </button>
             </div>
             {productImages.length > 1 && (
               <div className="image-thumbnails">
@@ -125,6 +128,7 @@ const ProductDetail = () => {
           </div>
 
           <div className="product-info">
+            <div className="product-category-label">{product.category}</div>
             <h1 className="product-title">{product.name}</h1>
 
             <div className="product-meta">
@@ -140,10 +144,7 @@ const ProductDetail = () => {
                   <span className="meta-value">{product.packingSizes.join(', ')}</span>
                 </div>
               )}
-              <div className="meta-item">
-                <span className="meta-label">SKU:</span>
-                <span className="meta-value">{product.sku || 'N/A'}</span>
-              </div>
+              {/* SKU Removed */}
               <div className="meta-item">
                 <span className="rating-stars">
                   {[...Array(5)].map((_, i) => (
@@ -155,9 +156,11 @@ const ProductDetail = () => {
             </div>
 
             <div className="product-price">
-              <span className="current-price">${product.price}</span>
-              {product.originalPrice && (
-                <span className="original-price">${product.originalPrice}</span>
+              <span className="current-price">₹{product.price}</span>
+              {product.originalPrice && product.originalPrice > product.price && (
+                <span className="original-price" style={{ textDecoration: 'line-through', color: '#999', marginLeft: '10px' }}>
+                  ₹{product.originalPrice}
+                </span>
               )}
             </div>
 
@@ -184,47 +187,88 @@ const ProductDetail = () => {
               </div>
             )}
 
-            {product.packingSizes && product.packingSizes.length > 0 && (
-              <div className="product-option">
-                <label className="option-label">Amount</label>
-                <div className="option-buttons">
-                  {product.packingSizes.map((size, index) => (
-                    <button
-                      key={index}
-                      className={`option-btn ${selectedSize === size ? 'active' : ''}`}
-                      onClick={() => setSelectedSize(size)}
+            {product.packingSizes && product.packingSizes.length > 0 ? (
+              <div className="product-option amount-option-container">
+                <div className="amount-selection">
+                  <label className="option-label">Amount</label>
+                  <div className="option-buttons">
+                    {product.packingSizes.map((size, index) => (
+                      <button
+                        key={index}
+                        className={`option-btn ${selectedSize === size ? 'active' : ''}`}
+                        onClick={() => setSelectedSize(size)}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="quantity-wishlist-group">
+                  <div className="quantity-selector">
+                    <button 
+                      className="qty-btn" 
+                      onClick={() => handleQuantityChange(-1)}
+                      disabled={quantity <= 1}
                     >
-                      {size}
+                      <FiMinus />
                     </button>
-                  ))}
+                    <input 
+                      type="number" 
+                      value={quantity} 
+                      readOnly 
+                      className="qty-input"
+                    />
+                    <button 
+                      className="qty-btn" 
+                      onClick={() => handleQuantityChange(1)}
+                      disabled={quantity >= (product.stock || 999)}
+                    >
+                      <FiPlus />
+                    </button>
+                  </div>
+                  <button className="secondary-btn wishlist-inline-btn" title="Add to Wishlist">
+                    <FiHeart />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Fallback if no packing sizes, still show quantity */
+              <div className="product-option amount-option-container">
+                 <div className="amount-selection">
+                    <label className="option-label">Quantity</label>
+                 </div>
+                 <div className="quantity-wishlist-group">
+                   <div className="quantity-selector">
+                    <button 
+                      className="qty-btn" 
+                      onClick={() => handleQuantityChange(-1)}
+                      disabled={quantity <= 1}
+                    >
+                      <FiMinus />
+                    </button>
+                    <input 
+                      type="number" 
+                      value={quantity} 
+                      readOnly 
+                      className="qty-input"
+                    />
+                    <button 
+                      className="qty-btn" 
+                      onClick={() => handleQuantityChange(1)}
+                      disabled={quantity >= (product.stock || 999)}
+                    >
+                      <FiPlus />
+                    </button>
+                  </div>
+                  <button className="secondary-btn wishlist-inline-btn" title="Add to Wishlist">
+                    <FiHeart />
+                  </button>
                 </div>
               </div>
             )}
 
             <div className="product-actions">
-              <div className="quantity-selector">
-                <button 
-                  className="qty-btn" 
-                  onClick={() => handleQuantityChange(-1)}
-                  disabled={quantity <= 1}
-                >
-                  <FiMinus />
-                </button>
-                <input 
-                  type="number" 
-                  value={quantity} 
-                  readOnly 
-                  className="qty-input"
-                />
-                <button 
-                  className="qty-btn" 
-                  onClick={() => handleQuantityChange(1)}
-                  disabled={quantity >= (product.stock || 999)}
-                >
-                  <FiPlus />
-                </button>
-              </div>
-
               <button 
                 className="btn-add-to-cart"
                 onClick={handleAddToCart}
@@ -232,6 +276,7 @@ const ProductDetail = () => {
               >
                 Add to cart
               </button>
+
               <button 
                 className="btn-buy-now"
                 onClick={handleBuyNow}
@@ -239,12 +284,6 @@ const ProductDetail = () => {
               >
                 Buy Now
               </button>
-
-              <div className="secondary-actions">
-                <button className="secondary-btn">
-                  <FiHeart /> <span className="wishlist-text">ADD TO WISHLIST</span>
-                </button>
-              </div>
             </div>
 
             <div className="product-features">

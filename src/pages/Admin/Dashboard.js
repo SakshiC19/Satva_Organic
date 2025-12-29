@@ -167,8 +167,30 @@ const Dashboard = () => {
   return (
     <div className="admin-dashboard">
       <div className="dashboard-header">
-        <h1>Dashboard Overview</h1>
-        <p>Welcome back! Your grocery store's performance view</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+          <div>
+            <h1>Dashboard Overview</h1>
+            <p>Welcome back! Your grocery store's performance view</p>
+          </div>
+          <button 
+            onClick={() => navigate('/')}
+            className="view-website-btn"
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#27ae60',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            <FiShoppingBag /> View Website
+          </button>
+        </div>
       </div>
 
       {/* Stats Grid */}

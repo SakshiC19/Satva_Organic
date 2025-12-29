@@ -115,11 +115,6 @@ const Header = () => {
       {/* Top Header (Logo, Search, Actions) */}
       <div className="header-main">
         <div className="container header-container">
-          {/* Logo */}
-          <Link to="/" className="header-logo">
-            <img src={logo} alt="Satva Organics" className="logo-image" />
-          </Link>
-
           {/* Mobile Menu Button */}
           <button 
             className="mobile-menu-btn"
@@ -128,7 +123,25 @@ const Header = () => {
             <FiMenu />
           </button>
 
-          {/* Search Bar */}
+          {/* Logo */}
+          <Link to="/" className="header-logo">
+            <img src={logo} alt="Satva Organics" className="logo-image" />
+          </Link>
+
+          {/* Mobile Search Toggle (Visible only on mobile) */}
+          <button 
+            className="mobile-header-search-btn"
+            onClick={() => {
+              // Toggle search or focus search
+              const searchInput = document.querySelector('.mobile-search-input');
+              if (searchInput) searchInput.focus();
+              setMobileMenuOpen(true); // Open sidebar to show search for now, or implement a toggle
+            }}
+          >
+            <FiSearch />
+          </button>
+
+          {/* Search Bar (Desktop) */}
           <form onSubmit={handleSearch} className="header-search">
             <div className="search-wrapper">
               <button type="submit" className="search-icon-btn">
@@ -255,7 +268,6 @@ const Header = () => {
             </Link>
 
             {/* Cart */}
-            {/* Cart */}
             <button 
               className="action-item cart-item" 
               onClick={(e) => {
@@ -338,9 +350,25 @@ const Header = () => {
               </button>
             </div>
           </form>
+          
           {/* Auth Section in Sidebar */}
           <div className="mobile-auth-section">
-            {!currentUser && (
+            {currentUser ? (
+              <div className="mobile-user-info">
+                <div className="user-greeting">
+                  <FiUser />
+                  <span>Hello, {currentUser.displayName || 'User'}</span>
+                </div>
+                <div className="mobile-user-links">
+                  <Link to="/account/profile" onClick={() => setMobileMenuOpen(false)}>My Profile</Link>
+                  <Link to="/account/orders" onClick={() => setMobileMenuOpen(false)}>My Orders</Link>
+                  <Link to="/account/wishlist" onClick={() => setMobileMenuOpen(false)}>My Wishlist</Link>
+                  {isAdmin && (
+                    <Link to="/admin/dashboard" onClick={() => setMobileMenuOpen(false)}>Admin Dashboard</Link>
+                  )}
+                </div>
+              </div>
+            ) : (
               <div className="mobile-auth-buttons">
                 <Link to="/login" className="mobile-auth-btn login" onClick={() => setMobileMenuOpen(false)}>Login</Link>
                 <Link to="/signup" className="mobile-auth-btn signup" onClick={() => setMobileMenuOpen(false)}>Sign Up</Link>

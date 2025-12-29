@@ -6,7 +6,7 @@ import { useCart } from '../../contexts/CartContext';
 import { useWishlist } from '../../contexts/WishlistContext';
 import ProductSelectionModal from './ProductSelectionModal';
 
-const ProductCard = ({ 
+const ProductCard = ({
   product,
   compact = false,
   isWishlistPage = false
@@ -15,15 +15,15 @@ const ProductCard = ({
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist, removeFromWishlist } = useWishlist();
   const [isModalOpen, setIsModalOpen] = React.useState(false);
-  
-  const { 
+
+  const {
     id,
-    name, 
-    image, 
-    images, 
-    price, 
-    originalPrice, 
-    discount, 
+    name,
+    image,
+    images,
+    price,
+    originalPrice,
+    discount,
     category,
     rating = 0,
     inStock = true,
@@ -33,8 +33,8 @@ const ProductCard = ({
     priceAlert = null // e.g., "Price dropped by ₹20"
   } = product;
 
-  const productImage = images && images.length > 0 
-    ? (images[0].url || images[0]) 
+  const productImage = images && images.length > 0
+    ? (images[0].url || images[0])
     : image;
 
   const isInStock = stock !== undefined ? stock > 0 : inStock;
@@ -60,13 +60,13 @@ const ProductCard = ({
       {/* Product Image */}
       <div className="product-card-image">
         <div className="wishlist-icon-container">
-           <button 
-             className={`wishlist-btn ${isItemInWishlist ? 'active' : ''}`} 
-             onClick={handleWishlistClick}
-             title={isWishlistPage ? "Remove from Wishlist" : (isItemInWishlist ? "Remove from Wishlist" : "Add to Wishlist")}
-           >
-             {isWishlistPage ? <FiTrash2 className="trash-icon" /> : <FiHeart className={`heart-icon ${isItemInWishlist ? 'filled' : ''}`} />}
-           </button>
+          <button
+            className={`wishlist-btn ${isItemInWishlist ? 'active' : ''}`}
+            onClick={handleWishlistClick}
+            title={isWishlistPage ? "Remove from Wishlist" : (isItemInWishlist ? "Remove from Wishlist" : "Add to Wishlist")}
+          >
+            {isWishlistPage ? <FiTrash2 className="trash-icon" /> : <FiHeart className={`heart-icon ${isItemInWishlist ? 'filled' : ''}`} />}
+          </button>
         </div>
         <img src={productImage} alt={name} />
         {!isInStock && <div className="out-of-stock-overlay">Out of Stock</div>}
@@ -74,12 +74,8 @@ const ProductCard = ({
 
       {/* Product Info */}
       <div className="product-card-info">
-        <div className="product-meta">
-          <span className="product-variant">{category}</span>
-          <span className="product-weight">{weight}</span>
-        </div>
         <h3 className="product-name" title={name}>{name}</h3>
-        
+
         {/* Rating & Organic Label */}
         <div className="rating-row">
           <div className="product-rating-badge">
@@ -87,8 +83,8 @@ const ProductCard = ({
           </div>
           <span className="review-count">({Math.floor(Math.random() * 1000) + 50})</span>
           <div className="organic-assured-badge">
-             <img src="https://cdn-icons-png.flaticon.com/512/2917/2917995.png" alt="shield" className="shield-icon" style={{width: '14px', height: '14px', marginRight: '4px'}} />
-             <span>Organic</span>
+            <img src="https://cdn-icons-png.flaticon.com/512/2917/2917995.png" alt="shield" className="shield-icon" style={{ width: '14px', height: '14px', marginRight: '4px' }} />
+            <span>Organic</span>
           </div>
         </div>
 
@@ -125,7 +121,7 @@ const ProductCard = ({
 
         {/* Action Buttons */}
         <div className="product-card-actions">
-          <button 
+          <button
             className="card-btn add-cart-btn"
             disabled={!isInStock}
             onClick={(e) => {
@@ -136,7 +132,7 @@ const ProductCard = ({
           >
             Add to Cart
           </button>
-          <button 
+          <button
             className="card-btn buy-now-btn"
             disabled={!isInStock}
             onClick={(e) => {
@@ -151,7 +147,7 @@ const ProductCard = ({
         </div>
       </div>
 
-      <ProductSelectionModal 
+      <ProductSelectionModal
         product={product}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

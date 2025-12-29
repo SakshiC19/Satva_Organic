@@ -135,6 +135,8 @@
 .product-info {
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
+    /* Ensure everything is left-aligned */
 }
 
 .product-title {
@@ -148,6 +150,8 @@
 .product-meta {
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
+    /* Aligns Amount, SKU, and Stars to the left */
     gap: 6px;
     margin-bottom: 15px;
     font-size: 14px;
@@ -157,6 +161,8 @@
 .meta-item {
     display: flex;
     align-items: center;
+    justify-content: flex-start;
+    /* Ensure items stay on the left */
     gap: 8px;
 }
 
@@ -277,16 +283,39 @@
     align-items: center;
 }
 
+/* Amount & Quantity Container */
+.amount-option-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.amount-selection {
+    display: flex;
+    flex-direction: column;
+}
+
+.quantity-wishlist-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: auto;
+    /* Push to right */
+}
+
+/* Ensure quantity selector is visible and styled correctly */
 .quantity-selector {
     display: flex;
     align-items: center;
     border: 1px solid #e5e7eb;
     border-radius: 4px;
-    height: 40px;
+    height: 36px;
 }
 
 .qty-btn {
-    width: 36px;
+    width: 32px;
     height: 100%;
     border: none;
     background: #f9fafb;
@@ -308,7 +337,7 @@
 }
 
 .qty-input {
-    width: 40px;
+    width: 36px;
     height: 100%;
     border: none;
     border-left: 1px solid #e5e7eb;
@@ -316,6 +345,7 @@
     text-align: center;
     font-weight: 600;
     color: #1f2937;
+    font-size: 14px;
     -moz-appearance: textfield;
     appearance: textfield;
 }
@@ -324,6 +354,26 @@
 .qty-input::-webkit-inner-spin-button {
     -webkit-appearance: none;
     margin: 0;
+}
+
+.wishlist-inline-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    background: #fff;
+    color: #4b5563;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.wishlist-inline-btn:hover {
+    border-color: #16a34a;
+    color: #16a34a;
 }
 
 .btn-add-to-cart {
@@ -365,28 +415,6 @@
 
 .btn-buy-now:hover:not(:disabled) {
     background-color: #1F2D26;
-}
-
-.secondary-actions {
-    display: flex;
-    gap: 20px;
-}
-
-.secondary-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: none;
-    border: none;
-    color: #4b5563;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: color 0.2s;
-}
-
-.secondary-btn:hover {
-    color: #16a34a;
 }
 
 .product-features {
@@ -571,6 +599,14 @@
         margin-bottom: 20px;
     }
 
+    .product-images {
+        flex: 1;
+    }
+
+    .product-info {
+        flex: 1;
+    }
+
     .product-title {
         font-size: 20px;
         text-align: left;
@@ -613,11 +649,6 @@
         gap: 8px;
         margin-bottom: 15px;
         align-items: stretch;
-    }
-
-    .quantity-selector {
-        width: 100%;
-        margin-bottom: 5px;
     }
 
     .btn-add-to-cart,
@@ -672,4 +703,56 @@
     .tab-pane p {
         font-size: 13px;
     }
+
+    /* Mobile Wishlist Button */
+    .mobile-wishlist-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #fff;
+        border: none;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        color: #4b5563;
+        font-size: 18px;
+        z-index: 10;
+    }
+
+    .main-image {
+        position: relative;
+    }
+
+    .product-category-label {
+        font-size: 12px;
+        text-transform: uppercase;
+        color: #6b7280;
+        font-weight: 600;
+        margin-bottom: 4px;
+        letter-spacing: 0.5px;
+    }
+
+    /* Ensure amount container works well on mobile */
+    .amount-option-container {
+        align-items: flex-end;
+    }
+}
+
+/* Default styles for new elements */
+.mobile-wishlist-btn {
+    display: none;
+}
+
+.product-category-label {
+    display: block;
+    font-size: 13px;
+    color: #6b7280;
+    font-weight: 600;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
