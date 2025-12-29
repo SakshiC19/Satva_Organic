@@ -25,7 +25,8 @@ const AddProduct = () => {
     packingSizes: '',
     productType: 'organic',
     featured: false,
-    codAvailable: false
+    codAvailable: false,
+    refundPolicyAvailable: false
   });
 
   const { categories: contextCategories, loading: categoriesLoading } = useCategories();
@@ -88,6 +89,7 @@ const AddProduct = () => {
         organic: formData.productType === 'organic', // Keep for backward compatibility
         featured: formData.featured,
         codAvailable: formData.codAvailable,
+        refundPolicyAvailable: formData.refundPolicyAvailable,
         images: uploadedImages.map(img => ({
           url: img.url,
           path: img.path
@@ -292,6 +294,16 @@ const AddProduct = () => {
                   onChange={handleInputChange}
                 />
                 <span>Cash on Delivery Available</span>
+              </label>
+
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="refundPolicyAvailable"
+                  checked={formData.refundPolicyAvailable}
+                  onChange={handleInputChange}
+                />
+                <span>Refund Policy Available</span>
               </label>
             </div>
           </div>

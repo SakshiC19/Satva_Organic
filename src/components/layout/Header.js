@@ -129,17 +129,7 @@ const Header = () => {
           </Link>
 
           {/* Mobile Search Toggle (Visible only on mobile) */}
-          <button 
-            className="mobile-header-search-btn"
-            onClick={() => {
-              // Toggle search or focus search
-              const searchInput = document.querySelector('.mobile-search-input');
-              if (searchInput) searchInput.focus();
-              setMobileMenuOpen(true); // Open sidebar to show search for now, or implement a toggle
-            }}
-          >
-            <FiSearch />
-          </button>
+
 
           {/* Search Bar (Desktop) */}
           <form onSubmit={handleSearch} className="header-search">

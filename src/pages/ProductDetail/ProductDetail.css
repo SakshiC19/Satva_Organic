@@ -756,3 +756,5 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+.feature-icon.success { color: #16a34a !important; }
+.feature-icon.error { color: #dc2626 !important; }

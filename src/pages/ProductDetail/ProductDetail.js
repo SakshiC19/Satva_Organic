@@ -291,6 +291,14 @@ const ProductDetail = () => {
                 <FiCheck className="feature-icon" />
                 <span>Type: {product.productType || 'Organic'}</span>
               </div>
+              <div className="feature-item">
+                <FiCheck className={`feature-icon ${product.codAvailable !== false ? 'success' : 'error'}`} />
+                <span>Cash on Delivery: {product.codAvailable !== false ? 'Available' : 'Not Available'}</span>
+              </div>
+              <div className="feature-item">
+                <FiCheck className={`feature-icon ${product.refundPolicyAvailable ? 'success' : 'error'}`} />
+                <span>Refund Policy: {product.refundPolicyAvailable ? 'Available' : 'Not Available'}</span>
+              </div>
               {product.mfgDate && (
                 <div className="feature-item">
                   <FiCheck className="feature-icon" />

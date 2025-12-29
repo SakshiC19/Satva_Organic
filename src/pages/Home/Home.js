@@ -58,7 +58,7 @@ const Home = () => {
     try {
       setLoadingProducts(true);
       const productsCollection = collection(db, 'products');
-      const productsQuery = query(productsCollection, limit(8));
+      const productsQuery = query(productsCollection, limit(12));
       const productsSnapshot = await getDocs(productsQuery);
       const productsList = productsSnapshot.docs.map(doc => ({
         id: doc.id,
@@ -353,11 +353,11 @@ const Home = () => {
                 320: { slidesPerView: 2, spaceBetween: 12 },
                 480: { slidesPerView: 2.5, spaceBetween: 12 },
                 768: { slidesPerView: 3.5, spaceBetween: 14 },
-                1024: { slidesPerView: 4.5, spaceBetween: 16 },
+                1024: { slidesPerView: 5, spaceBetween: 12 },
               }}
               className="flash-deals-slider"
             >
-              {featuredProducts.slice(0, 6).map(product => (
+              {featuredProducts.map(product => (
                 <SwiperSlide key={product.id}>
                   <ProductCard product={product} compact />
                 </SwiperSlide>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, orderBy, getDocs, limit } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { FiTrendingUp, FiTrendingDown, FiDollarSign, FiShoppingBag, FiBox, FiUsers, FiFilter } from 'react-icons/fi';
+import { FiTrendingUp, FiTrendingDown, FiDollarSign, FiShoppingBag, FiBox, FiUsers, FiFilter, FiTag, FiStar, FiClock } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import './Admin.css';
 
@@ -46,15 +46,15 @@ const Dashboard = () => {
       // Prepare Stats Array
       const statsData = [
         { 
-          label: 'Total Revenue', 
+          label: 'TOTAL REVENUE', 
           value: `₹${totalRevenue.toLocaleString()}`, 
-          trend: '+12.5% this week', // Mock trend
+          trend: '+12.5% this week', 
           trendUp: true,
           icon: <FiDollarSign />,
           primary: true
         },
         { 
-          label: 'Total Orders', 
+          label: 'TOTAL ORDERS', 
           value: totalOrdersCount.toLocaleString(), 
           trend: '+8.2% this week', 
           trendUp: true,
@@ -63,7 +63,7 @@ const Dashboard = () => {
           path: '/admin/orders'
         },
         { 
-          label: 'Total Product', 
+          label: 'TOTAL PRODUCT', 
           value: totalProductsCount.toLocaleString(), 
           trend: '+2.4% this week', 
           trendUp: true,
@@ -72,7 +72,7 @@ const Dashboard = () => {
           path: '/admin/products'
         },
         { 
-          label: 'Active Customers', 
+          label: 'ACTIVE CUSTOMERS', 
           value: totalUsers.toLocaleString(), 
           trend: '+15.3% this week', 
           trendUp: true,
@@ -194,7 +194,7 @@ const Dashboard = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="stats-grid">
+      <div className="admin-stats-grid">
         {stats.map((stat, index) => (
           <div 
             key={index} 
