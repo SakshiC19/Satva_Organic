@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { deleteMultipleImages, getPathFromURL } from '../../services/storageService';
-import { FiPlus, FiEdit2, FiTrash2, FiSearch, FiPackage } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiSearch, FiPackage, FiX, FiStar } from 'react-icons/fi';
 import '../Admin/Admin.css';
 
 const Products = () => {
@@ -11,10 +11,16 @@ const Products = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  const handleProductClick = (product) => {
+    setSelectedProduct(product);
+  };
+
 
   const fetchProducts = async () => {
     try {
@@ -48,7 +54,7 @@ const Products = () => {
         const imagePaths = productImages
           .map(img => getPathFromURL(img.url || img))
           .filter(path => path !== null);
-        
+
         if (imagePaths.length > 0) {
           await deleteMultipleImages(imagePaths);
         }
@@ -66,7 +72,7 @@ const Products = () => {
   // Filter products
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.description?.toLowerCase().includes(searchTerm.toLowerCase());
+      product.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = filterCategory === 'all' || product.category === filterCategory;
     return matchesSearch && matchesCategory;
   });
@@ -130,11 +136,16 @@ const Products = () => {
       ) : (
         <div className="products-grid-admin">
           {filteredProducts.map(product => (
-            <div key={product.id} className="product-card-admin">
+            <div
+              key={product.id}
+              className="product-card-admin"
+              onClick={() => handleProductClick(product)}
+              style={{ cursor: 'pointer' }}
+            >
               <div className="product-image-admin">
                 {product.images && product.images.length > 0 ? (
-                  <img 
-                    src={product.images[0].url || product.images[0]} 
+                  <img
+                    src={product.images[0].url || product.images[0]}
                     alt={product.name}
                   />
                 ) : (
@@ -146,6 +157,9 @@ const Products = () => {
 
               <div className="product-info-admin">
                 <h3>{product.name}</h3>
+                <p className="product-description-preview">
+                  {product.description || 'No description available'}
+                </p>
                 <p className="product-category">{product.category}</p>
                 <p className="product-price">₹{product.price}</p>
                 {product.stock !== undefined && (
@@ -155,8 +169,8 @@ const Products = () => {
                 )}
               </div>
 
-              <div className="product-actions">
-                <Link 
+              <div className="product-actions" onClick={(e) => e.stopPropagation()}>
+                <Link
                   to={`/admin/products/edit/${product.id}`}
                   className="btn-icon btn-edit"
                   title="Edit"
@@ -175,7 +189,71 @@ const Products = () => {
           ))}
         </div>
       )}
-    </div>
+
+
+
+      {
+        selectedProduct && (
+          <div className="product-modal-overlay" onClick={() => setSelectedProduct(null)}>
+            <div className="product-modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="product-modal-header">
+                <h2>Product Details</h2>
+                <button className="product-modal-close" onClick={() => setSelectedProduct(null)}>
+                  <FiX size={24} />
+                </button>
+              </div>
+              <div className="product-modal-body">
+                <div className="modal-product-image">
+                  <img
+                    src={selectedProduct.images?.[0]?.url || selectedProduct.images?.[0] || 'https://via.placeholder.com/300'}
+                    alt={selectedProduct.name}
+                  />
+                </div>
+                <div className="modal-product-details">
+                  <div className="modal-product-meta">
+                    <span className="modal-product-price">₹{selectedProduct.price}</span>
+                    <span className="modal-product-category">{selectedProduct.category}</span>
+                    <span className={`modal-product-stock ${selectedProduct.stock === 0 ? 'out-of-stock' : ''}`}>
+                      {selectedProduct.stock === 0 ? 'Out of Stock' : `Stock: ${selectedProduct.stock}`}
+                    </span>
+                  </div>
+
+                  <h2>{selectedProduct.name}</h2>
+
+                  <div className="modal-product-description">
+                    <h3>Description</h3>
+                    <p>{selectedProduct.description || "No detailed description available for this product."}</p>
+                  </div>
+
+                  <div className="modal-product-reviews">
+                    <h3>Customer Reviews</h3>
+                    {/* Mock reviews for now as backend integration is pending */}
+                    <div className="review-item">
+                      <div className="review-header">
+                        <span>Anjali S.</span>
+                        <div className="review-stars">
+                          <FiStar fill="#fbbf24" /><FiStar fill="#fbbf24" /><FiStar fill="#fbbf24" /><FiStar fill="#fbbf24" /><FiStar fill="#fbbf24" />
+                        </div>
+                      </div>
+                      <p className="review-text">Absolutely loved the quality of this product! Will definitely order again.</p>
+                    </div>
+                    <div className="review-item">
+                      <div className="review-header">
+                        <span>Rahul M.</span>
+                        <div className="review-stars">
+                          <FiStar fill="#fbbf24" /><FiStar fill="#fbbf24" /><FiStar fill="#fbbf24" /><FiStar fill="#fbbf24" stroke="none" />
+                        </div>
+                      </div>
+                      <p className="review-text">Good packaging and timely delivery. Matches the description perfectly.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      }
+    </div >
   );
 };
 

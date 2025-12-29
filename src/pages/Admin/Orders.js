@@ -24,12 +24,12 @@ const Orders = () => {
       const ordersRef = collection(db, 'orders');
       const q = query(ordersRef, orderBy('createdAt', 'desc'));
       const querySnapshot = await getDocs(q);
-      
+
       const ordersData = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
-      
+
       setOrders(ordersData);
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -43,12 +43,12 @@ const Orders = () => {
     try {
       const orderRef = doc(db, 'orders', orderId);
       await updateDoc(orderRef, { status: newStatus });
-      
+
       // Update local state
-      setOrders(orders.map(order => 
+      setOrders(orders.map(order =>
         order.id === orderId ? { ...order, status: newStatus } : order
       ));
-      
+
       setActiveDropdown(null);
     } catch (error) {
       console.error('Error updating order status:', error);
@@ -72,18 +72,18 @@ const Orders = () => {
 
   // Filter orders based on active tab and search
   const filteredOrders = orders.filter(order => {
-    const matchesSearch = 
+    const matchesSearch =
       order.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.items?.some(item => item.name?.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesTab = 
-      activeTab === 'all' || 
+
+    const matchesTab =
+      activeTab === 'all' ||
       (activeTab === 'pending' && order.status?.toLowerCase() === 'pending') ||
       (activeTab === 'processing' && order.status?.toLowerCase() === 'processing') ||
       (activeTab === 'out-for-delivery' && order.status?.toLowerCase() === 'shipped') ||
       (activeTab === 'delivered' && order.status?.toLowerCase() === 'delivered');
-    
+
     return matchesSearch && matchesTab;
   });
 
@@ -91,7 +91,7 @@ const Orders = () => {
     if (!timestamp) return 'N/A';
     try {
       const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-      return date.toLocaleDateString('en-US', { 
+      return date.toLocaleDateString('en-US', {
         month: 'short',
         day: '2-digit',
         year: 'numeric'
@@ -183,12 +183,12 @@ const Orders = () => {
         <div className="stat-card stat-new">
           <div className="stat-icon-wrapper blue">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M20 7H4C2.9 7 2 7.9 2 9V19C2 20.1 2.9 21 4 21H20C21.1 21 22 20.1 22 19V9C22 7.9 21.1 7 20 7Z" stroke="currentColor" strokeWidth="2"/>
-              <path d="M16 7V5C16 3.9 15.1 3 14 3H10C8.9 3 8 3.9 8 5V7" stroke="currentColor" strokeWidth="2"/>
+              <path d="M20 7H4C2.9 7 2 7.9 2 9V19C2 20.1 2.9 21 4 21H20C21.1 21 22 20.1 22 19V9C22 7.9 21.1 7 20 7Z" stroke="currentColor" strokeWidth="2" />
+              <path d="M16 7V5C16 3.9 15.1 3 14 3H10C8.9 3 8 3.9 8 5V7" stroke="currentColor" strokeWidth="2" />
             </svg>
           </div>
           <div className="stat-content">
-            <p className="stat-label">Total New Orders</p>
+            <p className="stat-label">New Orders</p>
             <div className="stat-value-row">
               <h2 className="stat-value">{stats.total.toLocaleString()}</h2>
               <span className="stat-change positive">{getPercentageChange(stats.total, stats.total - 100)}</span>
@@ -199,12 +199,12 @@ const Orders = () => {
         <div className="stat-card stat-pending">
           <div className="stat-icon-wrapper purple">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
-              <path d="M12 7V12L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+              <path d="M12 7V12L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </div>
           <div className="stat-content">
-            <p className="stat-label">Total Orders Pending</p>
+            <p className="stat-label">Orders Pending</p>
             <div className="stat-value-row">
               <h2 className="stat-value">{stats.pending}</h2>
               <span className="stat-change negative">-10%</span>
@@ -215,12 +215,12 @@ const Orders = () => {
         <div className="stat-card stat-completed">
           <div className="stat-icon-wrapper green">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
-              <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+              <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
           <div className="stat-content">
-            <p className="stat-label">Total Orders Completed</p>
+            <p className="stat-label">Orders Completed</p>
             <div className="stat-value-row">
               <h2 className="stat-value">{stats.completed.toLocaleString()}</h2>
               <span className="stat-change positive">+84%</span>
@@ -231,12 +231,12 @@ const Orders = () => {
         <div className="stat-card stat-cancelled">
           <div className="stat-icon-wrapper red">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
-              <path d="M15 9L9 15M9 9L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+              <path d="M15 9L9 15M9 9L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </div>
           <div className="stat-content">
-            <p className="stat-label">Total Orders Canceled</p>
+            <p className="stat-label">Orders Canceled</p>
             <div className="stat-value-row">
               <h2 className="stat-value">{stats.cancelled}</h2>
               <span className="stat-change positive">+54%</span>
@@ -255,31 +255,31 @@ const Orders = () => {
         {/* Tabs */}
         <div className="om-tabs-wrapper">
           <div className="om-tabs">
-            <button 
+            <button
               className={`om-tab ${activeTab === 'all' ? 'active' : ''}`}
               onClick={() => setActiveTab('all')}
             >
               All Order
             </button>
-            <button 
+            <button
               className={`om-tab ${activeTab === 'pending' ? 'active' : ''}`}
               onClick={() => setActiveTab('pending')}
             >
               Pending
             </button>
-            <button 
+            <button
               className={`om-tab ${activeTab === 'processing' ? 'active' : ''}`}
               onClick={() => setActiveTab('processing')}
             >
               Processing
             </button>
-            <button 
+            <button
               className={`om-tab ${activeTab === 'out-for-delivery' ? 'active' : ''}`}
               onClick={() => setActiveTab('out-for-delivery')}
             >
               Out for Delivery
             </button>
-            <button 
+            <button
               className={`om-tab ${activeTab === 'delivered' ? 'active' : ''}`}
               onClick={() => setActiveTab('delivered')}
             >
@@ -295,15 +295,15 @@ const Orders = () => {
             </button>
             <button className="table-action-btn">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <rect x="3" y="3" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/>
-                <rect x="11" y="3" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/>
-                <rect x="3" y="11" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/>
-                <rect x="11" y="11" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/>
+                <rect x="3" y="3" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5" />
+                <rect x="11" y="3" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5" />
+                <rect x="3" y="11" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5" />
+                <rect x="11" y="11" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5" />
               </svg>
             </button>
             <button className="table-action-btn">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M3 6H17M3 10H17M3 14H17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                <path d="M3 6H17M3 10H17M3 14H17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
               </svg>
             </button>
           </div>
@@ -326,10 +326,10 @@ const Orders = () => {
               <tbody>
                 {filteredOrders.map((order) => {
                   const firstItem = order.items?.[0] || {};
-                  const itemImage = firstItem.images && firstItem.images.length > 0 
-                    ? (firstItem.images[0].url || firstItem.images[0]) 
+                  const itemImage = firstItem.images && firstItem.images.length > 0
+                    ? (firstItem.images[0].url || firstItem.images[0])
                     : firstItem.image;
-                  
+
                   return (
                     <tr key={order.id}>
                       <td>
@@ -355,8 +355,8 @@ const Orders = () => {
                           <div className="customer-info">
                             <span className="customer-name">{order.customerName || 'Customer'}</span>
                             <span className="customer-type">
-                              {order.orderCount > 10 ? 'Star Customer' : 
-                               order.orderCount > 5 ? 'Pro Customer' : 'New Customer'}
+                              {order.orderCount > 10 ? 'Star Customer' :
+                                order.orderCount > 5 ? 'Pro Customer' : 'New Customer'}
                             </span>
                           </div>
                         </div>
@@ -371,8 +371,8 @@ const Orders = () => {
                         <div className="amount-cell">
                           <span className="amount-value">₹{order.totalAmount?.toLocaleString() || 0}</span>
                           <span className="payment-method">
-                            {order.paymentMethod === 'card' ? 'Paid by Mastercard' : 
-                             order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Paid'}
+                            {order.paymentMethod === 'card' ? 'Paid by Mastercard' :
+                              order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Paid'}
                           </span>
                         </div>
                       </td>
@@ -383,7 +383,7 @@ const Orders = () => {
                       </td>
                       <td>
                         <div className="action-cell">
-                          <button 
+                          <button
                             className="action-menu-btn"
                             onClick={() => setActiveDropdown(activeDropdown === order.id ? null : order.id)}
                           >
@@ -420,13 +420,13 @@ const Orders = () => {
         ) : (
           <div className="empty-state">
             <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-              <rect x="8" y="16" width="48" height="40" rx="4" stroke="#D1D5DB" strokeWidth="2"/>
-              <path d="M24 16V12C24 10.9 24.9 10 26 10H38C39.1 10 40 10.9 40 12V16" stroke="#D1D5DB" strokeWidth="2"/>
+              <rect x="8" y="16" width="48" height="40" rx="4" stroke="#D1D5DB" strokeWidth="2" />
+              <path d="M24 16V12C24 10.9 24.9 10 26 10H38C39.1 10 40 10.9 40 12V16" stroke="#D1D5DB" strokeWidth="2" />
             </svg>
             <h3>No Orders Found</h3>
             <p>
-              {searchTerm || activeTab !== 'all' 
-                ? 'No orders match your search criteria.' 
+              {searchTerm || activeTab !== 'all'
+                ? 'No orders match your search criteria.'
                 : 'No orders have been placed yet.'}
             </p>
           </div>

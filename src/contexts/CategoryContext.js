@@ -25,13 +25,13 @@ export const CategoryProvider = ({ children }) => {
         id: doc.id,
         ...doc.data()
       }));
-      
+
       if (cats.length === 0) {
         // Seed default categories to DB if empty
         const seededCats = [];
         for (const cat of defaultCategories) {
           // Remove id as Firestore generates it
-          const { id, ...catData } = cat; 
+          const { id, ...catData } = cat;
           const docRef = await addDoc(collection(db, 'categories'), catData);
           seededCats.push({ id: docRef.id, ...catData });
         }
@@ -42,7 +42,7 @@ export const CategoryProvider = ({ children }) => {
     } catch (error) {
       console.error("Error fetching categories:", error);
       // Fallback only on error, but don't seed
-      setCategories([]); 
+      setCategories([]);
     } finally {
       setLoading(false);
     }
@@ -62,7 +62,7 @@ export const CategoryProvider = ({ children }) => {
   const updateCategory = async (id, updates) => {
     try {
       await updateDoc(doc(db, 'categories', id), updates);
-      setCategories(categories.map(cat => 
+      setCategories(categories.map(cat =>
         cat.id === id ? { ...cat, ...updates } : cat
       ));
     } catch (error) {
