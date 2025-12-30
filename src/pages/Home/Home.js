@@ -467,8 +467,11 @@ const Home = () => {
         </div>
       </section>
 
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> origin/main
       {/* Features Compact */}
       <section className="features-compact">
         <div className="container-fluid">

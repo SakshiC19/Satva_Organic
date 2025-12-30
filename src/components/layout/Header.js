@@ -129,20 +129,35 @@ const Header = () => {
           </Link>
 
           {/* Mobile Search (Visible only on mobile) */}
+<<<<<<< HEAD
           <form onSubmit={handleSearch} className="header-search-mobile">
             <div className="search-wrapper-mobile">
+=======
+          <form onSubmit={handleSearch} className="mobile-header-search">
+            <div className="mobile-search-wrapper-main">
+>>>>>>> origin/main
               <input
                 type="text"
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+<<<<<<< HEAD
                 className="search-input-mobile"
               />
               <button type="submit" className="search-icon-btn-mobile">
+=======
+                className="mobile-search-input-main"
+              />
+              <button type="submit" className="mobile-search-btn-main">
+>>>>>>> origin/main
                 <FiSearch />
               </button>
             </div>
           </form>
+<<<<<<< HEAD
+=======
+          
+>>>>>>> origin/main
           {/* Search Bar (Desktop) */}
           <form onSubmit={handleSearch} className="header-search">
             <div className="search-wrapper">

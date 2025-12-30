@@ -202,7 +202,15 @@
 }
 
 /* Mobile Responsive */
+.mobile-filter-btn {
+    display: none;
+}
+
 @media (max-width: 768px) {
+    .desktop-only {
+        display: none !important;
+    }
+
     .shop-results-header {
         flex-direction: column;
         align-items: flex-start;

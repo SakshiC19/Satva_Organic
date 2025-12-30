@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { FiGrid, FiList, FiChevronDown, FiX } from 'react-icons/fi';
+import { FiGrid, FiList, FiChevronDown, FiX, FiFilter } from 'react-icons/fi';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import ProductCard from '../../components/product/ProductCard';
