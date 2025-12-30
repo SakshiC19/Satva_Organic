@@ -128,9 +128,21 @@ const Header = () => {
             <img src={logo} alt="Satva Organics" className="logo-image" />
           </Link>
 
-          {/* Mobile Search Toggle (Visible only on mobile) */}
-
-
+          {/* Mobile Search (Visible only on mobile) */}
+          <form onSubmit={handleSearch} className="header-search-mobile">
+            <div className="search-wrapper-mobile">
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="search-input-mobile"
+              />
+              <button type="submit" className="search-icon-btn-mobile">
+                <FiSearch />
+              </button>
+            </div>
+          </form>
           {/* Search Bar (Desktop) */}
           <form onSubmit={handleSearch} className="header-search">
             <div className="search-wrapper">
@@ -196,7 +208,7 @@ const Header = () => {
           <div className="header-actions">
             {/* Login Button */}
             <div 
-              className="action-item login-item"
+              className="action-item login-item desktop-only"
               onMouseEnter={() => setActiveMenu('login')}
               onMouseLeave={() => setActiveMenu(null)}
             >

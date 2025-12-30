@@ -393,46 +393,84 @@
     font-size: 14px;
 }
 
+/* Flash Deal Filters */
+.flash-filters {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 0 16px;
+}
+
+.filter-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.discount-select,
+.category-select {
+    padding: 8px 16px;
+    border-radius: 12px;
+    border: 1px solid #e9ecef;
+    background: white;
+    font-size: 13px;
+    font-weight: 700;
+    color: #2f3542;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.3s;
+}
+
+.discount-select:hover,
+.category-select:hover {
+    border-color: #27ae60;
+}
+
 .flash-deals-container {
     position: relative;
-    display: flex;
-    align-items: center;
-    gap: 12px;
+    padding: 0 10px;
 }
 
 .flash-nav-btn {
-    width: 40px;
-    height: 40px;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     background: white;
-    border: 2px solid #e9ecef;
+    border: none;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.3s;
-    flex-shrink: 0;
-    z-index: 10;
+    z-index: 30;
     color: #27ae60;
     font-size: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.flash-prev {
+    left: -12px;
+}
+
+.flash-next {
+    right: -12px;
 }
 
 .flash-nav-btn:hover {
     background: #27ae60;
     color: white;
-    border-color: #27ae60;
-    transform: scale(1.1);
+    transform: translateY(-50%) scale(1.1);
 }
 
 .flash-nav-btn:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-}
-
-.flash-nav-btn:disabled:hover {
-    background: white;
-    color: #27ae60;
-    transform: scale(1);
+    opacity: 0;
+    pointer-events: none;
 }
 
 .flash-deals-slider {
@@ -449,7 +487,6 @@
 .flash-deals-slider .swiper-slide {
     height: auto;
     width: auto !important;
-    max-width: 180px;
 }
 
 /* ========================================
@@ -462,11 +499,19 @@
 }
 
 .products-grid-compact {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    display: flex;
+    flex-direction: row;
     gap: 16px;
     width: 100%;
+    overflow-x: auto;
+    padding-bottom: 12px;
 }
+
+.products-grid-compact>* {
+    flex: 0 0 auto;
+    width: 300px;
+}
+
 
 .loading-state {
     display: flex;
@@ -670,11 +715,6 @@
         font-size: 22px;
     }
 
-    .products-grid-compact {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 18px;
-    }
-
     .features-grid-modern {
         grid-template-columns: repeat(4, 1fr);
         gap: 16px;
@@ -708,11 +748,6 @@
 
     .section-title-small {
         font-size: 24px;
-    }
-
-    .products-grid-compact {
-        grid-template-columns: repeat(5, 1fr);
-        gap: 12px;
     }
 
     .category-image-wrapper {
@@ -809,6 +844,10 @@
     .feature-desc-modern {
         font-size: 11px;
     }
+
+    .cat-nav-btn {
+        display: none !important;
+    }
 }
 
 /* ========================================
@@ -846,36 +885,14 @@
    FINAL WIDTH AND SPACING FIXES
    ======================================== */
 
-/* Ensure compact cards in slider have consistent width */
-.flash-deals-slider .product-card-compact {
-    width: 160px;
-    min-width: 160px;
-    max-width: 160px;
-    flex-shrink: 0;
-}
-
 /* Better mobile category layout */
 @media (max-width: 767px) {
     .category-card-compact {
         min-width: 75px;
     }
-}
 
-/* Tablet adjustments */
-@media (min-width: 768px) and (max-width: 1023px) {
-    .flash-deals-slider .product-card-compact {
-        width: 170px;
-        min-width: 170px;
-        max-width: 170px;
-    }
-}
-
-/* Desktop adjustments */
-@media (min-width: 1024px) {
-    .flash-deals-slider .product-card-compact {
-        width: 180px;
-        min-width: 180px;
-        max-width: 180px;
+    .cat-nav-btn {
+        display: none !important;
     }
 }
 

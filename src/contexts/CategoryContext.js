@@ -26,7 +26,19 @@ export const CategoryProvider = ({ children }) => {
         ...doc.data()
       }));
 
-      if (cats.length === 0) {
+      // Deduplicate categories based on slug or name
+      const uniqueCats = [];
+      const seenKeys = new Set();
+      
+      cats.forEach(cat => {
+        const key = cat.slug || cat.name;
+        if (key && !seenKeys.has(key)) {
+          seenKeys.add(key);
+          uniqueCats.push(cat);
+        }
+      });
+
+      if (uniqueCats.length === 0) {
         // Seed default categories to DB if empty
         const seededCats = [];
         for (const cat of defaultCategories) {
@@ -37,7 +49,7 @@ export const CategoryProvider = ({ children }) => {
         }
         setCategories(seededCats);
       } else {
-        setCategories(cats);
+        setCategories(uniqueCats);
       }
     } catch (error) {
       console.error("Error fetching categories:", error);

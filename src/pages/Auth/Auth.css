@@ -125,6 +125,10 @@
     transition: all var(--transition-fast);
 }
 
+.form-input.no-icon {
+    padding: 14px 16px;
+}
+
 .form-input:focus {
     outline: none;
     border-color: var(--color-primary-500);

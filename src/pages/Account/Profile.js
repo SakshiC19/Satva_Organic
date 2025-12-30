@@ -51,22 +51,31 @@ const Profile = () => {
   });
 
   useEffect(() => {
+    const fetchUserData = async () => {
+      if (!currentUser) return;
+      try {
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          if (userData.addresses) {
+            setSavedAddresses(userData.addresses);
+          }
+          setFormData(prev => ({
+            ...prev,
+            phoneNumber: userData.phoneNumber || '',
+            gender: userData.gender || '',
+            dob: userData.dob || ''
+          }));
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    };
+
     if (currentUser) {
-      fetchSavedAddresses();
+      fetchUserData();
     }
   }, [currentUser]);
-
-  const fetchSavedAddresses = async () => {
-    if (!currentUser) return;
-    try {
-      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-      if (userDoc.exists() && userDoc.data().addresses) {
-        setSavedAddresses(userDoc.data().addresses);
-      }
-    } catch (error) {
-      console.error("Error fetching addresses:", error);
-    }
-  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;

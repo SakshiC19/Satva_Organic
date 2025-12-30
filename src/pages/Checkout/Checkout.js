@@ -10,7 +10,7 @@ import './Checkout.css';
 
 const Checkout = () => {
   const { currentUser, login, signup } = useAuth();
-  const { cartItems, cartTotal } = useCart();
+  const { cartItems, cartTotal, updateQuantity, removeFromCart } = useCart();
   const navigate = useNavigate();
   
   const [activeStep, setActiveStep] = useState(1);
@@ -19,6 +19,12 @@ const Checkout = () => {
   const [name, setName] = useState('');
   const [isSignup, setIsSignup] = useState(false);
   const [error, setError] = useState('');
+  
+  // Phone Verification State
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [showOtpInput, setShowOtpInput] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [verifying, setVerifying] = useState(false);
   
   // Check if COD is available for all items in cart
   // Default to true if codAvailable property is missing (backward compatibility)
@@ -133,8 +139,8 @@ const Checkout = () => {
   const handleAddressSubmit = async (e) => {
     e.preventDefault();
     
-    if (!currentUser) {
-      setActiveStep(3);
+    if (!isPhoneVerified) {
+      alert('Please verify your mobile number with OTP before proceeding. (Use 123456 for demo)');
       return;
     }
 
@@ -259,11 +265,23 @@ const Checkout = () => {
         image: "https://example.com/your_logo",
         handler: async function (response) {
           try {
+            // Create Order
             await addDoc(collection(db, 'orders'), {
               ...orderData,
               paymentId: response.razorpay_payment_id,
               paymentStatus: 'Paid'
             });
+
+            // Reduce Stock
+            const { increment } = await import('firebase/firestore');
+            const stockUpdates = cartItems.map(item => {
+              const productRef = doc(db, 'products', item.id);
+              return updateDoc(productRef, {
+                stock: increment(-item.quantity)
+              });
+            });
+            await Promise.all(stockUpdates);
+
             setShowConfirmation(true);
           } catch (error) {
             console.error("Error saving order (Razorpay):", error);
@@ -289,6 +307,17 @@ const Checkout = () => {
               paymentId: 'pay_' + Date.now(),
               paymentStatus: 'Paid'
             });
+
+            // Reduce Stock
+            const { increment } = await import('firebase/firestore');
+            const stockUpdates = cartItems.map(item => {
+              const productRef = doc(db, 'products', item.id);
+              return updateDoc(productRef, {
+                stock: increment(-item.quantity)
+              });
+            });
+            await Promise.all(stockUpdates);
+
             setShowConfirmation(true);
         } catch (error) {
             console.error("Error saving order (Simulated):", error);
@@ -303,6 +332,17 @@ const Checkout = () => {
             ...orderData,
             paymentStatus: 'Pending'
         });
+
+        // Reduce Stock
+        const { increment } = await import('firebase/firestore');
+        const stockUpdates = cartItems.map(item => {
+          const productRef = doc(db, 'products', item.id);
+          return updateDoc(productRef, {
+            stock: increment(-item.quantity)
+          });
+        });
+        await Promise.all(stockUpdates);
+
         setShowConfirmation(true);
       } catch (error) {
         console.error("Error saving order (COD):", error);
@@ -328,26 +368,6 @@ const Checkout = () => {
             <p>Thank you for shopping with Satva Organics.</p>
             <button onClick={() => navigate('/shop')} className="continue-shopping-btn">
               Continue Shopping
-            </button>
-            <button 
-              onClick={() => {
-                const mockOrder = {
-                  id: 'ORDER-' + Date.now(),
-                  createdAt: new Date(),
-                  customerName: address.name || currentUser?.displayName || 'Guest',
-                  shippingAddress: address,
-                  email: email,
-                  items: cartItems,
-                  totalAmount: cartTotal,
-                  paymentMethod: selectedPaymentMethod,
-                  status: 'Pending'
-                };
-                generateInvoice(mockOrder);
-              }} 
-              className="continue-shopping-btn"
-              style={{ marginTop: '10px', backgroundColor: '#333' }}
-            >
-              Download Invoice
             </button>
           </div>
         </div>
@@ -493,14 +513,63 @@ const Checkout = () => {
                       value={address.name}
                       onChange={e => setAddress({...address, name: e.target.value})}
                     />
-                    <input 
-                      type="text" 
-                      className="checkout-input" 
-                      placeholder="10-digit mobile number" 
-                      required 
-                      value={address.phone}
-                      onChange={e => setAddress({...address, phone: e.target.value})}
-                    />
+                    <div style={{ position: 'relative' }}>
+                      <input 
+                        type="text" 
+                        className="checkout-input" 
+                        placeholder="10-digit mobile number" 
+                        required 
+                        value={address.phone}
+                        onChange={e => {
+                          setAddress({...address, phone: e.target.value});
+                          setIsPhoneVerified(false);
+                        }}
+                        disabled={isPhoneVerified}
+                      />
+                      {!isPhoneVerified && address.phone.length === 10 && !showOtpInput && (
+                        <button 
+                          type="button"
+                          className="verify-btn"
+                          onClick={() => setShowOtpInput(true)}
+                        >
+                          Verify
+                        </button>
+                      )}
+                      {isPhoneVerified && (
+                        <span className="verified-badge">
+                          <FiCheck /> Verified
+                        </span>
+                      )}
+                    </div>
+
+                    {showOtpInput && (
+                      <div className="otp-container full-width">
+                        <p>Enter 6-digit OTP sent to {address.phone}</p>
+                        <div className="otp-input-group">
+                          <input 
+                            type="text" 
+                            maxLength="6" 
+                            placeholder="000000"
+                            value={otp}
+                            onChange={e => setOtp(e.target.value)}
+                          />
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              if (otp === '123456') {
+                                setIsPhoneVerified(true);
+                                setShowOtpInput(false);
+                              } else {
+                                alert('Invalid OTP. Use 123456 for demo.');
+                              }
+                            }}
+                          >
+                            Verify OTP
+                          </button>
+                          <button type="button" className="resend-btn" onClick={() => setOtp('')}>Resend</button>
+                        </div>
+                      </div>
+                    )}
                     <div style={{ position: 'relative' }}>
                       <input 
                         type="text" 
@@ -609,14 +678,44 @@ const Checkout = () => {
                     : item.image;
 
                   return (
-                    <div key={`${item.id}-${item.selectedSize || 'default'}`} style={{display: 'flex', gap: '16px', marginBottom: '16px', borderBottom: '1px solid #f0f0f0', paddingBottom: '16px'}}>
-                      <img src={itemImage} alt={item.name} style={{width: '80px', height: '80px', objectFit: 'contain'}} />
-                      <div>
-                        <h4 style={{margin: '0 0 8px 0'}}>{item.name}</h4>
-                        <div style={{fontSize: '14px', color: '#878787'}}>
-                          Size: {item.selectedSize || 'Standard'} | Quantity: {item.quantity}
+                    <div key={`${item.id}-${item.selectedSize || 'default'}`} className="order-summary-item">
+                      <div className="item-main-info">
+                        <img src={itemImage} alt={item.name} className="item-image" />
+                        <div className="item-details">
+                          <h4 className="item-name">{item.name}</h4>
+                          <div className="item-meta">
+                            Size: {item.selectedSize || 'Standard'}
+                          </div>
+                          <div className="item-price">
+                            ₹{item.price}
+                          </div>
                         </div>
-                        <div style={{marginTop: '8px', fontWeight: '600'}}>
+                      </div>
+                      
+                      <div className="item-controls-row">
+                        <div className="item-quantity-controls">
+                          <button 
+                            className="qty-btn"
+                            onClick={() => updateQuantity(item.id, item.selectedSize, item.quantity - 1)}
+                            disabled={item.quantity <= 1}
+                          >
+                            -
+                          </button>
+                          <span className="qty-value">{item.quantity}</span>
+                          <button 
+                            className="qty-btn"
+                            onClick={() => updateQuantity(item.id, item.selectedSize, item.quantity + 1)}
+                          >
+                            +
+                          </button>
+                        </div>
+                        <button 
+                          className="remove-item-btn"
+                          onClick={() => removeFromCart(item.id, item.selectedSize)}
+                        >
+                          Remove
+                        </button>
+                        <div className="item-total-price">
                           ₹{item.price * item.quantity}
                         </div>
                       </div>

@@ -185,6 +185,242 @@
     grid-column: span 2;
 }
 
+/* Address Actions */
+.address-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.deliver-here-btn {
+    background-color: #fb641b;
+    color: #fff;
+    border: none;
+    padding: 10px 24px;
+    font-weight: 600;
+    text-transform: uppercase;
+    border-radius: 2px;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.deliver-here-btn:hover {
+    background-color: #f4511e;
+}
+
+.edit-address-btn {
+    background: none;
+    border: none;
+    color: #2874f0;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.add-new-address-btn {
+    width: 100%;
+    padding: 16px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    color: #2874f0;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    margin-top: 16px;
+}
+
+/* Order Summary Items */
+.order-summary-item {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.item-main-info {
+    display: flex;
+    gap: 16px;
+}
+
+.order-summary-item .item-image {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    border: 1px solid #f0f0f0;
+    border-radius: 4px;
+}
+
+.order-summary-item .item-details {
+    flex: 1;
+}
+
+.order-summary-item .item-name {
+    margin: 0 0 4px 0;
+    font-size: 16px;
+    color: #212121;
+    font-weight: 500;
+}
+
+.order-summary-item .item-meta {
+    font-size: 14px;
+    color: #878787;
+    margin-bottom: 8px;
+}
+
+.order-summary-item .item-price {
+    font-weight: 600;
+    font-size: 16px;
+    color: #212121;
+}
+
+.item-controls-row {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.item-quantity-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 2px;
+}
+
+.item-quantity-controls .qty-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    border: none;
+    background: #f1f3f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 18px;
+    color: #212121;
+    transition: background 0.2s;
+}
+
+.item-quantity-controls .qty-btn:hover:not(:disabled) {
+    background: #e0e0e0;
+}
+
+.item-quantity-controls .qty-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.item-quantity-controls .qty-value {
+    font-weight: 600;
+    min-width: 30px;
+    text-align: center;
+    font-size: 14px;
+}
+
+.remove-item-btn {
+    background: none;
+    border: none;
+    color: #212121;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 14px;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.remove-item-btn:hover {
+    color: #2874f0;
+}
+
+.item-total-price {
+    margin-left: auto;
+    font-weight: 700;
+    font-size: 18px;
+    color: #212121;
+}
+
+/* Verification Styles */
+.verify-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #2874f0;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px 8px;
+}
+
+.verified-badge {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #388e3c;
+    font-weight: 600;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.otp-container {
+    background: #f5faff;
+    padding: 16px;
+    border-radius: 4px;
+    border: 1px solid #d0e4ff;
+    margin-bottom: 16px;
+}
+
+.otp-container p {
+    font-size: 14px;
+    margin-bottom: 12px;
+    color: #212121;
+}
+
+.otp-input-group {
+    display: flex;
+    gap: 12px;
+}
+
+.otp-input-group input {
+    width: 120px;
+    padding: 8px;
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    font-size: 16px;
+    letter-spacing: 4px;
+    text-align: center;
+}
+
+.otp-input-group button {
+    background: #2874f0;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 2px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.resend-btn {
+    background: none !important;
+    color: #2874f0 !important;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+}
+
 /* Sidebar - Right Side */
 .checkout-sidebar {
     width: 320px;

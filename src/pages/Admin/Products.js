@@ -161,7 +161,14 @@ const Products = () => {
                   {product.description || 'No description available'}
                 </p>
                 <p className="product-category">{product.category}</p>
-                <p className="product-price">₹{product.price}</p>
+                <div className="product-price-group">
+                  <span className="product-price">₹{product.price}</span>
+                  {product.originalPrice && product.originalPrice > product.price && (
+                    <span className="product-discount" style={{ color: '#dc2626', fontSize: '12px', marginLeft: '8px', fontWeight: '600' }}>
+                      {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
+                    </span>
+                  )}
+                </div>
                 {product.stock !== undefined && (
                   <p className={`product-stock ${product.stock === 0 ? 'out-of-stock' : ''}`}>
                     {product.stock === 0 ? 'Out of Stock' : `Stock: ${product.stock}`}

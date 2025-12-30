@@ -26,7 +26,9 @@ const AddProduct = () => {
     productType: 'organic',
     featured: false,
     codAvailable: false,
-    refundPolicyAvailable: false
+    refundPolicyAvailable: false,
+    originalPrice: '',
+    discountPercentage: ''
   });
 
   const { categories: contextCategories, loading: categoriesLoading } = useCategories();
@@ -36,14 +38,47 @@ const AddProduct = () => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      };
+
+      // Discount Logic
+      if (name === 'originalPrice' || name === 'discountPercentage' || name === 'price') {
+        const orig = name === 'originalPrice' ? parseFloat(value) : parseFloat(prev.originalPrice);
+        const disc = name === 'discountPercentage' ? parseFloat(value) : parseFloat(prev.discountPercentage);
+        const sale = name === 'price' ? parseFloat(value) : parseFloat(prev.price);
+
+        if (name === 'discountPercentage' && !isNaN(orig) && !isNaN(disc)) {
+          newData.price = (orig * (1 - disc / 100)).toFixed(2);
+        } else if (name === 'price' && !isNaN(orig) && !isNaN(sale) && orig > 0) {
+          newData.discountPercentage = (((orig - sale) / orig) * 100).toFixed(2);
+        } else if (name === 'originalPrice' && !isNaN(orig)) {
+          if (!isNaN(disc)) {
+            newData.price = (orig * (1 - disc / 100)).toFixed(2);
+          } else if (!isNaN(sale)) {
+            newData.discountPercentage = (((orig - sale) / orig) * 100).toFixed(2);
+          }
+        }
+      }
+
+      return newData;
+    });
   };
 
   const handleImagesSelected = (files) => {
     setSelectedImages(files);
+  };
+
+  const categoryPackingSizes = {
+    'organic exotic products': ['500g', '750g', '1kg'],
+    'organic Woodcold press Oils products': ['250ml', '500ml', '750ml', '1L'],
+    'Millets Of India': ['2kg', '5kg'],
+    'Organic Iteams': ['500g', '1kg'],
+    'Seeds And Nuts': ['100g', '250g', '500g'],
+    'Organic Powder': ['250g', '500g', '1kg']
   };
 
   const handleSubmit = async (e) => {
@@ -90,6 +125,8 @@ const AddProduct = () => {
         featured: formData.featured,
         codAvailable: formData.codAvailable,
         refundPolicyAvailable: formData.refundPolicyAvailable,
+        originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
+        discount: formData.discountPercentage ? parseFloat(formData.discountPercentage) : 0,
         images: uploadedImages.map(img => ({
           url: img.url,
           path: img.path
@@ -190,9 +227,38 @@ const AddProduct = () => {
           <div className="form-section">
             <h3 className="form-section-title">Pricing & Inventory</h3>
 
-            <div className="form-row">
+            <div className="form-row price-row">
               <div className="form-group">
-                <label htmlFor="price">Price (₹) *</label>
+                <label htmlFor="originalPrice">Original Price (₹)</label>
+                <input
+                  type="number"
+                  id="originalPrice"
+                  name="originalPrice"
+                  value={formData.originalPrice}
+                  onChange={handleInputChange}
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="discountPercentage">Discount (%)</label>
+                <input
+                  type="number"
+                  id="discountPercentage"
+                  name="discountPercentage"
+                  value={formData.discountPercentage}
+                  onChange={handleInputChange}
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  placeholder="0"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="price">Sale Price (₹) *</label>
                 <input
                   type="number"
                   id="price"
@@ -205,7 +271,9 @@ const AddProduct = () => {
                   placeholder="0.00"
                 />
               </div>
+            </div>
 
+            <div className="form-row">
               <div className="form-group">
                 <label htmlFor="stock">Stock Quantity</label>
                 <input
@@ -247,6 +315,28 @@ const AddProduct = () => {
                 onChange={handleInputChange}
                 placeholder="e.g., 500g, 1kg, 2kg"
               />
+              <div className="packing-suggestions">
+                <span className="suggestion-label">Quick Add:</span>
+                {(categoryPackingSizes[formData.category.toLowerCase()] || [
+                  '100g', '250g', '500g', '750g', '1kg', '2kg', '5kg',
+                  '250ml', '500ml', '750ml', '1L', '5L'
+                ]).map(size => (
+                  <button
+                    key={size}
+                    type="button"
+                    className="suggestion-btn"
+                    onClick={() => {
+                      const current = formData.packingSizes ? formData.packingSizes.split(',').map(s => s.trim()) : [];
+                      if (!current.includes(size)) {
+                        const updated = [...current, size].join(', ');
+                        setFormData(prev => ({ ...prev, packingSizes: updated }));
+                      }
+                    }}
+                  >
+                    +{size}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="form-group">

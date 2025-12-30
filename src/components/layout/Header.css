@@ -4,7 +4,6 @@
     top: 0;
     z-index: 2000;
     background-color: #fff;
-    /* box-shadow removed for simpler look */
     font-family: 'Inter', sans-serif;
 }
 
@@ -43,7 +42,6 @@
     border: none !important;
     outline: none !important;
     box-shadow: none !important;
-    box-shadow: none;
     padding: 0;
     margin: 0;
 }
@@ -106,6 +104,43 @@
 
 .search-input::placeholder {
     color: #9ca3af;
+}
+
+/* Mobile Search */
+.header-search-mobile {
+    display: none;
+    flex: 1;
+    margin: 0 12px;
+}
+
+.search-wrapper-mobile {
+    display: flex;
+    align-items: center;
+    background-color: #f3f4f6;
+    border-radius: 8px;
+    padding: 4px 12px;
+    width: 100%;
+}
+
+.search-input-mobile {
+    flex: 1;
+    border: none;
+    background: none;
+    font-size: 14px;
+    color: #374151;
+    outline: none;
+    padding: 6px 0;
+    width: 100%;
+}
+
+.search-icon-btn-mobile {
+    background: none;
+    border: none;
+    color: #6b7280;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    padding-left: 8px;
 }
 
 /* Header Actions */
@@ -252,7 +287,6 @@
 
 .dropdown-item svg {
     display: none;
-    /* Hide icons in dropdown as per request */
 }
 
 /* Cart & Wishlist Badge */
@@ -277,7 +311,6 @@
 
 .wishlist-count {
     background-color: #27ae60;
-    /* Different color for wishlist badge */
 }
 
 /* Secondary Navigation */
@@ -292,8 +325,6 @@
     justify-content: center;
     gap: 24px;
     padding: 8px 0;
-    /* overflow-x: auto; Removed to allow dropdowns to show */
-    /* scrollbar-width: none; */
 }
 
 .category-nav::-webkit-scrollbar {
@@ -469,7 +500,6 @@
     flex-direction: column;
 }
 
-/* Mobile Search */
 .mobile-search-form {
     margin-bottom: 20px;
 }
@@ -744,7 +774,6 @@
     .mobile-menu-btn {
         display: block;
         order: -1;
-        /* Move to start */
     }
 
     .header-logo {
@@ -755,27 +784,18 @@
         display: none;
     }
 
-    /* Hide desktop category nav */
     .header-categories {
         display: none;
     }
 
-    /* Show login button in header actions on mobile but hide text */
-    .action-item.login-item {
-        display: flex;
+    .action-item.login-item.desktop-only {
+        display: none !important;
     }
 
-    .action-item.login-item .login-btn span,
-    .action-item.login-item .login-btn .chevron {
-        display: none;
+    .header-search-mobile {
+        display: block;
     }
 
-    .action-item.login-item .login-btn {
-        padding: 0;
-        border: none;
-    }
-
-    /* Hide text labels for wishlist and cart on mobile */
     .action-item.wishlist-item span:not(.cart-count),
     .action-item.cart-item span:not(.cart-count) {
         display: none;
@@ -789,7 +809,6 @@
         gap: 16px;
     }
 
-    /* Adjust dropdown position for mobile */
     .action-dropdown {
         position: fixed;
         top: 60px;

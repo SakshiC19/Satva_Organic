@@ -14,6 +14,7 @@ import AdminRoute from './components/auth/AdminRoute';
 import AccountLayout from './pages/Account/AccountLayout';
 import Profile from './pages/Account/Profile';
 import UserOrders from './pages/Account/Orders';
+import OrderDetails from './pages/Account/OrderDetails';
 import Wishlist from './pages/Account/Wishlist';
 import Addresses from './pages/Account/Addresses';
 import AdminLayout from './pages/Admin/AdminLayout';
@@ -28,6 +29,7 @@ import Categories from './pages/Admin/Categories';
 import Users from './pages/Admin/Users';
 import MakeAdmin from './components/admin/MakeAdmin';
 import ProductDetail from './pages/ProductDetail/ProductDetail';
+import FlashDeals from './pages/FlashDeals/FlashDeals';
 import Checkout from './pages/Checkout/Checkout';
 import CartDrawer from './components/cart/CartDrawer';
 import { CategoryProvider } from './contexts/CategoryContext';
@@ -61,6 +63,7 @@ function App() {
                 <Route path="/" element={<Layout><Home /></Layout>} />
                 <Route path="/shop/*" element={<Layout><Shop /></Layout>} />
                 <Route path="/product/:id" element={<Layout><ProductDetail /></Layout>} />
+                <Route path="/flash-deals" element={<Layout><FlashDeals /></Layout>} />
                 <Route path="/contact" element={<Layout><Contact /></Layout>} />
                 
                 {/* Auth Routes (Standalone) */}
@@ -80,6 +83,7 @@ function App() {
                   <Route index element={<Navigate to="profile" replace />} />
                   <Route path="profile" element={<Profile />} />
                   <Route path="orders" element={<UserOrders />} />
+                  <Route path="orders/:id" element={<OrderDetails />} />
                   <Route path="wishlist" element={<Wishlist />} />
                   <Route path="addresses" element={<Addresses />} />
                 </Route>

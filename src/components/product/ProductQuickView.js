@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import ReactDOM from 'react-dom';
+import { createPortal } from 'react-dom';
 import { FiX, FiShoppingCart, FiHeart, FiMinus, FiPlus } from 'react-icons/fi';
 import './ProductQuickView.css';
 
@@ -48,7 +48,7 @@ const ProductQuickView = ({ product, onClose }) => {
     // Add to wishlist logic here
   };
 
-  return ReactDOM.createPortal(
+  return createPortal(
     <div className="quick-view-overlay" onClick={onClose}>
       <div className="quick-view-modal" onClick={(e) => e.stopPropagation()}>
         <button className="quick-view-close" onClick={onClose} aria-label="Close">

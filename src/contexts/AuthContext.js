@@ -28,7 +28,7 @@ export const AuthProvider = ({ children }) => {
   const [userRole, setUserRole] = useState(null);
 
   // Sign up with email and password
-  const signup = async (email, password, displayName) => {
+  const signup = async (email, password, displayName, phoneNumber) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     
     // Update profile with display name
@@ -41,6 +41,7 @@ export const AuthProvider = ({ children }) => {
       uid: userCredential.user.uid,
       email: email,
       displayName: displayName,
+      phoneNumber: phoneNumber || '',
       role: 'user',
       createdAt: new Date(),
       wishlist: [],
@@ -48,6 +49,19 @@ export const AuthProvider = ({ children }) => {
     });
 
     return userCredential;
+  };
+
+  // Find user by phone number
+  const findUserByPhone = async (phoneNumber) => {
+    const { collection, query, where, getDocs } = await import('firebase/firestore');
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('phoneNumber', '==', phoneNumber));
+    const querySnapshot = await getDocs(q);
+    
+    if (!querySnapshot.empty) {
+      return querySnapshot.docs[0].data();
+    }
+    return null;
   };
 
   // Login with email and password
@@ -163,6 +177,7 @@ export const AuthProvider = ({ children }) => {
     userRole,
     signup,
     login,
+    findUserByPhone,
     loginWithGoogle,
     logout,
     resetPassword,

@@ -138,34 +138,89 @@ const ProductDetail = () => {
                   <span className="meta-value">{product.brands.join(', ')}</span>
                 </div>
               )}
-              {product.packingSizes && product.packingSizes.length > 0 && (
-                <div className="meta-item">
-                  <span className="meta-label">Amount:</span>
-                  <span className="meta-value">{product.packingSizes.join(', ')}</span>
-                </div>
-              )}
+
               {/* SKU Removed */}
               <div className="meta-item">
                 <span className="rating-stars">
                   {[...Array(5)].map((_, i) => (
-                    <span key={i} className={i < (product.rating || 4) ? 'star filled' : 'star'}>★</span>
+                    <span key={i} className={i < Math.floor(product.rating || 4) ? 'star filled' : 'star'}>★</span>
                   ))}
                 </span>
-                <span className="review-count">{product.reviewCount || 1} REVIEW</span>
+                <span className="rating-value" style={{ marginLeft: '8px', fontWeight: '600', color: '#4b5563' }}>
+                  {product.rating ? product.rating.toFixed(1) : '4.0'}
+                </span>
               </div>
             </div>
 
-            <div className="product-price">
-              <span className="current-price">₹{product.price}</span>
-              {product.originalPrice && product.originalPrice > product.price && (
-                <span className="original-price" style={{ textDecoration: 'line-through', color: '#999', marginLeft: '10px' }}>
-                  ₹{product.originalPrice}
-                </span>
-              )}
+            <div className="product-price-group">
+              <div className="product-price">
+                <span className="current-price">₹{product.price}</span>
+                {product.originalPrice && product.originalPrice > product.price && (
+                  <>
+                    <span className="original-price" style={{ textDecoration: 'line-through', color: '#999', marginLeft: '10px' }}>
+                      ₹{product.originalPrice}
+                    </span>
+                    <span className="discount-badge" style={{ color: '#dc2626', marginLeft: '10px', fontWeight: '600' }}>
+                      {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
+                    </span>
+                  </>
+                )}
+              </div>
+              <div className="unit-price" style={{ fontSize: '14px', color: '#6b7280', marginTop: '-8px', marginBottom: '12px' }}>
+                {(() => {
+                   const size = selectedSize || (product.packingSizes && product.packingSizes[0]) || product.weight;
+                   if (!size) return null;
+                   const match = size.match(/(\d+(?:\.\d+)?)\s*([a-zA-Z]+)/);
+                   if (match) {
+                     const val = parseFloat(match[1]);
+                     const unit = match[2].toLowerCase();
+                     if (val > 0) {
+                       let unitPrice = product.price / val;
+                       let unitLabel = unit;
+                       if (unit === 'g' || unit === 'gm') {
+                         unitPrice = unitPrice * 1000;
+                         unitLabel = 'kg';
+                       } else if (unit === 'ml') {
+                         unitPrice = unitPrice * 1000;
+                         unitLabel = 'L';
+                       }
+                       return `(₹${unitPrice.toFixed(2)} / ${unitLabel})`;
+                     }
+                   }
+                   return null;
+                })()}
+              </div>
             </div>
 
             <div className={`stock-status ${product.stock > 0 ? 'in-stock' : 'out-of-stock'}`}>
               {product.stock > 0 ? 'IN STOCK' : 'OUT OF STOCK'}
+            </div>
+
+            <div className="product-features" style={{ marginTop: '8px', marginBottom: '16px', borderTop: 'none', paddingTop: 0 }}>
+              <div className="feature-item">
+                <FiCheck className="feature-icon" />
+                <span>Type: {product.productType || 'Organic'}</span>
+              </div>
+              <div className="feature-item">
+                <FiCheck className={`feature-icon ${product.codAvailable !== false ? 'success' : 'error'}`} />
+                <span>Cash on Delivery: {product.codAvailable !== false ? 'Available' : 'Not Available'}</span>
+              </div>
+              <div className="feature-item">
+                <FiCheck className={`feature-icon ${product.refundPolicyAvailable ? 'success' : 'error'}`} />
+                <span>Refund Policy: {product.refundPolicyAvailable ? 'Available' : 'Not Available'}</span>
+              </div>
+              {product.mfgDate && (
+                <div className="feature-item">
+                  <FiCheck className="feature-icon" />
+                  <span>MFG: {product.mfgDate}</span>
+                </div>
+              )}
+              {product.shelfLife && (
+                <div className="feature-item">
+                  <FiCheck className="feature-icon" />
+                  <span>LIFE: {product.shelfLife}</span>
+                </div>
+              )}
             </div>
 
             <p className="product-description">{product.description}</p>
@@ -187,12 +242,15 @@ const ProductDetail = () => {
               </div>
             )}
 
-            {product.packingSizes && product.packingSizes.length > 0 ? (
+            {(product.packingSizes && product.packingSizes.length > 0) || product.weight ? (
               <div className="product-option amount-option-container">
                 <div className="amount-selection">
-                  <label className="option-label">Amount</label>
+                  <label className="option-label">Weight</label>
                   <div className="option-buttons">
-                    {product.packingSizes.map((size, index) => (
+                    {(product.packingSizes && product.packingSizes.length > 0 
+                      ? product.packingSizes 
+                      : (product.weight ? [product.weight] : [])
+                    ).map((size, index) => (
                       <button
                         key={index}
                         className={`option-btn ${selectedSize === size ? 'active' : ''}`}
@@ -277,41 +335,10 @@ const ProductDetail = () => {
                 Add to cart
               </button>
 
-              <button 
-                className="btn-buy-now"
-                onClick={handleBuyNow}
-                disabled={product.stock <= 0}
-              >
-                Buy Now
-              </button>
+
             </div>
 
-            <div className="product-features">
-              <div className="feature-item">
-                <FiCheck className="feature-icon" />
-                <span>Type: {product.productType || 'Organic'}</span>
-              </div>
-              <div className="feature-item">
-                <FiCheck className={`feature-icon ${product.codAvailable !== false ? 'success' : 'error'}`} />
-                <span>Cash on Delivery: {product.codAvailable !== false ? 'Available' : 'Not Available'}</span>
-              </div>
-              <div className="feature-item">
-                <FiCheck className={`feature-icon ${product.refundPolicyAvailable ? 'success' : 'error'}`} />
-                <span>Refund Policy: {product.refundPolicyAvailable ? 'Available' : 'Not Available'}</span>
-              </div>
-              {product.mfgDate && (
-                <div className="feature-item">
-                  <FiCheck className="feature-icon" />
-                  <span>MFG: {product.mfgDate}</span>
-                </div>
-              )}
-              {product.shelfLife && (
-                <div className="feature-item">
-                  <FiCheck className="feature-icon" />
-                  <span>LIFE: {product.shelfLife}</span>
-                </div>
-              )}
-            </div>
+
           </div>
         </div>
 

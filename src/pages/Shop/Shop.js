@@ -12,6 +12,7 @@ const Shop = () => {
   const [searchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState('grid');
   const [activeDropdown, setActiveDropdown] = useState(null);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const [filters, setFilters] = useState({
     availability: [],
@@ -82,8 +83,12 @@ const Shop = () => {
     if (categoryParam) {
       filtered = filtered.filter(product => {
         if (!product.category) return false;
-        const productCatSlug = product.category.toLowerCase().replace(/\s+/g, '-');
-        return productCatSlug === categoryParam;
+        
+        const normalize = (str) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const productCatNorm = normalize(product.category);
+        const paramNorm = normalize(categoryParam);
+        
+        return productCatNorm.includes(paramNorm) || paramNorm.includes(productCatNorm);
       });
     }
 
@@ -159,116 +164,108 @@ const Shop = () => {
 
   return (
     <div className="shop-page">
-      <Breadcrumbs>
-        <div className="toolbar-filters">
-          {/* Availability Dropdown */}
-          <div className="filter-dropdown-container">
-            <button 
-              className={`filter-dropdown-btn ${activeDropdown === 'availability' ? 'active' : ''}`}
-              onClick={() => toggleDropdown('availability')}
-            >
-              Availability <FiChevronDown />
-            </button>
-            {activeDropdown === 'availability' && (
-              <div className="filter-dropdown-menu">
-                <label className="dropdown-item">
-                  <input 
-                    type="checkbox" 
-                    checked={filters.availability.includes('inStock')}
-                    onChange={() => handleAvailabilityChange('inStock')}
-                  />
-                  <span>In Stock</span>
-                </label>
-                <label className="dropdown-item">
-                  <input 
-                    type="checkbox" 
-                    checked={filters.availability.includes('outOfStock')}
-                    onChange={() => handleAvailabilityChange('outOfStock')}
-                  />
-                  <span>Out of Stock</span>
-                </label>
-              </div>
-            )}
-          </div>
-
-          {/* Price Dropdown */}
-          <div className="filter-dropdown-container">
-            <button 
-              className={`filter-dropdown-btn ${activeDropdown === 'price' ? 'active' : ''}`}
-              onClick={() => toggleDropdown('price')}
-            >
-              Price <FiChevronDown />
-            </button>
-            {activeDropdown === 'price' && (
-              <div className="filter-dropdown-menu">
-                <button 
-                  className={`dropdown-item-btn ${filters.priceSort === 'lowToHigh' ? 'active' : ''}`}
-                  onClick={() => handlePriceSortChange('lowToHigh')}
-                >
-                  Low to High
-                </button>
-                <button 
-                  className={`dropdown-item-btn ${filters.priceSort === 'highToLow' ? 'active' : ''}`}
-                  onClick={() => handlePriceSortChange('highToLow')}
-                >
-                  High to Low
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Deals Dropdown */}
-          <div className="filter-dropdown-container">
-            <button 
-              className={`filter-dropdown-btn ${activeDropdown === 'deals' ? 'active' : ''}`}
-              onClick={() => toggleDropdown('deals')}
-            >
-              Deals & Discounts <FiChevronDown />
-            </button>
-            {activeDropdown === 'deals' && (
-              <div className="filter-dropdown-menu">
-                <button 
-                  className={`dropdown-item-btn ${filters.deals === 'allDiscounts' ? 'active' : ''}`}
-                  onClick={() => handleDealsChange('allDiscounts')}
-                >
-                  All Discounts
-                </button>
-                <button 
-                  className={`dropdown-item-btn ${filters.deals === 'todaysDeals' ? 'active' : ''}`}
-                  onClick={() => handleDealsChange('todaysDeals')}
-                >
-                  Today's Deals
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </Breadcrumbs>
+      <Breadcrumbs />
 
       <div className="container">
         <div className="shop-layout-full">
 
           <div className="shop-results-header">
-             <div className="results-count">
-                Showing 1 - {filteredProducts.length} of {filteredProducts.length} result{filteredProducts.length !== 1 ? 's' : ''}
+            <div className="results-count">
+              Showing 1 - {filteredProducts.length} of {filteredProducts.length} result{filteredProducts.length !== 1 ? 's' : ''}
+            </div>
+            
+            <div className="shop-filters-container">
+              <button 
+                className={`mobile-filter-toggle ${mobileFiltersOpen ? 'active' : ''}`}
+                onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
+              >
+                Filters <FiChevronDown />
+              </button>
+
+              <div className={`toolbar-filters ${mobileFiltersOpen ? 'mobile-open' : ''}`}>
+                {/* Availability Dropdown */}
+                <div className="filter-dropdown-container">
+                  <button 
+                    className={`filter-dropdown-btn ${activeDropdown === 'availability' ? 'active' : ''}`}
+                    onClick={() => toggleDropdown('availability')}
+                  >
+                    Availability <FiChevronDown />
+                  </button>
+                  {activeDropdown === 'availability' && (
+                    <div className="filter-dropdown-menu">
+                      <label className="dropdown-item">
+                        <input 
+                          type="checkbox" 
+                          checked={filters.availability.includes('inStock')}
+                          onChange={() => handleAvailabilityChange('inStock')}
+                        />
+                        <span>In Stock</span>
+                      </label>
+                      <label className="dropdown-item">
+                        <input 
+                          type="checkbox" 
+                          checked={filters.availability.includes('outOfStock')}
+                          onChange={() => handleAvailabilityChange('outOfStock')}
+                        />
+                        <span>Out of Stock</span>
+                      </label>
+                    </div>
+                  )}
+                </div>
+
+                {/* Price Dropdown */}
+                <div className="filter-dropdown-container">
+                  <button 
+                    className={`filter-dropdown-btn ${activeDropdown === 'price' ? 'active' : ''}`}
+                    onClick={() => toggleDropdown('price')}
+                  >
+                    Price <FiChevronDown />
+                  </button>
+                  {activeDropdown === 'price' && (
+                    <div className="filter-dropdown-menu">
+                      <button 
+                        className={`dropdown-item-btn ${filters.priceSort === 'lowToHigh' ? 'active' : ''}`}
+                        onClick={() => handlePriceSortChange('lowToHigh')}
+                      >
+                        Low to High
+                      </button>
+                      <button 
+                        className={`dropdown-item-btn ${filters.priceSort === 'highToLow' ? 'active' : ''}`}
+                        onClick={() => handlePriceSortChange('highToLow')}
+                      >
+                        High to Low
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Deals Dropdown */}
+                <div className="filter-dropdown-container">
+                  <button 
+                    className={`filter-dropdown-btn ${activeDropdown === 'deals' ? 'active' : ''}`}
+                    onClick={() => toggleDropdown('deals')}
+                  >
+                    Deals & Discounts <FiChevronDown />
+                  </button>
+                  {activeDropdown === 'deals' && (
+                    <div className="filter-dropdown-menu">
+                      <button 
+                        className={`dropdown-item-btn ${filters.deals === 'allDiscounts' ? 'active' : ''}`}
+                        onClick={() => handleDealsChange('allDiscounts')}
+                      >
+                        All Discounts
+                      </button>
+                      <button 
+                        className={`dropdown-item-btn ${filters.deals === 'todaysDeals' ? 'active' : ''}`}
+                        onClick={() => handleDealsChange('todaysDeals')}
+                      >
+                        Today's Deals
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
-              
-              <div className="view-modes">
-                <button 
-                  className={`view-mode-btn ${viewMode === 'grid' ? 'active' : ''}`}
-                  onClick={() => setViewMode('grid')}
-                  aria-label="Grid view"
-                >
-                  <FiGrid />
-                </button>
-                <button 
-                  className={`view-mode-btn ${viewMode === 'compact' ? 'active' : ''}`}
-                  onClick={() => setViewMode('compact')}
-                  aria-label="Compact view"
-                >
-                  <FiList />
-                </button>
-              </div>
+            </div>
           </div>
 
           {filteredProducts.length === 0 ? (

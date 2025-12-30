@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import ReactDOM from 'react-dom';
+import { createPortal } from 'react-dom';
 import { FiX, FiShoppingCart, FiMinus, FiPlus } from 'react-icons/fi';
 import { useCart } from '../../contexts/CartContext';
 import './ProductSelectionModal.css';
@@ -36,7 +36,7 @@ const ProductSelectionModal = ({ product, isOpen, onClose }) => {
     openCart();
   };
 
-  return ReactDOM.createPortal(
+  return createPortal(
     <div className="selection-modal-overlay" onClick={onClose}>
       <div className="selection-modal-content" onClick={e => e.stopPropagation()}>
         <button className="close-btn" onClick={onClose}><FiX /></button>

@@ -4,7 +4,7 @@ import { sendPasswordResetEmail } from 'firebase/auth';
 import { db, auth } from '../../config/firebase';
 import { 
   FiSearch, FiUser, FiMail, FiCalendar, FiShield, FiPhone, 
-  FiMoreVertical, FiEdit, FiTrash2, FiLock, FiUnlock, FiEye, 
+  FiMoreVertical, FiTrash2, FiLock, FiUnlock, FiEye, 
   FiDownload, FiFilter, FiCheckCircle, FiXCircle, FiAlertCircle, FiClock, FiX, FiMapPin
 } from 'react-icons/fi';
 import './Users.css';
@@ -336,6 +336,34 @@ const Users = () => {
                 </div>
               </div>
             )}
+
+            <div className="info-section full-width">
+              <h3><FiClock /> Login History</h3>
+              {user.loginHistory && user.loginHistory.length > 0 ? (
+                <div className="mini-table-container">
+                  <table className="mini-table">
+                    <thead>
+                      <tr>
+                        <th>Date & Time</th>
+                        <th>Device/Browser</th>
+                        <th>Type</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...user.loginHistory].reverse().slice(0, 10).map((login, idx) => (
+                        <tr key={idx}>
+                          <td>{formatDate(login.timestamp)} {login.timestamp?.toDate ? login.timestamp.toDate().toLocaleTimeString() : ''}</td>
+                          <td title={login.device}>{login.device?.substring(0, 50)}...</td>
+                          <td>{login.type}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="no-data">No login history available.</p>
+              )}
+            </div>
 
             <div className="info-section full-width">
               <h3><FiCalendar /> Recent Orders</h3>

@@ -301,7 +301,7 @@ const Categories = () => {
                     required
                   />
                 </div>
-                <div className="form-group">
+                <div className="form-group full-width">
                   <label>Image URL</label>
                   <input
                     type="text"
@@ -311,7 +311,7 @@ const Categories = () => {
                     placeholder="https://..."
                   />
                 </div>
-                <div className="form-group">
+                <div className="form-group full-width">
                   <label>Subcategories</label>
                   <div className="subcategory-input-group">
                     <input
@@ -326,9 +326,9 @@ const Categories = () => {
                       <FiPlus />
                     </button>
                   </div>
-                  <div className="added-subcategories">
+                  <div className="subcategories-list-edit">
                     {formData.subcategories.map((sub, index) => (
-                      <span key={index} className="added-subcategory-tag">
+                      <span key={index} className="subcategory-item">
                         {sub}
                         <button type="button" className="remove-sub-btn" onClick={() => handleRemoveSubcategory(index)}>
                           <FiX size={12} />

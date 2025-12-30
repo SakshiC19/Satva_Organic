@@ -1,36 +1,69 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiEye, FiEyeOff, FiUser, FiLock } from 'react-icons/fi';
 import { FaGoogle } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 import './Auth.css';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, loginWithGoogle } = useAuth();
+  const { login, loginWithGoogle, findUserByPhone } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!email || !password) {
-      setError('Please fill in all fields');
+    if (!identifier.trim()) {
+      setError('Please enter your email or phone number');
+      return;
+    }
+
+    if (!password) {
+      setError('Please enter your password');
       return;
     }
 
     try {
       setError('');
       setLoading(true);
-      const userCredential = await login(email, password);
       
+      let loginEmail = identifier;
+      
+      // Check if identifier is a phone number (10 digits)
+      if (/^\d{10}$/.test(identifier)) {
+        const userData = await findUserByPhone(identifier);
+        if (userData && userData.email) {
+          loginEmail = userData.email;
+        } else {
+          setError('No account found with this phone number');
+          setLoading(false);
+          return;
+        }
+      }
+
+      const userCredential = await login(loginEmail, password);
+      
+      // Update login history and details
+      const userRef = doc(db, 'users', userCredential.user.uid);
+      const loginData = {
+        lastLogin: new Date(),
+        lastIp: 'Local', // In a real app, you'd get this from a server
+        loginHistory: arrayUnion({
+          timestamp: new Date(),
+          device: navigator.userAgent,
+          type: 'email/phone'
+        })
+      };
+      await updateDoc(userRef, loginData);
+
       // Check user role
-      const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
+      const userDoc = await getDoc(userRef);
       const userData = userDoc.data();
       
       if (userData?.role === 'admin') {
@@ -82,16 +115,15 @@ const Login = () => {
 
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="form-group">
-              <label htmlFor="email" className="form-label">Email Address</label>
+              <label htmlFor="identifier" className="form-label">Email or Phone Number</label>
               <div className="input-wrapper">
-                <i className='bx bx-envelope input-icon'></i>
-                <input
-                  type="email"
-                  id="email"
-                  className="form-input"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                 <input
+                  type="text"
+                  id="identifier"
+                  className="form-input no-icon"
+                  placeholder="Enter email or 10-digit phone"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
                   required
                 />
               </div>
@@ -100,11 +132,10 @@ const Login = () => {
             <div className="form-group">
               <label htmlFor="password" className="form-label">Password</label>
               <div className="input-wrapper">
-                <i className='bx bx-lock input-icon'></i>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   id="password"
-                  className="form-input"
+                  className="form-input no-icon"
                   placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}

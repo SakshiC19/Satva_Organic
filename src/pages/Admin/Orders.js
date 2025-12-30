@@ -388,13 +388,13 @@ const Orders = () => {
             </button>
           </div>
           <div className="om-table-actions">
-            <button className="table-action-btn">
+            <button className="table-action-btn" onClick={() => document.querySelector('.om-search-box input')?.focus()} title="Search">
               <FiSearch />
             </button>
-            <button className="table-action-btn">
+            <button className="table-action-btn" onClick={() => alert('Filter options coming soon')} title="Filter">
               <FiFilter />
             </button>
-            <button className="table-action-btn">
+            <button className="table-action-btn" onClick={() => alert('View options coming soon')} title="Grid View">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <rect x="3" y="3" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5" />
                 <rect x="11" y="3" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5" />
@@ -402,7 +402,7 @@ const Orders = () => {
                 <rect x="11" y="11" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5" />
               </svg>
             </button>
-            <button className="table-action-btn">
+            <button className="table-action-btn" onClick={() => alert('View options coming soon')} title="List View">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <path d="M3 6H17M3 10H17M3 14H17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
               </svg>
@@ -479,8 +479,22 @@ const Orders = () => {
                       </td>
                       <td>
                         <div className="items-cell">
-                          <span className="items-count">{order.items?.length || 0} Items</span>
-                          <span className="items-preview">{firstItem.name}</span>
+                          <button 
+                            className="items-count-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // Toggle items popover logic could go here, or use a simple tooltip approach
+                              // For now, let's make it a simple toggle or just display
+                              const details = order.items.map(i => `${i.quantity}x ${i.name}`).join('\n');
+                              alert(details); // Simple fallback for now as requested "when clicked... displayed"
+                            }}
+                            title="Click to view items"
+                          >
+                            {order.items?.length || 0} Items
+                          </button>
+                          <div className="items-preview-text">
+                             {firstItem.name} {order.items?.length > 1 ? `+${order.items.length - 1} more` : ''}
+                          </div>
                         </div>
                       </td>
                       <td>
@@ -504,12 +518,15 @@ const Orders = () => {
                         <span className="order-date">{formatDate(order.createdAt)}</span>
                       </td>
                       <td>
-                        <div className="action-cell">
+                        <div className="action-cell" style={{ display: 'flex', gap: '8px', position: 'relative', zIndex: 5 }}>
                           <button 
                             className="action-menu-btn invoice-btn"
-                            onClick={() => generateInvoice(order)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              generateInvoice(order);
+                            }}
                             title="Download Invoice"
-                            style={{ marginRight: '8px', color: '#27ae60' }}
+                            style={{ color: '#27ae60', cursor: 'pointer' }}
                           >
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -519,25 +536,29 @@ const Orders = () => {
                           </button>
                           <button
                             className="action-menu-btn"
-                            onClick={() => setActiveDropdown(activeDropdown === order.id ? null : order.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveDropdown(activeDropdown === order.id ? null : order.id);
+                            }}
+                            style={{ cursor: 'pointer' }}
                           >
                             <FiMoreVertical />
                           </button>
                           {activeDropdown === order.id && (
-                            <div className="action-dropdown">
-                                <button className="dropdown-item" onClick={() => setViewingOrder(order)}>
+                            <div className="action-dropdown" style={{ display: 'block' }}>
+                                <button className="dropdown-item" onClick={(e) => { e.stopPropagation(); setViewingOrder(order); setActiveDropdown(null); }}>
                                   <FiSearch /> View Details
                                 </button>
-                                <button className="dropdown-item" onClick={() => updateOrderStatus(order.id, 'confirmed')}>
+                                <button className="dropdown-item" onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, 'confirmed'); }}>
                                   <FiEdit /> Confirm Order
                                 </button>
-                                <button className="dropdown-item" onClick={() => updateOrderStatus(order.id, 'processing')}>
+                                <button className="dropdown-item" onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, 'processing'); }}>
                                   <FiClock /> Start Processing
                                 </button>
-                                <button className="dropdown-item" onClick={() => updateOrderStatus(order.id, 'shipped')}>
+                                <button className="dropdown-item" onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, 'shipped'); }}>
                                   <FiStar /> Ship Order
                                 </button>
-                                <button className="dropdown-item danger" onClick={() => updateOrderStatus(order.id, 'cancelled')}>
+                                <button className="dropdown-item danger" onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, 'cancelled'); }}>
                                   <FiTrash2 /> Cancel Order
                                 </button>
                             </div>

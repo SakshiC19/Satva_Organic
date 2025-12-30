@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiEye, FiEyeOff, FiUser, FiMail, FiPhone, FiLock } from 'react-icons/fi';
 import { FaGoogle } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 import './Auth.css';
@@ -9,6 +9,7 @@ const Signup = () => {
   const [formData, setFormData] = useState({
     displayName: '',
     email: '',
+    phoneNumber: '',
     password: '',
     confirmPassword: ''
   });
@@ -29,13 +30,19 @@ const Signup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.displayName || !formData.email || !formData.password || !formData.confirmPassword) {
-      setError('Please fill in all fields');
+    if (formData.displayName.trim().length < 3) {
+      setError('Full Name must be at least 3 characters');
       return;
     }
 
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    if (!/^\d{10}$/.test(formData.phoneNumber)) {
+      setError('Please enter a valid 10-digit phone number');
       return;
     }
 
@@ -44,10 +51,15 @@ const Signup = () => {
       return;
     }
 
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
     try {
       setError('');
       setLoading(true);
-      await signup(formData.email, formData.password, formData.displayName);
+      await signup(formData.email, formData.password, formData.displayName, formData.phoneNumber);
       navigate('/');
     } catch (error) {
       if (error.code === 'auth/email-already-in-use') {
@@ -90,12 +102,11 @@ const Signup = () => {
             <div className="form-group">
               <label htmlFor="displayName" className="form-label">Full Name</label>
               <div className="input-wrapper">
-                <i className='bx bx-user input-icon'></i>
                 <input
                   type="text"
                   id="displayName"
                   name="displayName"
-                  className="form-input"
+                  className="form-input no-icon"
                   placeholder="Enter your full name"
                   value={formData.displayName}
                   onChange={handleChange}
@@ -107,12 +118,11 @@ const Signup = () => {
             <div className="form-group">
               <label htmlFor="email" className="form-label">Email Address</label>
               <div className="input-wrapper">
-                <i className='bx bx-envelope input-icon'></i>
                 <input
                   type="email"
                   id="email"
                   name="email"
-                  className="form-input"
+                  className="form-input no-icon"
                   placeholder="Enter your email"
                   value={formData.email}
                   onChange={handleChange}
@@ -122,14 +132,30 @@ const Signup = () => {
             </div>
 
             <div className="form-group">
+              <label htmlFor="phoneNumber" className="form-label">Phone Number</label>
+              <div className="input-wrapper">
+                <input
+                  type="tel"
+                  id="phoneNumber"
+                  name="phoneNumber"
+                  className="form-input no-icon"
+                  placeholder="Enter 10-digit phone number"
+                  value={formData.phoneNumber}
+                  onChange={handleChange}
+                  maxLength="10"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
               <label htmlFor="password" className="form-label">Password</label>
               <div className="input-wrapper">
-                <i className='bx bx-lock input-icon'></i>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   id="password"
                   name="password"
-                  className="form-input"
+                  className="form-input no-icon"
                   placeholder="Create a password"
                   value={formData.password}
                   onChange={handleChange}
@@ -148,12 +174,11 @@ const Signup = () => {
             <div className="form-group">
               <label htmlFor="confirmPassword" className="form-label">Confirm Password</label>
               <div className="input-wrapper">
-                <i className='bx bx-lock input-icon'></i>
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   id="confirmPassword"
                   name="confirmPassword"
-                  className="form-input"
+                  className="form-input no-icon"
                   placeholder="Confirm your password"
                   value={formData.confirmPassword}
                   onChange={handleChange}

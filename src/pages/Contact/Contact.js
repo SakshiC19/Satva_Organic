@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FiMail, FiPhone, FiMapPin, FiUser, FiChevronDown, FiEdit } from 'react-icons/fi';
+import { FiMail, FiPhone, FiMapPin } from 'react-icons/fi';
 import './Contact.css';
 
 const Contact = () => {
@@ -94,7 +94,6 @@ const Contact = () => {
                       onChange={handleChange}
                       required
                     />
-                    <FiUser className="input-icon" />
                   </div>
                   <div className="form-group-icon">
                     <input 
@@ -105,7 +104,6 @@ const Contact = () => {
                       onChange={handleChange}
                       required
                     />
-                    <FiMail className="input-icon" />
                   </div>
                 </div>
 
@@ -124,7 +122,6 @@ const Contact = () => {
                       <option value="partnership">Partnership</option>
                       <option value="other">Other</option>
                     </select>
-                    <FiChevronDown className="input-icon" />
                   </div>
                   <div className="form-group-icon">
                     <input 
@@ -135,7 +132,6 @@ const Contact = () => {
                       onChange={handleChange}
                       required
                     />
-                    <FiPhone className="input-icon" />
                   </div>
                 </div>
 
@@ -148,7 +144,6 @@ const Contact = () => {
                     onChange={handleChange}
                     required
                   ></textarea>
-                  <FiEdit className="input-icon textarea-icon" />
                 </div>
 
                 <button type="submit" className="submit-btn">

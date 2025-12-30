@@ -15,7 +15,7 @@ import {
 } from 'react-icons/fi';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Autoplay, Pagination } from 'swiper/modules';
-import { collection, getDocs, limit, query, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, limit, query, doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import 'swiper/css';
 import 'swiper/css/navigation';
@@ -34,12 +34,32 @@ const Home = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [flashDealFilter, setFlashDealFilter] = useState({
+    category: 'All',
+    discount: 0
+  });
 
   const [specialOffer, setSpecialOffer] = useState(null);
 
   useEffect(() => {
-    fetchFeaturedProducts();
+    const productsCollection = collection(db, 'products');
+    const productsQuery = query(productsCollection, limit(12));
+    
+    const unsubscribe = onSnapshot(productsQuery, (snapshot) => {
+      const productsList = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setFeaturedProducts(productsList);
+      setLoadingProducts(false);
+    }, (error) => {
+      console.error('Error fetching products:', error);
+      setLoadingProducts(false);
+    });
+
     fetchSpecialOffer();
+
+    return () => unsubscribe();
   }, []);
 
   const fetchSpecialOffer = async () => {
@@ -54,23 +74,12 @@ const Home = () => {
     }
   };
 
-  const fetchFeaturedProducts = async () => {
-    try {
-      setLoadingProducts(true);
-      const productsCollection = collection(db, 'products');
-      const productsQuery = query(productsCollection, limit(12));
-      const productsSnapshot = await getDocs(productsQuery);
-      const productsList = productsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setFeaturedProducts(productsList);
-    } catch (error) {
-      console.error('Error fetching featured products:', error);
-    } finally {
-      setLoadingProducts(false);
-    }
-  };
+  const flashDealsProducts = featuredProducts.filter(product => {
+    const hasDiscount = product.discount && parseFloat(product.discount) > 0;
+    const matchesCategory = flashDealFilter.category === 'All' || product.category === flashDealFilter.category;
+    const matchesDiscount = parseFloat(product.discount || 0) >= flashDealFilter.discount;
+    return hasDiscount && matchesCategory && matchesDiscount;
+  });
 
   const { categories: contextCategories } = useCategories();
 
@@ -310,6 +319,30 @@ const Home = () => {
         </div>
       </section>
 
+      {/* Promotional Banner */}
+      {specialOffer && specialOffer.isActive && (
+        <section className="promo-banner-section">
+          <div className="container-fluid">
+            <div className="promo-banner-modern">
+              <div className="promo-content">
+                <span className="promo-badge">{specialOffer.badge}</span>
+                <h3 className="promo-title">{specialOffer.title}</h3>
+                <p className="promo-text">{specialOffer.description}</p>
+                <button
+                  className="promo-btn"
+                  onClick={() => navigate(specialOffer.buttonLink || '/shop')}
+                >
+                  {specialOffer.buttonText}
+                </button>
+              </div>
+              <div className="promo-visual">
+                <div className="promo-circle"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Flash Deals Section */}
       <section className="flash-deals">
         <div className="container-fluid">
@@ -330,17 +363,45 @@ const Home = () => {
             </button>
           </div>
 
+          {/* Flash Deal Filters */}
+          <div className="flash-filters">
+            <div className="filter-group">
+              <select 
+                className="category-select"
+                value={flashDealFilter.category}
+                onChange={(e) => setFlashDealFilter({ ...flashDealFilter, category: e.target.value })}
+              >
+                <option value="All">All Categories</option>
+                {uniqueCategories.map(cat => (
+                  <option key={cat.id} value={cat.name}>{cat.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="filter-group">
+              <select 
+                className="discount-select"
+                value={flashDealFilter.discount}
+                onChange={(e) => setFlashDealFilter({ ...flashDealFilter, discount: parseInt(e.target.value) })}
+              >
+                <option value="0">All Discounts</option>
+                <option value="10">10% Off & Above</option>
+                <option value="20">20% Off & Above</option>
+                <option value="30">30% Off & Above</option>
+              </select>
+            </div>
+          </div>
+
           <div className="flash-deals-container">
             <button className="flash-nav-btn flash-prev" aria-label="Previous">
               <FiChevronLeft />
             </button>
 
             <Swiper
-              modules={[Navigation, Autoplay]}
+              modules={[Autoplay, Navigation]}
               spaceBetween={16}
               slidesPerView="auto"
               autoplay={{
-                delay: 3000,
+                delay: 4000,
                 disableOnInteraction: false,
                 pauseOnMouseEnter: true
               }}
@@ -348,18 +409,22 @@ const Home = () => {
                 prevEl: '.flash-prev',
                 nextEl: '.flash-next',
               }}
-              loop={true}
+              loop={flashDealsProducts.length > 5}
               breakpoints={{
-                320: { slidesPerView: 2, spaceBetween: 12 },
-                480: { slidesPerView: 2.5, spaceBetween: 12 },
-                768: { slidesPerView: 3.5, spaceBetween: 14 },
-                1024: { slidesPerView: 5, spaceBetween: 12 },
+                320: { slidesPerView: 1.5, spaceBetween: 12 },
+                480: { slidesPerView: 2.2, spaceBetween: 12 },
+                768: { slidesPerView: 3.2, spaceBetween: 14 },
+                1024: { slidesPerView: 4, spaceBetween: 16 },
+                1200: { slidesPerView: 5, spaceBetween: 20 },
               }}
               className="flash-deals-slider"
             >
-              {featuredProducts.map(product => (
+              {flashDealsProducts.map(product => (
                 <SwiperSlide key={product.id}>
-                  <ProductCard product={product} compact />
+                  <ProductCard 
+                    product={product} 
+                    isFlashDeal={true}
+                  />
                 </SwiperSlide>
               ))}
             </Swiper>
@@ -402,29 +467,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Promotional Banner */}
-      {specialOffer && specialOffer.isActive && (
-        <section className="promo-banner-section">
-          <div className="container-fluid">
-            <div className="promo-banner-modern">
-              <div className="promo-content">
-                <span className="promo-badge">{specialOffer.badge}</span>
-                <h3 className="promo-title">{specialOffer.title}</h3>
-                <p className="promo-text">{specialOffer.description}</p>
-                <button
-                  className="promo-btn"
-                  onClick={() => navigate(specialOffer.buttonLink || '/shop')}
-                >
-                  {specialOffer.buttonText}
-                </button>
-              </div>
-              <div className="promo-visual">
-                <div className="promo-circle"></div>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
+
 
       {/* Features Compact */}
       <section className="features-compact">

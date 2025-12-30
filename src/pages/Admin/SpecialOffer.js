@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
+import { useCategories } from '../../contexts/CategoryContext';
 import { FiSave, FiInfo, FiEye, FiEyeOff } from 'react-icons/fi';
 import './Admin.css';
 
@@ -10,7 +11,7 @@ const SpecialOffer = () => {
   const [message, setMessage] = useState({ type: '', text: '' });
 
   // Data for selection dropdowns
-  const [categories, setCategories] = useState([]);
+  const { categories } = useCategories();
   const [products, setProducts] = useState([]);
 
   const [offerData, setOfferData] = useState({
@@ -39,14 +40,6 @@ const SpecialOffer = () => {
         const data = offerSnap.data();
         setOfferData(prev => ({ ...prev, ...data }));
       }
-
-      // Fetch Categories
-      const categoriesSnap = await getDocs(collection(db, 'categories'));
-      const cats = categoriesSnap.docs.map(doc => ({
-        id: doc.id,
-        name: doc.data().name
-      }));
-      setCategories(cats);
 
       // Fetch Products
       const productsSnap = await getDocs(collection(db, 'products'));
