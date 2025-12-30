@@ -184,11 +184,7 @@
     font-size: 24px;
 }
 
-<<<<<<< HEAD
-/* Sticky WhatsApp */
-=======
 /* WhatsApp Sticky Button */
->>>>>>> origin/main
 .whatsapp-sticky {
     position: fixed;
     bottom: 20px;
@@ -201,24 +197,15 @@
     display: flex;
     align-items: center;
     justify-content: center;
-<<<<<<< HEAD
-    cursor: pointer;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-    z-index: 1000;
-    transition: transform 0.3s ease;
-=======
     font-size: 30px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     z-index: 2000;
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     text-decoration: none;
->>>>>>> origin/main
 }
 
 .whatsapp-sticky:hover {
     transform: scale(1.1);
-<<<<<<< HEAD
-=======
     background: #20ba5a;
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
@@ -231,7 +218,6 @@
         bottom: 15px;
         right: 15px;
     }
->>>>>>> origin/main
 }
 
 /* Responsive */
@@ -270,34 +256,33 @@
         margin-bottom: 0;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
-    
+
     .footer-toggle-icon {
         display: block;
     }
-    
+
     .footer-links {
         max-height: 0;
         overflow: hidden;
         transition: max-height 0.3s ease-out, padding 0.3s;
         padding: 0;
     }
-    
+
     .footer-column.expanded .footer-links {
         max-height: 500px;
         padding: 15px 0;
     }
-    
+
     .footer-column.expanded .footer-toggle-icon {
         transform: rotate(180deg);
     }
-    
+
     .footer-about {
         text-align: center;
         align-items: center;
     }
-    
+
     .footer-contact {
         align-items: center;
     }
 }
-
