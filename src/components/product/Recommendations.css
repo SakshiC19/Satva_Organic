@@ -1,0 +1,52 @@
+.recommendations-section {
+    margin-top: 60px;
+    padding: 40px 0;
+    border-top: 1px solid #f0f0f0;
+}
+
+.recommendations-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 30px;
+}
+
+.recommendations-icon {
+    color: #f59e0b;
+    font-size: 24px;
+}
+
+.recommendations-header h2 {
+    font-size: 24px;
+    color: #1e293b;
+    margin: 0;
+}
+
+.recommendations-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 20px;
+}
+
+@media (max-width: 1200px) {
+    .recommendations-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 992px) {
+    .recommendations-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .recommendations-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+
+    .recommendations-header h2 {
+        font-size: 20px;
+    }
+}

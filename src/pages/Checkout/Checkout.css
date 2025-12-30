@@ -157,7 +157,7 @@
 }
 
 .continue-btn {
-    background-color: #fb641b;
+    background-color: #2C3E37;
     color: #fff;
     border: none;
     padding: 14px 0;
@@ -171,7 +171,7 @@
 }
 
 .continue-btn:hover {
-    background-color: #f4511e;
+    background-color: #1F2D26;
 }
 
 /* Address Step */

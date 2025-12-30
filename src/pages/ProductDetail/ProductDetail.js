@@ -4,8 +4,8 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { FiHeart, FiMinus, FiPlus, FiCheck } from 'react-icons/fi';
 import { useCart } from '../../contexts/CartContext';
+import Recommendations from '../../components/product/Recommendations';
 import './ProductDetail.css';
-
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -26,7 +26,6 @@ const ProductDetail = () => {
           const productData = { id: productDoc.id, ...productDoc.data() };
           setProduct(productData);
           
-          // Set default selections
           if (productData.brands && productData.brands.length > 0) {
             setSelectedBrand(productData.brands[0]);
           }
@@ -55,8 +54,6 @@ const ProductDetail = () => {
   };
 
   const { addToCart, openCart } = useCart();
-
-  // ... (existing code)
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -99,7 +96,6 @@ const ProductDetail = () => {
   return (
     <div className="product-detail-page">
       <div className="container">
-        {/* Breadcrumb */}
         <nav className="breadcrumb">
           <Link to="/">HOME</Link>
           <span className="separator">›</span>
@@ -108,12 +104,13 @@ const ProductDetail = () => {
           <span className="current">{product.name?.toUpperCase()}</span>
         </nav>
 
-        {/* Product Main Section */}
         <div className="product-detail-main">
-          {/* Left: Product Images */}
           <div className="product-images">
             <div className="main-image">
               <img src={currentImage} alt={product.name} />
+              <button className="mobile-wishlist-btn" title="Add to Wishlist">
+                <FiHeart />
+              </button>
             </div>
             {productImages.length > 1 && (
               <div className="image-thumbnails">
@@ -130,11 +127,10 @@ const ProductDetail = () => {
             )}
           </div>
 
-          {/* Right: Product Info */}
           <div className="product-info">
+            <div className="product-category-label">{product.category}</div>
             <h1 className="product-title">{product.name}</h1>
 
-            {/* Meta Info */}
             <div className="product-meta">
               {product.brands && product.brands.length > 0 && (
                 <div className="meta-item">
@@ -148,10 +144,7 @@ const ProductDetail = () => {
                   <span className="meta-value">{product.packingSizes.join(', ')}</span>
                 </div>
               )}
-              <div className="meta-item">
-                <span className="meta-label">SKU:</span>
-                <span className="meta-value">{product.sku || 'N/A'}</span>
-              </div>
+              {/* SKU Removed */}
               <div className="meta-item">
                 <span className="rating-stars">
                   {[...Array(5)].map((_, i) => (
@@ -162,23 +155,21 @@ const ProductDetail = () => {
               </div>
             </div>
 
-            {/* Price */}
             <div className="product-price">
-              <span className="current-price">${product.price}</span>
-              {product.originalPrice && (
-                <span className="original-price">${product.originalPrice}</span>
+              <span className="current-price">₹{product.price}</span>
+              {product.originalPrice && product.originalPrice > product.price && (
+                <span className="original-price" style={{ textDecoration: 'line-through', color: '#999', marginLeft: '10px' }}>
+                  ₹{product.originalPrice}
+                </span>
               )}
             </div>
 
-            {/* Stock Status */}
             <div className={`stock-status ${product.stock > 0 ? 'in-stock' : 'out-of-stock'}`}>
               {product.stock > 0 ? 'IN STOCK' : 'OUT OF STOCK'}
             </div>
 
-            {/* Description */}
             <p className="product-description">{product.description}</p>
 
-            {/* Brand Selection */}
             {product.brands && product.brands.length > 0 && (
               <div className="product-option">
                 <label className="option-label">Brands</label>
@@ -196,49 +187,88 @@ const ProductDetail = () => {
               </div>
             )}
 
-            {/* Size/Amount Selection */}
-            {product.packingSizes && product.packingSizes.length > 0 && (
-              <div className="product-option">
-                <label className="option-label">Amount</label>
-                <div className="option-buttons">
-                  {product.packingSizes.map((size, index) => (
-                    <button
-                      key={index}
-                      className={`option-btn ${selectedSize === size ? 'active' : ''}`}
-                      onClick={() => setSelectedSize(size)}
+            {product.packingSizes && product.packingSizes.length > 0 ? (
+              <div className="product-option amount-option-container">
+                <div className="amount-selection">
+                  <label className="option-label">Amount</label>
+                  <div className="option-buttons">
+                    {product.packingSizes.map((size, index) => (
+                      <button
+                        key={index}
+                        className={`option-btn ${selectedSize === size ? 'active' : ''}`}
+                        onClick={() => setSelectedSize(size)}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="quantity-wishlist-group">
+                  <div className="quantity-selector">
+                    <button 
+                      className="qty-btn" 
+                      onClick={() => handleQuantityChange(-1)}
+                      disabled={quantity <= 1}
                     >
-                      {size}
+                      <FiMinus />
                     </button>
-                  ))}
+                    <input 
+                      type="number" 
+                      value={quantity} 
+                      readOnly 
+                      className="qty-input"
+                    />
+                    <button 
+                      className="qty-btn" 
+                      onClick={() => handleQuantityChange(1)}
+                      disabled={quantity >= (product.stock || 999)}
+                    >
+                      <FiPlus />
+                    </button>
+                  </div>
+                  <button className="secondary-btn wishlist-inline-btn" title="Add to Wishlist">
+                    <FiHeart />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Fallback if no packing sizes, still show quantity */
+              <div className="product-option amount-option-container">
+                 <div className="amount-selection">
+                    <label className="option-label">Quantity</label>
+                 </div>
+                 <div className="quantity-wishlist-group">
+                   <div className="quantity-selector">
+                    <button 
+                      className="qty-btn" 
+                      onClick={() => handleQuantityChange(-1)}
+                      disabled={quantity <= 1}
+                    >
+                      <FiMinus />
+                    </button>
+                    <input 
+                      type="number" 
+                      value={quantity} 
+                      readOnly 
+                      className="qty-input"
+                    />
+                    <button 
+                      className="qty-btn" 
+                      onClick={() => handleQuantityChange(1)}
+                      disabled={quantity >= (product.stock || 999)}
+                    >
+                      <FiPlus />
+                    </button>
+                  </div>
+                  <button className="secondary-btn wishlist-inline-btn" title="Add to Wishlist">
+                    <FiHeart />
+                  </button>
                 </div>
               </div>
             )}
 
-            {/* Quantity & Add to Cart */}
             <div className="product-actions">
-              <div className="quantity-selector">
-                <button 
-                  className="qty-btn" 
-                  onClick={() => handleQuantityChange(-1)}
-                  disabled={quantity <= 1}
-                >
-                  <FiMinus />
-                </button>
-                <input 
-                  type="number" 
-                  value={quantity} 
-                  readOnly 
-                  className="qty-input"
-                />
-                <button 
-                  className="qty-btn" 
-                  onClick={() => handleQuantityChange(1)}
-                  disabled={quantity >= (product.stock || 999)}
-                >
-                  <FiPlus />
-                </button>
-              </div>
-
               <button 
                 className="btn-add-to-cart"
                 onClick={handleAddToCart}
@@ -246,6 +276,7 @@ const ProductDetail = () => {
               >
                 Add to cart
               </button>
+
               <button 
                 className="btn-buy-now"
                 onClick={handleBuyNow}
@@ -255,18 +286,18 @@ const ProductDetail = () => {
               </button>
             </div>
 
-            {/* Wishlist & Compare */}
-            <div className="secondary-actions">
-              <button className="secondary-btn">
-                <FiHeart /> ADD TO WISHLIST
-              </button>
-            </div>
-
-            {/* Product Features */}
             <div className="product-features">
               <div className="feature-item">
                 <FiCheck className="feature-icon" />
                 <span>Type: {product.productType || 'Organic'}</span>
+              </div>
+              <div className="feature-item">
+                <FiCheck className={`feature-icon ${product.codAvailable !== false ? 'success' : 'error'}`} />
+                <span>Cash on Delivery: {product.codAvailable !== false ? 'Available' : 'Not Available'}</span>
+              </div>
+              <div className="feature-item">
+                <FiCheck className={`feature-icon ${product.refundPolicyAvailable ? 'success' : 'error'}`} />
+                <span>Refund Policy: {product.refundPolicyAvailable ? 'Available' : 'Not Available'}</span>
               </div>
               {product.mfgDate && (
                 <div className="feature-item">
@@ -284,7 +315,6 @@ const ProductDetail = () => {
           </div>
         </div>
 
-        {/* Product Tabs */}
         <div className="product-tabs">
           <div className="tabs-header">
             <button
@@ -347,7 +377,6 @@ const ProductDetail = () => {
             {activeTab === 'reviews' && (
               <div className="tab-pane">
                 <h3>Customer Reviews</h3>
-                {/* Review Form */}
                 <div className="review-form-container">
                   <h4>Write a Review</h4>
                   <form className="review-form" onSubmit={(e) => e.preventDefault()}>
@@ -374,6 +403,12 @@ const ProductDetail = () => {
             )}
           </div>
         </div>
+
+        <Recommendations 
+          title="Similar Products" 
+          category={product.category} 
+          currentProductId={product.id} 
+        />
       </div>
     </div>
   );

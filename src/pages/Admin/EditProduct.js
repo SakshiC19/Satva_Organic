@@ -28,20 +28,17 @@ const EditProduct = () => {
     packingSizes: '',
     productType: 'organic',
     featured: false,
-    codAvailable: false
+    codAvailable: false,
+    refundPolicyAvailable: false
   });
 
   const categories = [
-    'Fruits & Vegetables',
-    'Dairy Products',
-    'Grains & Cereals',
-    'Pulses & Legumes',
-    'Spices & Herbs',
-    'Oils & Ghee',
-    'Dry Fruits & Nuts',
-    'Beverages',
-    'Snacks & Sweets',
-    'Personal Care'
+    'Organic Items',
+    'Millets Of India',
+    'Organic Exotic Products',
+    'Organic Powder',
+    'Organic Wood Cold Press Oils Products',
+    'Seeds And Nuts'
   ];
 
   useEffect(() => {
@@ -64,7 +61,8 @@ const EditProduct = () => {
           packingSizes: data.packingSizes ? data.packingSizes.join(', ') : '',
           productType: data.productType || (data.organic ? 'organic' : 'inorganic'),
           featured: data.featured || false,
-          codAvailable: data.codAvailable || false
+          codAvailable: data.codAvailable || false,
+          refundPolicyAvailable: data.refundPolicyAvailable || false
         });
         setExistingImages(data.images || []);
       } else {
@@ -134,7 +132,7 @@ const EditProduct = () => {
         const pathsToDelete = imagesToDelete
           .map(img => getPathFromURL(img.url || img))
           .filter(path => path !== null);
-        
+
         for (const path of pathsToDelete) {
           try {
             await deleteImage(path);
@@ -167,6 +165,7 @@ const EditProduct = () => {
         organic: formData.productType === 'organic', // Keep for backward compatibility
         featured: formData.featured,
         codAvailable: formData.codAvailable,
+        refundPolicyAvailable: formData.refundPolicyAvailable,
         images: allImages,
         updatedAt: serverTimestamp()
       };
@@ -198,7 +197,7 @@ const EditProduct = () => {
     <div className="admin-edit-product">
       <div className="admin-page-header">
         <h1 className="admin-page-title">Edit Product</h1>
-        <button 
+        <button
           onClick={() => navigate('/admin/products')}
           className="btn btn-secondary"
         >
@@ -377,6 +376,16 @@ const EditProduct = () => {
                 />
                 <span>Cash on Delivery Available</span>
               </label>
+
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="refundPolicyAvailable"
+                  checked={formData.refundPolicyAvailable}
+                  onChange={handleInputChange}
+                />
+                <span>Refund Policy Available</span>
+              </label>
             </div>
           </div>
         </div>
@@ -419,8 +428,8 @@ const EditProduct = () => {
                 <div key={index} className="upload-progress-item">
                   <span>Image {parseInt(index) + 1}</span>
                   <div className="progress-bar">
-                    <div 
-                      className="progress-fill" 
+                    <div
+                      className="progress-fill"
                       style={{ width: `${progress}%` }}
                     />
                   </div>

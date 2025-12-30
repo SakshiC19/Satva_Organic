@@ -1,17 +1,22 @@
 /* Design Tokens - Satva Organics Green Theme */
 
 :root {
-  /* Primary Green Palette - Organic & Natural */
-  --color-primary-50: #e8f5e9;
-  --color-primary-100: #c8e6c9;
-  --color-primary-200: #a5d6a7;
-  --color-primary-300: #81c784;
-  --color-primary-400: #66bb6a;
-  --color-primary-500: #4caf50;
-  --color-primary-600: #43a047;
-  --color-primary-700: #388e3c;
-  --color-primary-800: #2e7d32;
-  --color-primary-900: #1b5e20;
+  /* Primary Green Palette - Satva Logo Theme */
+  --color-primary-50: #e8f5f0;
+  --color-primary-100: #c3e6d8;
+  --color-primary-200: #9dd6bf;
+  --color-primary-300: #6fcf97;
+  --color-primary-400: #27ae60;
+  /* Logo Bright Green Circle */
+  --color-primary-500: #0D6E4F;
+  /* Logo SATVA Text & Leaf */
+  --color-primary-600: #0A5A40;
+  --color-primary-700: #1B5E4A;
+  /* Logo Dark Leaf */
+  --color-primary-800: #2C3E37;
+  /* Logo Leaf Base */
+  --color-primary-900: #1F2D26;
+  /* Logo ORGANICS Text */
 
   /* Earth Tones - Supporting Colors */
   --color-earth-50: #fefce8;

@@ -1,66 +1,79 @@
-.account-page {
-    padding: var(--spacing-10) 0;
-    background: var(--bg-primary);
-    min-height: 80vh;
+/* Account.css */
+:root {
+    --primary-green: #27ae60;
+    --primary-dark: #1e8449;
+    --bg-light: #f8fafc;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .account-layout {
     display: grid;
     grid-template-columns: 280px 1fr;
-    gap: var(--spacing-8);
+    gap: 30px;
+    padding: 40px 0;
+    min-height: 80vh;
 }
 
-/* Sidebar Styles */
+/* Sidebar Styling */
 .account-sidebar {
     background: white;
-    border: 1px solid var(--color-gray-200);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-4);
+    border-radius: 16px;
+    padding: 24px;
     height: fit-content;
+    box-shadow: var(--shadow-md);
+    position: sticky;
+    top: 100px;
 }
 
-.account-menu {
+.account-nav {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-2);
+    gap: 8px;
 }
 
-.account-menu-item {
+.nav-item {
     display: flex;
     align-items: center;
-    gap: var(--spacing-3);
-    padding: var(--spacing-3) var(--spacing-4);
-    color: var(--text-secondary);
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    color: var(--text-muted);
     text-decoration: none;
-    border-radius: var(--radius-md);
-    transition: all 0.2s ease;
-    font-weight: 500;
+    transition: all 0.3s ease;
     border: none;
     background: transparent;
     width: 100%;
-    text-align: left;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 0.95rem;
+    font-weight: 500;
 }
 
-.account-menu-item:hover {
-    background: var(--color-gray-50);
-    color: var(--text-primary);
+.nav-item:hover {
+    background: var(--bg-light);
+    color: var(--primary-green);
 }
 
-.account-menu-item.active {
-    background: var(--color-primary-50);
-    color: var(--color-primary-600);
+.nav-item.active {
+    background: #f0fdf4;
+    color: var(--primary-green);
     font-weight: 600;
 }
 
+.nav-icon {
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+}
+
 .logout-btn {
-    margin-top: var(--spacing-2);
-    border-top: 1px solid var(--color-gray-200);
-    border-radius: 0;
-    padding-top: var(--spacing-4);
-    color: #dc2626;
-    /* Red color for logout */
+    margin-top: 16px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 24px;
+    color: #ef4444;
 }
 
 .logout-btn:hover {
@@ -68,81 +81,488 @@
     color: #dc2626;
 }
 
-/* Content Area Styles */
+/* Content Area Styling */
 .account-content {
     background: white;
-    border: 1px solid var(--color-gray-200);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-8);
-    min-height: 500px;
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: var(--shadow-md);
 }
 
-.account-header {
-    margin-bottom: var(--spacing-8);
-    padding-bottom: var(--spacing-4);
-    border-bottom: 1px solid var(--color-gray-200);
+.account-section {
+    max-width: 800px;
 }
 
 .account-title {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     font-weight: 700;
-    color: var(--text-primary);
-    margin: 0;
+    color: var(--text-main);
+    margin-bottom: 32px;
 }
 
-/* Form Styles */
+/* Form Styling */
 .account-form {
-    max-width: 600px;
+    display: grid;
+    gap: 24px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
 }
 
 .form-group {
-    margin-bottom: var(--spacing-6);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .form-label {
-    display: block;
-    margin-bottom: var(--spacing-2);
-    font-weight: 500;
-    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-main);
 }
 
 .form-input {
-    width: 100%;
-    padding: var(--spacing-3);
-    border: 1px solid var(--color-gray-300);
-    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
     font-size: 1rem;
-    transition: border-color 0.2s;
+    transition: all 0.2s;
+    background: white;
 }
 
 .form-input:focus {
     outline: none;
-    border-color: var(--color-primary-500);
-    box-shadow: 0 0 0 3px var(--color-primary-100);
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.1);
 }
 
-.save-btn {
-    background: var(--color-primary-600);
-    color: white;
-    border: none;
-    padding: var(--spacing-3) var(--spacing-8);
-    border-radius: var(--radius-md);
+.form-input:disabled {
+    background: #f1f5f9;
+    cursor: not-allowed;
+}
+
+/* Profile Picture Section */
+.profile-pic-section {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 32px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.profile-avatar-wrapper {
+    position: relative;
+    width: 100px;
+    height: 100px;
+}
+
+.profile-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid white;
+    box-shadow: var(--shadow-md);
+}
+
+.avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    color: var(--text-muted);
+}
+
+.change-photo-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: white;
+    font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all 0.2s;
 }
 
-.save-btn:hover {
-    background: var(--color-primary-700);
+.change-photo-btn:hover {
+    background: var(--bg-light);
+    border-color: var(--text-muted);
+}
+
+/* Section Headers */
+.section-header {
+    margin: 40px 0 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.section-header h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+/* Checkbox Groups */
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+}
+
+.checkbox-item input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary-green);
+}
+
+.checkbox-label {
+    font-size: 0.95rem;
+    color: var(--text-main);
+}
+
+/* Summary Cards */
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.summary-card {
+    padding: 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--bg-light);
+}
+
+.summary-card h4 {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.summary-card p {
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+/* Buttons */
+.save-btn {
+    background: var(--primary-green);
+    color: white;
+    padding: 14px 32px;
+    border-radius: 10px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 24px;
+    width: fit-content;
+}
+
+.save-btn:hover:not(:disabled) {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+}
+
+.save-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Alerts */
+.alert {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    font-weight: 500;
+}
+
+.alert-success {
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.alert-error {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+/* Wishlist Header Actions */
+.wishlist-header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.wishlist-controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.wishlist-sort {
+    padding: 10px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #475569;
+    background: white;
+    cursor: pointer;
+    outline: none;
+}
+
+.wishlist-sort:focus {
+    border-color: #27ae60;
+}
+
+/* Grid Layout */
+.wishlist-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 24px;
+    margin-bottom: 50px;
+}
+
+/* Empty Wishlist State */
+.empty-wishlist {
+    text-align: center;
+    padding: 60px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.empty-wishlist-icon {
+    width: 100px;
+    height: 100px;
+    background: #f0fdf4;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    color: #27ae60;
+    margin-bottom: 10px;
+}
+
+.empty-wishlist h2 {
+    font-size: 1.8rem;
+    color: #1e293b;
+    margin: 0;
+}
+
+.empty-wishlist p {
+    color: #64748b;
+    max-width: 400px;
+    margin: 0 auto 10px;
+}
+
+/* Recommendations Section */
+.wishlist-recommendations {
+    border-top: 1px solid #f1f5f9;
+    padding-top: 40px;
+}
+
+.section-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 20px;
+}
+
+/* Buttons */
+.btn-primary {
+    background: #27ae60;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.btn-primary:hover {
+    background: #1e8449;
+    transform: translateY(-2px);
+}
+
+.btn-outline-danger {
+    background: transparent;
+    color: #ef4444;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    border: 1px solid #ef4444;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.btn-outline-danger:hover {
+    background: #fef2f2;
 }
 
 /* Responsive */
+@media (max-width: 1024px) {
+    .account-layout {
+        grid-template-columns: 240px 1fr;
+    }
+}
+
 @media (max-width: 768px) {
     .account-layout {
         grid-template-columns: 1fr;
+        padding: 20px 0;
+        gap: 20px;
     }
 
     .account-sidebar {
-        margin-bottom: var(--spacing-6);
+        position: static;
+        margin-bottom: 0;
+        padding: 16px;
+        border-radius: 12px;
+    }
+
+    .account-nav {
+        flex-direction: row;
+        overflow-x: auto;
+        padding-bottom: 4px;
+        gap: 12px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .account-nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .nav-item {
+        white-space: nowrap;
+        width: auto;
+        padding: 8px 16px;
+        font-size: 0.9rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
+
+    .nav-item.active {
+        background: #f0fdf4;
+        border-color: #27ae60;
+    }
+
+    .logout-btn {
+        margin-top: 0;
+        border-top: none;
+        padding-top: 0;
+        padding: 8px 16px;
+        border: 1px solid #fee2e2;
+        background: #fef2f2;
+        border-radius: 10px;
+    }
+
+    .account-content {
+        padding: 20px 16px;
+        border-radius: 12px;
+    }
+
+    .account-title {
+        font-size: 1.5rem;
+        margin-bottom: 24px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    /* Wishlist Mobile Adjustments */
+    .wishlist-header-actions {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    .wishlist-controls {
+        width: 100%;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .wishlist-sort {
+        width: 100%;
+        order: -1;
+    }
+
+    .wishlist-controls button {
+        flex: 1;
+        justify-content: center;
+        font-size: 0.9rem;
+        padding: 10px;
+    }
+
+    .wishlist-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-bottom: 30px;
+    }
+
+    .empty-wishlist {
+        padding: 40px 0;
+    }
+
+    .empty-wishlist-icon {
+        width: 80px;
+        height: 80px;
+        font-size: 2.5rem;
+    }
+
+    .empty-wishlist h2 {
+        font-size: 1.5rem;
+    }
+
+    .empty-wishlist p {
+        font-size: 0.95rem;
+        padding: 0 20px;
+    }
+
+    .wishlist-recommendations {
+        padding-top: 24px;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 380px) {
+    .wishlist-grid {
+        grid-template-columns: 1fr;
     }
 }

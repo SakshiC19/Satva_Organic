@@ -13,6 +13,8 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 
 import { useCart } from '../../contexts/CartContext';
+import { useWishlist } from '../../contexts/WishlistContext';
+import { useCategories } from '../../contexts/CategoryContext';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import './Header.css';
@@ -27,6 +29,7 @@ const Header = () => {
   const [filteredProducts, setFilteredProducts] = useState([]);
   const { currentUser, logout, isAdmin, userRole } = useAuth();
   const { cartCount, openCart } = useCart();
+  const { wishlistCount } = useWishlist();
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
 
@@ -94,53 +97,24 @@ const Header = () => {
     }));
   };
 
-  // Static categories for the secondary nav
-  const navItems = [
-    { 
-      name: 'Organic Exotic', 
-      path: '/shop?category=organic-exotic-products',
-      subcategories: [
-        'Broccoli', 'Cherry Tomato', 'Red Cabbage', 'Yellow Zucchini', 'Lettuce Leaf', 
-        'Beshal', 'Jalapena Green Chilli', 'Bok Choy', 'Organic Spinach', 'Organic Roman', 'Rocket'
-      ]
-    },
-    { 
-      name: 'Organic Woodcold Press Oils', 
-      path: '/shop?category=woodcold-press-oils',
-      subcategories: ['Coconut Oil', 'groundnuts Oil', 'Sunflower Oil', 'Safflower Oil']
-    },
-    { 
-      name: 'Millets Of India', 
-      path: '/shop?category=millets-of-india',
-      subcategories: ['Sorghum (Jawar)', 'Pearl Millet(Bajra)', 'Finger Millet( Ragi)']
-    },
-    { 
-      name: 'Organic Items', 
-      path: '/shop?category=organic-items',
-      subcategories: ['Fresh Turmeric', 'Organic Jaggary', 'Organic Jaggary cubes']
-    },
-    { 
-      name: 'Seeds And Nuts', 
-      path: '/shop?category=seeds-and-nuts',
-      subcategories: ['pumpkin seed', 'sunflower seed', 'sesame seed', 'Solapuri peanuts', 'Chia Seeds', 'Mustard Seeds']
-    },
-    { 
-      name: 'Organic Powder', 
-      path: '/shop?category=organic-powder',
-      subcategories: ['Moringa Leaf Powder', 'Neem Powder', 'Amla Powder', 'Shatavari Powder', 'Triphala Powder', 'Turmeric Latte Mix', 'Organic Jaggary powder']
-    },
-  ];
+  const { categories } = useCategories();
+
+  // Map dynamic categories to nav structure, ensuring unique categories by name
+  const uniqueCategories = categories.filter((cat, index, self) =>
+    index === self.findIndex((c) => c.name === cat.name)
+  );
+
+  const navItems = uniqueCategories.map(cat => ({
+    name: cat.name,
+    path: `/shop?category=${cat.slug}`,
+    subcategories: cat.subcategories
+  }));
 
   return (
     <header className="header">
       {/* Top Header (Logo, Search, Actions) */}
       <div className="header-main">
         <div className="container header-container">
-          {/* Logo */}
-          <Link to="/" className="header-logo">
-            <img src={logo} alt="Satva Organics" className="logo-image" />
-          </Link>
-
           {/* Mobile Menu Button */}
           <button 
             className="mobile-menu-btn"
@@ -149,7 +123,15 @@ const Header = () => {
             <FiMenu />
           </button>
 
-          {/* Search Bar */}
+          {/* Logo */}
+          <Link to="/" className="header-logo">
+            <img src={logo} alt="Satva Organics" className="logo-image" />
+          </Link>
+
+          {/* Mobile Search Toggle (Visible only on mobile) */}
+
+
+          {/* Search Bar (Desktop) */}
           <form onSubmit={handleSearch} className="header-search">
             <div className="search-wrapper">
               <button type="submit" className="search-icon-btn">
@@ -272,9 +254,9 @@ const Header = () => {
             {/* Wishlist */}
             <Link to="/account/wishlist" className="action-item wishlist-item">
               <FiHeart />
+              {wishlistCount > 0 && <span className="wishlist-count">{wishlistCount}</span>}
             </Link>
 
-            {/* Cart */}
             {/* Cart */}
             <button 
               className="action-item cart-item" 
@@ -358,9 +340,25 @@ const Header = () => {
               </button>
             </div>
           </form>
+          
           {/* Auth Section in Sidebar */}
           <div className="mobile-auth-section">
-            {!currentUser && (
+            {currentUser ? (
+              <div className="mobile-user-info">
+                <div className="user-greeting">
+                  <FiUser />
+                  <span>Hello, {currentUser.displayName || 'User'}</span>
+                </div>
+                <div className="mobile-user-links">
+                  <Link to="/account/profile" onClick={() => setMobileMenuOpen(false)}>My Profile</Link>
+                  <Link to="/account/orders" onClick={() => setMobileMenuOpen(false)}>My Orders</Link>
+                  <Link to="/account/wishlist" onClick={() => setMobileMenuOpen(false)}>My Wishlist</Link>
+                  {isAdmin && (
+                    <Link to="/admin/dashboard" onClick={() => setMobileMenuOpen(false)}>Admin Dashboard</Link>
+                  )}
+                </div>
+              </div>
+            ) : (
               <div className="mobile-auth-buttons">
                 <Link to="/login" className="mobile-auth-btn login" onClick={() => setMobileMenuOpen(false)}>Login</Link>
                 <Link to="/signup" className="mobile-auth-btn signup" onClick={() => setMobileMenuOpen(false)}>Sign Up</Link>

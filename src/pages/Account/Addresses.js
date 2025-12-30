@@ -54,11 +54,11 @@ const Addresses = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (editingId) {
       // Update existing address
-      setAddresses(prev => prev.map(addr => 
-        addr.id === editingId 
+      setAddresses(prev => prev.map(addr =>
+        addr.id === editingId
           ? { ...formData, id: editingId }
           : formData.isDefault ? { ...addr, isDefault: false } : addr
       ));
@@ -68,7 +68,7 @@ const Addresses = () => {
         ...formData,
         id: Date.now()
       };
-      
+
       setAddresses(prev => {
         if (formData.isDefault) {
           // Remove default from other addresses
@@ -77,7 +77,7 @@ const Addresses = () => {
         return [...prev, newAddress];
       });
     }
-    
+
     // Reset form and close modal
     setShowAddressForm(false);
     setEditingId(null);
@@ -133,8 +133,8 @@ const Addresses = () => {
     <div className="account-section">
       <div className="account-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 className="account-title">My Addresses</h2>
-        <button 
-          className="save-btn" 
+        <button
+          className="save-btn"
           style={{ padding: '8px 16px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}
           onClick={handleAddNew}
         >
@@ -145,7 +145,7 @@ const Addresses = () => {
       {/* Address Form Modal */}
       {showAddressForm && (
         <>
-          <div 
+          <div
             style={{
               position: 'fixed',
               top: 0,
@@ -174,7 +174,7 @@ const Addresses = () => {
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h3 style={{ margin: 0, fontSize: '1.25rem' }}>{editingId ? 'Edit Address' : 'Add New Address'}</h3>
-              <button 
+              <button
                 onClick={() => setShowAddressForm(false)}
                 style={{
                   background: 'none',
@@ -187,7 +187,7 @@ const Addresses = () => {
                 <FiX />
               </button>
             </div>
-            
+
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
                 <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.9rem', fontWeight: '500' }}>
@@ -388,29 +388,29 @@ const Addresses = () => {
 
       <div className="addresses-list">
         {addresses.map(addr => (
-          <div key={addr.id} className="address-card" style={{ 
-            border: '1px solid #e5e7eb', 
-            borderRadius: '8px', 
-            padding: '20px', 
+          <div key={addr.id} className="address-card" style={{
+            border: '1px solid #e5e7eb',
+            borderRadius: '8px',
+            padding: '20px',
             marginBottom: '16px',
             position: 'relative'
           }}>
             {addr.isDefault && (
-              <span style={{ 
-                position: 'absolute', 
-                top: '12px', 
-                right: '12px', 
-                background: '#dcfce7', 
-                color: '#166534', 
-                padding: '2px 8px', 
-                borderRadius: '4px', 
-                fontSize: '0.75rem', 
-                fontWeight: 'bold' 
+              <span style={{
+                position: 'absolute',
+                top: '12px',
+                right: '12px',
+                background: '#dcfce7',
+                color: '#166534',
+                padding: '2px 8px',
+                borderRadius: '4px',
+                fontSize: '0.75rem',
+                fontWeight: 'bold'
               }}>
                 DEFAULT
               </span>
             )}
-            
+
             <h3 style={{ margin: '0 0 8px 0', fontSize: '1.1rem' }}>{addr.type}</h3>
             <p style={{ margin: '0 0 4px 0', fontWeight: '500' }}>{addr.name}</p>
             <p style={{ margin: '0 0 4px 0', color: '#4b5563' }}>{addr.street}</p>
@@ -418,30 +418,30 @@ const Addresses = () => {
             <p style={{ margin: '0 0 16px 0', color: '#4b5563' }}>Phone: {addr.phone}</p>
 
             <div className="address-actions" style={{ display: 'flex', gap: '12px' }}>
-              <button 
+              <button
                 onClick={() => handleEdit(addr)}
-                style={{ 
-                  background: 'none', 
-                  border: 'none', 
-                  color: '#2563eb', 
-                  cursor: 'pointer', 
-                  display: 'flex', 
-                  alignItems: 'center', 
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#2563eb',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
                   gap: '4px',
                   fontWeight: '500'
                 }}
               >
                 <FiEdit /> Edit
               </button>
-              <button 
+              <button
                 onClick={() => handleDelete(addr.id)}
-                style={{ 
-                  background: 'none', 
-                  border: 'none', 
-                  color: '#dc2626', 
-                  cursor: 'pointer', 
-                  display: 'flex', 
-                  alignItems: 'center', 
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#dc2626',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
                   gap: '4px',
                   fontWeight: '500'
                 }}
