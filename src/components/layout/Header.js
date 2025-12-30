@@ -128,9 +128,22 @@ const Header = () => {
             <img src={logo} alt="Satva Organics" className="logo-image" />
           </Link>
 
-          {/* Mobile Search Toggle (Visible only on mobile) */}
-
-
+          {/* Mobile Search (Visible only on mobile) */}
+          <form onSubmit={handleSearch} className="mobile-header-search">
+            <div className="mobile-search-wrapper-main">
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="mobile-search-input-main"
+              />
+              <button type="submit" className="mobile-search-btn-main">
+                <FiSearch />
+              </button>
+            </div>
+          </form>
+          
           {/* Search Bar (Desktop) */}
           <form onSubmit={handleSearch} className="header-search">
             <div className="search-wrapper">

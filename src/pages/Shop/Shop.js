@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { FiGrid, FiList, FiChevronDown, FiX } from 'react-icons/fi';
+import { FiGrid, FiList, FiChevronDown, FiX, FiFilter } from 'react-icons/fi';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import ProductCard from '../../components/product/ProductCard';
@@ -12,6 +12,7 @@ const Shop = () => {
   const [searchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState('grid');
   const [activeDropdown, setActiveDropdown] = useState(null);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const [filters, setFilters] = useState({
     availability: [],
@@ -160,7 +161,7 @@ const Shop = () => {
   return (
     <div className="shop-page">
       <Breadcrumbs>
-        <div className="toolbar-filters">
+        <div className={`toolbar-filters ${showMobileFilters ? 'show' : ''}`}>
           {/* Availability Dropdown */}
           <div className="filter-dropdown-container">
             <button 
@@ -253,7 +254,7 @@ const Shop = () => {
                 Showing 1 - {filteredProducts.length} of {filteredProducts.length} result{filteredProducts.length !== 1 ? 's' : ''}
               </div>
               
-              <div className="view-modes">
+              <div className="view-modes desktop-only">
                 <button 
                   className={`view-mode-btn ${viewMode === 'grid' ? 'active' : ''}`}
                   onClick={() => setViewMode('grid')}
@@ -269,6 +270,13 @@ const Shop = () => {
                   <FiList />
                 </button>
               </div>
+
+              <button 
+                className="mobile-filter-btn"
+                onClick={() => setShowMobileFilters(!showMobileFilters)}
+              >
+                <FiFilter /> {showMobileFilters ? 'Hide Filters' : 'Show Filters'}
+              </button>
           </div>
 
           {filteredProducts.length === 0 ? (

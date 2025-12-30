@@ -310,6 +310,30 @@ const Home = () => {
         </div>
       </section>
 
+      {/* Promotional Banner */}
+      {specialOffer && specialOffer.isActive && (
+        <section className="promo-banner-section">
+          <div className="container-fluid">
+            <div className="promo-banner-modern">
+              <div className="promo-content">
+                <span className="promo-badge">{specialOffer.badge}</span>
+                <h3 className="promo-title">{specialOffer.title}</h3>
+                <p className="promo-text">{specialOffer.description}</p>
+                <button
+                  className="promo-btn"
+                  onClick={() => navigate(specialOffer.buttonLink || '/shop')}
+                >
+                  {specialOffer.buttonText}
+                </button>
+              </div>
+              <div className="promo-visual">
+                <div className="promo-circle"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Flash Deals Section */}
       <section className="flash-deals">
         <div className="container-fluid">
@@ -401,30 +425,6 @@ const Home = () => {
           )}
         </div>
       </section>
-
-      {/* Promotional Banner */}
-      {specialOffer && specialOffer.isActive && (
-        <section className="promo-banner-section">
-          <div className="container-fluid">
-            <div className="promo-banner-modern">
-              <div className="promo-content">
-                <span className="promo-badge">{specialOffer.badge}</span>
-                <h3 className="promo-title">{specialOffer.title}</h3>
-                <p className="promo-text">{specialOffer.description}</p>
-                <button
-                  className="promo-btn"
-                  onClick={() => navigate(specialOffer.buttonLink || '/shop')}
-                >
-                  {specialOffer.buttonText}
-                </button>
-              </div>
-              <div className="promo-visual">
-                <div className="promo-circle"></div>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* Features Compact */}
       <section className="features-compact">

@@ -286,7 +286,7 @@
 /* Amount & Quantity Container */
 .amount-option-container {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start; gap: 30px;
     align-items: flex-end;
     width: 100%;
     margin-bottom: 20px;
@@ -301,8 +301,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-left: auto;
-    /* Push to right */
+    
 }
 
 /* Ensure quantity selector is visible and styled correctly */
@@ -410,8 +409,7 @@
     font-size: 15px;
     cursor: pointer;
     transition: background 0.2s;
-    height: 40px;
-}
+    height: 40px; display: none; }
 
 .btn-buy-now:hover:not(:disabled) {
     background-color: #1F2D26;
@@ -651,15 +649,7 @@
         align-items: stretch;
     }
 
-    .btn-add-to-cart,
-    .btn-buy-now {
-        flex: 2;
-        width: auto;
-        height: 44px;
-        font-size: 13px;
-        white-space: nowrap;
-        padding: 0 5px;
-    }
+    .btn-add-to-cart { flex: 1; height: 50px; font-size: 14px; } .btn-buy-now { display: flex; flex: 1; height: 50px; font-size: 14px; align-items: center; justify-content: center; }
 
     .secondary-actions {
         flex: 0.5;
@@ -758,3 +748,4 @@
 }
 .feature-icon.success { color: #16a34a !important; }
 .feature-icon.error { color: #dc2626 !important; }
+
