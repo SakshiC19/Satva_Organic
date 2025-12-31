@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { doc, getDoc, updateDoc, serverTimestamp, collection, addDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
-import { generateInvoice } from '../../utils/invoiceGenerator';
+import { downloadInvoice } from '../../utils/invoiceGenerator';
 import Badge from '../../components/common/Badge';
 import { 
   FiArrowLeft, 
@@ -112,7 +112,7 @@ const OrderDetails = () => {
           <FiArrowLeft /> Back to Orders
         </button>
         <div className="header-actions">
-          <button className="btn-download-invoice" onClick={() => generateInvoice(order)}>
+          <button className="btn-primary" onClick={() => downloadInvoice(order)}>
             <FiDownload /> Download Invoice
           </button>
         </div>

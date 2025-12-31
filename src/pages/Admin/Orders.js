@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, getDocs, doc, updateDoc, where } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, doc, updateDoc, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { 
   FiSearch, FiFilter, FiMoreVertical, FiEdit, FiTrash2, FiEye, FiDownload, 
@@ -7,6 +7,7 @@ import {
   FiShoppingBag, FiAlertCircle, FiTrendingUp, FiCalendar, FiRefreshCw
 } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
+import { downloadInvoice, viewInvoice } from '../../utils/invoiceGenerator';
 import './Orders.css';
 
 const Orders = () => {
@@ -23,29 +24,24 @@ const Orders = () => {
   const { currentUser } = useAuth();
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
-
-  const fetchOrders = async () => {
-    try {
-      setLoading(true);
-      const ordersRef = collection(db, 'orders');
-      const q = query(ordersRef, orderBy('createdAt', 'desc'));
-      const querySnapshot = await getDocs(q);
-      
-      const ordersData = querySnapshot.docs.map(doc => ({
+    setLoading(true);
+    const ordersRef = collection(db, 'orders');
+    const q = query(ordersRef, orderBy('createdAt', 'desc'));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const ordersData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
-      
       setOrders(ordersData);
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-      setOrders([]);
-    } finally {
       setLoading(false);
-    }
-  };
+    }, (error) => {
+      console.error('Error fetching orders:', error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Calculate comprehensive stats
   const calculateStats = () => {
@@ -108,6 +104,46 @@ const Orders = () => {
 
   const stats = calculateStats();
 
+  const handleApproveCancellation = async (orderId) => {
+    if (window.confirm('Approve cancellation for this order?')) {
+      try {
+        const orderRef = doc(db, 'orders', orderId);
+        await updateDoc(orderRef, {
+          status: 'Cancelled',
+          'cancellationRequest.status': 'approved',
+          'cancellationRequest.approvedAt': new Date()
+        });
+        setOrders(orders.map(o => o.id === orderId ? { 
+          ...o, 
+          status: 'Cancelled',
+          cancellationRequest: { ...o.cancellationRequest, status: 'approved' }
+        } : o));
+        setActiveDropdown(null);
+      } catch (error) {
+        console.error("Error approving cancellation:", error);
+      }
+    }
+  };
+
+  const handleRejectCancellation = async (orderId) => {
+    if (window.confirm('Reject cancellation request?')) {
+      try {
+        const orderRef = doc(db, 'orders', orderId);
+        await updateDoc(orderRef, {
+          'cancellationRequest.status': 'rejected',
+          'cancellationRequest.rejectedAt': new Date()
+        });
+        setOrders(orders.map(o => o.id === orderId ? { 
+          ...o, 
+          cancellationRequest: { ...o.cancellationRequest, status: 'rejected' }
+        } : o));
+        setActiveDropdown(null);
+      } catch (error) {
+        console.error("Error rejecting cancellation:", error);
+      }
+    }
+  };
+
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
       const orderRef = doc(db, 'orders', orderId);
@@ -152,10 +188,13 @@ const Orders = () => {
     if (!timestamp) return 'N/A';
     try {
       const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+      if (isNaN(date.getTime())) return 'N/A';
       return date.toLocaleDateString('en-IN', { 
         day: '2-digit',
         month: 'short',
-        year: 'numeric'
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
       });
     } catch (error) {
       return 'Invalid Date';
@@ -222,8 +261,8 @@ const Orders = () => {
       {/* Header */}
       <div className="om-header">
         <div className="om-header-left">
-          <h1 className="om-title">Order Management</h1>
-          <p className="om-subtitle">Track and manage all orders in real-time</p>
+          <h1 className="om-title">Order Management & Invoices</h1>
+          <p className="om-subtitle">Track orders, manage shipments, and download invoices</p>
         </div>
         <div className="om-header-right">
           <div className="om-search-box">
@@ -382,6 +421,12 @@ const Orders = () => {
             <button className={`om-tab ${activeTab === 'processing' ? 'active' : ''}`} onClick={() => setActiveTab('processing')}>
               Processing <span className="tab-count">{stats.processing}</span>
             </button>
+            <button className={`om-tab ${activeTab === 'shipped' ? 'active' : ''}`} onClick={() => setActiveTab('shipped')}>
+              Shipped <span className="tab-count">{stats.shipped || 0}</span>
+            </button>
+            <button className={`om-tab ${activeTab === 'out for delivery' ? 'active' : ''}`} onClick={() => setActiveTab('out for delivery')}>
+              Out for Delivery <span className="tab-count">{stats.outForDelivery || 0}</span>
+            </button>
             <button className={`om-tab ${activeTab === 'delivered' ? 'active' : ''}`} onClick={() => setActiveTab('delivered')}>
               Delivered <span className="tab-count">{stats.delivered}</span>
             </button>
@@ -457,7 +502,7 @@ const Orders = () => {
                         </div>
                       </td>
                       <td>
-                        <div className="items-cell">
+                        <div className="items-cell clickable" onClick={() => setViewingOrder(order)}>
                           <span className="items-count">{order.items?.length || 0} items</span>
                           {firstItem && <span className="items-preview">{firstItem.name}</span>}
                         </div>
@@ -478,12 +523,22 @@ const Orders = () => {
                         <span className={`status-badge ${getStatusClass(order.status)}`}>
                           {order.status || 'Pending'}
                         </span>
+                        {order.cancellationRequest?.status === 'pending' && (
+                          <div className="cancellation-badge">Request Pending</div>
+                        )}
                       </td>
                       <td>
                         <span className="date-text">{formatDate(order.createdAt)}</span>
                       </td>
                       <td>
                         <div className="action-cell">
+                          <button 
+                            className="action-icon-btn" 
+                            onClick={() => downloadInvoice(order)}
+                            title="Download Invoice"
+                          >
+                            <FiDownload />
+                          </button>
                           <button
                             className="action-menu-btn"
                             onClick={() => setActiveDropdown(activeDropdown === order.id ? null : order.id)}
@@ -495,18 +550,33 @@ const Orders = () => {
                               <button className="dropdown-item" onClick={() => setViewingOrder(order)}>
                                 <FiEye /> View Details
                               </button>
-                              <button className="dropdown-item" onClick={() => updateOrderStatus(order.id, 'processing')}>
+                              <button className="dropdown-item" onClick={() => updateOrderStatus(order.id, 'Processing')}>
                                 <FiEdit /> Update Status
                               </button>
-                              <button className="dropdown-item">
-                                <FiDownload /> Invoice
+                              <button className="dropdown-item" onClick={() => downloadInvoice(order)}>
+                                <FiDownload /> Download Invoice
+                              </button>
+                              <button className="dropdown-item" onClick={() => viewInvoice(order)}>
+                                <FiEye /> View Invoice
                               </button>
                               <button className="dropdown-item">
                                 <FiTruck /> Assign Delivery
                               </button>
-                              <button className="dropdown-item danger" onClick={() => updateOrderStatus(order.id, 'cancelled')}>
-                                <FiTrash2 /> Cancel Order
-                              </button>
+                              
+                              {order.cancellationRequest?.status === 'pending' ? (
+                                <>
+                                  <button className="dropdown-item danger" onClick={() => handleApproveCancellation(order.id)}>
+                                    <FiCheck /> Approve Cancel
+                                  </button>
+                                  <button className="dropdown-item" onClick={() => handleRejectCancellation(order.id)}>
+                                    <FiX /> Reject Cancel
+                                  </button>
+                                </>
+                              ) : (
+                                <button className="dropdown-item danger" onClick={() => updateOrderStatus(order.id, 'Cancelled')}>
+                                  <FiTrash2 /> Cancel Order
+                                </button>
+                              )}
                             </div>
                           )}
                         </div>
@@ -610,7 +680,7 @@ const Orders = () => {
             </div>
             <div className="modal-footer">
               <button className="btn-secondary" onClick={() => setViewingOrder(null)}>Close</button>
-              <button className="btn-primary">
+              <button className="btn-primary" onClick={() => downloadInvoice(viewingOrder)}>
                 <FiDownload /> Download Invoice
               </button>
             </div>
