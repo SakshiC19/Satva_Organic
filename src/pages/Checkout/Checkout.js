@@ -2,29 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
-import { FiCheck, FiShield, FiEdit2, FiPlus } from 'react-icons/fi';
-import { generateInvoice } from '../../utils/invoiceGenerator';
-import { doc, getDoc, updateDoc, arrayUnion, addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import { FiCheck, FiShield } from 'react-icons/fi';
 import './Checkout.css';
 
 const Checkout = () => {
   const { currentUser, login, signup } = useAuth();
   const { cartItems, cartTotal, updateQuantity, removeFromCart } = useCart();
   const navigate = useNavigate();
-  
+
+  // Safety check for cartTotal
+  const safeCartTotal = cartTotal || 0;
+  const safeCartItems = cartItems || [];
+
   const [activeStep, setActiveStep] = useState(1);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [isSignup, setIsSignup] = useState(false);
   const [error, setError] = useState('');
-  
-  // Phone Verification State
-  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
-  const [showOtpInput, setShowOtpInput] = useState(false);
-  const [otp, setOtp] = useState('');
-  const [verifying, setVerifying] = useState(false);
   
   // Check if COD is available for all items in cart
   // Default to true if codAvailable property is missing (backward compatibility)
@@ -107,29 +102,16 @@ const Checkout = () => {
     }
   }, [currentUser]);
 
-  const fetchSavedAddresses = async () => {
-    if (!currentUser) return;
-    try {
-      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-      if (userDoc.exists() && userDoc.data().addresses) {
-        setSavedAddresses(userDoc.data().addresses);
-      }
-    } catch (error) {
-      console.error("Error fetching addresses:", error);
-    }
-  };
-
   const handleLoginContinue = async (e) => {
     e.preventDefault();
     setError('');
-    
+
     try {
       if (isSignup) {
         await signup(email, password, name);
       } else {
         await login(email, password);
       }
-      // Success is handled by useEffect listening to currentUser
     } catch (err) {
       console.error(err);
       setError('Failed to ' + (isSignup ? 'create account' : 'login') + '. Please check your credentials.');
@@ -198,11 +180,11 @@ const Checkout = () => {
           {isCompleted && info && <span className="step-info">{info}</span>}
         </div>
         {isCompleted && (
-          <button 
+          <button
             className="step-action-btn"
             onClick={() => setActiveStep(step)}
           >
-            Change
+            CHANGE
           </button>
         )}
       </div>
@@ -265,23 +247,11 @@ const Checkout = () => {
         image: "https://example.com/your_logo",
         handler: async function (response) {
           try {
-            // Create Order
             await addDoc(collection(db, 'orders'), {
               ...orderData,
               paymentId: response.razorpay_payment_id,
               paymentStatus: 'Paid'
             });
-
-            // Reduce Stock
-            const { increment } = await import('firebase/firestore');
-            const stockUpdates = cartItems.map(item => {
-              const productRef = doc(db, 'products', item.id);
-              return updateDoc(productRef, {
-                stock: increment(-item.quantity)
-              });
-            });
-            await Promise.all(stockUpdates);
-
             setShowConfirmation(true);
           } catch (error) {
             console.error("Error saving order (Razorpay):", error);
@@ -307,17 +277,6 @@ const Checkout = () => {
               paymentId: 'pay_' + Date.now(),
               paymentStatus: 'Paid'
             });
-
-            // Reduce Stock
-            const { increment } = await import('firebase/firestore');
-            const stockUpdates = cartItems.map(item => {
-              const productRef = doc(db, 'products', item.id);
-              return updateDoc(productRef, {
-                stock: increment(-item.quantity)
-              });
-            });
-            await Promise.all(stockUpdates);
-
             setShowConfirmation(true);
         } catch (error) {
             console.error("Error saving order (Simulated):", error);
@@ -332,17 +291,6 @@ const Checkout = () => {
             ...orderData,
             paymentStatus: 'Pending'
         });
-
-        // Reduce Stock
-        const { increment } = await import('firebase/firestore');
-        const stockUpdates = cartItems.map(item => {
-          const productRef = doc(db, 'products', item.id);
-          return updateDoc(productRef, {
-            stock: increment(-item.quantity)
-          });
-        });
-        await Promise.all(stockUpdates);
-
         setShowConfirmation(true);
       } catch (error) {
         console.error("Error saving order (COD):", error);
@@ -352,7 +300,7 @@ const Checkout = () => {
     
     // Hide confetti after 5 seconds
     setTimeout(() => {
-      // navigate('/account/orders'); // Redirect to orders page
+      // navigate('/account/orders');
     }, 5000);
   };
 
@@ -376,32 +324,32 @@ const Checkout = () => {
       <div className="checkout-container">
         {/* Main Content */}
         <div className="checkout-main">
-          
+
           {/* Step 1: Login */}
           <div className="checkout-step">
-            <StepHeader 
-              step={1} 
-              title="Login or Signup" 
-              info={currentUser ? `Logged in as ${currentUser.displayName || currentUser.email}` : null} 
+            <StepHeader
+              step={1}
+              title="LOGIN OR SIGNUP"
+              info={currentUser ? `Logged in as ${currentUser.displayName || currentUser.email}` : null}
             />
             {activeStep === 1 && !currentUser && (
               <div className="step-body">
                 <div className="login-step-content">
                   <div className="login-form-container">
                     <form onSubmit={handleLoginContinue}>
-                      <input 
-                        type="email" 
-                        className="checkout-input" 
+                      <input
+                        type="email"
+                        className="checkout-input"
                         placeholder="Enter Email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
                       />
-                      
+
                       {isSignup && (
-                        <input 
-                          type="text" 
-                          className="checkout-input" 
+                        <input
+                          type="text"
+                          className="checkout-input"
                           placeholder="Enter Name"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
@@ -409,36 +357,36 @@ const Checkout = () => {
                         />
                       )}
 
-                      <input 
-                        type="password" 
-                        className="checkout-input" 
+                      <input
+                        type="password"
+                        className="checkout-input"
                         placeholder="Enter Password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
                       />
 
-                      {error && <p style={{color: 'red', fontSize: '12px', marginBottom: '8px'}}>{error}</p>}
+                      {error && <p style={{ color: 'red', fontSize: '12px', marginBottom: '8px' }}>{error}</p>}
 
                       <button type="submit" className="continue-btn">
                         {isSignup ? 'Signup & Continue' : 'Login & Continue'}
                       </button>
-                      
-                      <div style={{marginTop: '12px', fontSize: '14px', textAlign: 'center'}}>
-                        <span style={{color: '#878787'}}>
+
+                      <div style={{ marginTop: '12px', fontSize: '14px', textAlign: 'center' }}>
+                        <span style={{ color: '#878787' }}>
                           {isSignup ? 'Existing User? ' : 'New to Satva Organics? '}
                         </span>
-                        <button 
+                        <button
                           type="button"
                           onClick={() => {
                             setIsSignup(!isSignup);
                             setError('');
                           }}
                           style={{
-                            background: 'none', 
-                            border: 'none', 
-                            color: '#2874f0', 
-                            fontWeight: '600', 
+                            background: 'none',
+                            border: 'none',
+                            color: '#2874f0',
+                            fontWeight: '600',
                             cursor: 'pointer'
                           }}
                         >
@@ -454,9 +402,9 @@ const Checkout = () => {
 
           {/* Step 2: Delivery Address */}
           <div className="checkout-step">
-            <StepHeader 
-              step={2} 
-              title="Delivery Address" 
+            <StepHeader
+              step={2}
+              title="DELIVERY ADDRESS"
               info={activeStep > 2 ? `${address.name}, ${address.pincode}` : null}
             />
             {activeStep === 2 && (
@@ -513,63 +461,14 @@ const Checkout = () => {
                       value={address.name}
                       onChange={e => setAddress({...address, name: e.target.value})}
                     />
-                    <div style={{ position: 'relative' }}>
-                      <input 
-                        type="text" 
-                        className="checkout-input" 
-                        placeholder="10-digit mobile number" 
-                        required 
-                        value={address.phone}
-                        onChange={e => {
-                          setAddress({...address, phone: e.target.value});
-                          setIsPhoneVerified(false);
-                        }}
-                        disabled={isPhoneVerified}
-                      />
-                      {!isPhoneVerified && address.phone.length === 10 && !showOtpInput && (
-                        <button 
-                          type="button"
-                          className="verify-btn"
-                          onClick={() => setShowOtpInput(true)}
-                        >
-                          Verify
-                        </button>
-                      )}
-                      {isPhoneVerified && (
-                        <span className="verified-badge">
-                          <FiCheck /> Verified
-                        </span>
-                      )}
-                    </div>
-
-                    {showOtpInput && (
-                      <div className="otp-container full-width">
-                        <p>Enter 6-digit OTP sent to {address.phone}</p>
-                        <div className="otp-input-group">
-                          <input 
-                            type="text" 
-                            maxLength="6" 
-                            placeholder="000000"
-                            value={otp}
-                            onChange={e => setOtp(e.target.value)}
-                          />
-                          <button 
-                            type="button"
-                            onClick={() => {
-                              if (otp === '123456') {
-                                setIsPhoneVerified(true);
-                                setShowOtpInput(false);
-                              } else {
-                                alert('Invalid OTP. Use 123456 for demo.');
-                              }
-                            }}
-                          >
-                            Verify OTP
-                          </button>
-                          <button type="button" className="resend-btn" onClick={() => setOtp('')}>Resend</button>
-                        </div>
-                      </div>
-                    )}
+                    <input 
+                      type="text" 
+                      className="checkout-input" 
+                      placeholder="10-digit mobile number" 
+                      required 
+                      value={address.phone}
+                      onChange={e => setAddress({...address, phone: e.target.value})}
+                    />
                     <div style={{ position: 'relative' }}>
                       <input 
                         type="text" 
@@ -669,61 +568,31 @@ const Checkout = () => {
 
           {/* Step 3: Order Summary */}
           <div className="checkout-step">
-            <StepHeader step={3} title="Order Summary" info={`${cartItems.length} Items`} />
+            <StepHeader step={3} title="ORDER SUMMARY" info={`${safeCartItems.length} Items`} />
             {activeStep === 3 && (
               <div className="step-body">
-                {cartItems.map(item => {
-                  const itemImage = item.images && item.images.length > 0 
-                    ? (item.images[0].url || item.images[0]) 
+                {safeCartItems.map(item => {
+                  const itemImage = item.images && item.images.length > 0
+                    ? (item.images[0].url || item.images[0])
                     : item.image;
 
                   return (
-                    <div key={`${item.id}-${item.selectedSize || 'default'}`} className="order-summary-item">
-                      <div className="item-main-info">
-                        <img src={itemImage} alt={item.name} className="item-image" />
-                        <div className="item-details">
-                          <h4 className="item-name">{item.name}</h4>
-                          <div className="item-meta">
-                            Size: {item.selectedSize || 'Standard'}
-                          </div>
-                          <div className="item-price">
-                            ₹{item.price}
-                          </div>
+                    <div key={`${item.id}-${item.selectedSize || 'default'}`} style={{display: 'flex', gap: '16px', marginBottom: '16px', borderBottom: '1px solid #f0f0f0', paddingBottom: '16px'}}>
+                      <img src={itemImage} alt={item.name} style={{width: '80px', height: '80px', objectFit: 'contain'}} />
+                      <div>
+                        <h4 style={{margin: '0 0 8px 0'}}>{item.name}</h4>
+                        <div style={{fontSize: '14px', color: '#878787'}}>
+                          Size: {item.selectedSize || 'Standard'} | Quantity: {item.quantity}
                         </div>
-                      </div>
-                      
-                      <div className="item-controls-row">
-                        <div className="item-quantity-controls">
-                          <button 
-                            className="qty-btn"
-                            onClick={() => updateQuantity(item.id, item.selectedSize, item.quantity - 1)}
-                            disabled={item.quantity <= 1}
-                          >
-                            -
-                          </button>
-                          <span className="qty-value">{item.quantity}</span>
-                          <button 
-                            className="qty-btn"
-                            onClick={() => updateQuantity(item.id, item.selectedSize, item.quantity + 1)}
-                          >
-                            +
-                          </button>
-                        </div>
-                        <button 
-                          className="remove-item-btn"
-                          onClick={() => removeFromCart(item.id, item.selectedSize)}
-                        >
-                          Remove
-                        </button>
-                        <div className="item-total-price">
+                        <div style={{marginTop: '8px', fontWeight: '600'}}>
                           ₹{item.price * item.quantity}
                         </div>
                       </div>
                     </div>
                   );
                 })}
-                <button onClick={handleSummaryContinue} className="continue-btn" style={{width: '200px', marginLeft: 'auto', display: 'block'}}>
-                  Continue
+                <button onClick={handleSummaryContinue} className="continue-btn">
+                  CONTINUE
                 </button>
               </div>
             )}
@@ -731,76 +600,36 @@ const Checkout = () => {
 
           {/* Step 4: Payment Options */}
           <div className="checkout-step">
-            <StepHeader step={4} title="Payment Options" />
+            <StepHeader step={4} title="PAYMENT OPTIONS" />
             {activeStep === 4 && (
               <div className="step-body">
                 <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
-                  {/* Razorpay Option */}
-                  <label 
-                    style={{
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '12px', 
-                      cursor: 'pointer',
-                      padding: '16px',
-                      border: selectedPaymentMethod === 'razorpay' ? '1px solid #2874f0' : '1px solid #e0e0e0',
-                      borderRadius: '4px',
-                      backgroundColor: selectedPaymentMethod === 'razorpay' ? '#f5faff' : 'white'
-                    }}
-                  >
-                    <input 
-                      type="radio" 
-                      name="payment" 
-                      value="razorpay"
-                      checked={selectedPaymentMethod === 'razorpay'}
-                      onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-                    />
-                    <div style={{display: 'flex', flexDirection: 'column'}}>
-                      <span style={{fontWeight: '600'}}>Razorpay (Cards, UPI, NetBanking)</span>
-                      <span style={{fontSize: '12px', color: '#878787'}}>Pay securely online</span>
-                    </div>
+                  <label style={{display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer'}}>
+                    <input type="radio" name="payment" />
+                    <span>UPI</span>
                   </label>
-
-                  {/* Cash on Delivery Option */}
-                  <label 
-                    style={{
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '12px', 
-                      cursor: isCodAvailable ? 'pointer' : 'not-allowed',
-                      padding: '16px',
-                      border: selectedPaymentMethod === 'cod' ? '1px solid #2874f0' : '1px solid #e0e0e0',
-                      borderRadius: '4px',
-                      backgroundColor: !isCodAvailable ? '#f9f9f9' : (selectedPaymentMethod === 'cod' ? '#f5faff' : 'white'),
-                      opacity: isCodAvailable ? 1 : 0.6
-                    }}
-                  >
-                    <input 
-                      type="radio" 
-                      name="payment" 
-                      value="cod"
-                      checked={selectedPaymentMethod === 'cod'}
-                      onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-                      disabled={!isCodAvailable}
-                    />
-                    <div style={{display: 'flex', flexDirection: 'column'}}>
-                      <span style={{fontWeight: '600'}}>Cash on Delivery</span>
-                      {!isCodAvailable ? (
-                        <span style={{fontSize: '12px', color: '#dc2626'}}>
-                          Not available for some items in your cart
-                        </span>
-                      ) : (
-                        <span style={{fontSize: '12px', color: '#878787'}}>Pay when you receive the order</span>
-                      )}
-                    </div>
+                  <label style={{display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer'}}>
+                    <input type="radio" name="payment" />
+                    <span>Wallets</span>
+                  </label>
+                  <label style={{display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer'}}>
+                    <input type="radio" name="payment" />
+                    <span>Credit / Debit / ATM Card</span>
+                  </label>
+                  <label style={{display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer'}}>
+                    <input type="radio" name="payment" />
+                    <span>Net Banking</span>
+                  </label>
+                  <label style={{display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer'}}>
+                    <input type="radio" name="payment" defaultChecked />
+                    <span>Cash on Delivery</span>
                   </label>
                 </div>
-                <button 
-                  className="continue-btn" 
-                  style={{marginTop: '24px', width: '200px'}}
+                <button
+                  className="continue-btn confirm-order-btn"
                   onClick={handleConfirmOrder}
                 >
-                  {selectedPaymentMethod === 'razorpay' ? 'Pay Now' : 'Confirm Order'}
+                  Confirm Order
                 </button>
               </div>
             )}
@@ -811,30 +640,65 @@ const Checkout = () => {
         {/* Sidebar - Price Details */}
         <div className="checkout-sidebar">
           <div className="price-details-card">
-            <div className="price-header">Price Details</div>
+            <div className="price-header">PRICE DETAILS</div>
             <div className="price-content">
+              {/* Product Details Breakdown */}
+              <div className="products-breakdown">
+                <div className="breakdown-header">
+                  Price ({safeCartItems.length} item{safeCartItems.length !== 1 ? 's' : ''})
+                </div>
+                {safeCartItems.map((item, index) => {
+                  const itemImage = item.images && item.images.length > 0
+                    ? (item.images[0].url || item.images[0])
+                    : item.image;
+
+                  return (
+                    <div key={`price-${item.id}-${item.selectedSize || 'default'}-${index}`} className="product-price-item">
+                      <div className="product-price-left">
+                        <img src={itemImage} alt={item.name} className="product-price-thumb" />
+                        <div className="product-price-info">
+                          <div className="product-price-name">{item.name}</div>
+                          <div className="product-price-meta">
+                            {item.selectedSize && <span>{item.selectedSize}</span>}
+                            <span>Qty: {item.quantity}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="product-price-amount">
+                        ₹{(item.price * item.quantity).toLocaleString()}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="price-divider"></div>
+
               <div className="price-row">
-                <span>Price ({cartItems.length} items)</span>
-                <span>₹{cartTotal}</span>
+                <span>Subtotal</span>
+                <span>₹{safeCartTotal.toLocaleString()}</span>
               </div>
               <div className="price-row">
                 <span>Delivery Charges</span>
                 <span className="green-text">FREE</span>
               </div>
+
+              <div className="price-divider"></div>
+
               <div className="price-row total">
                 <span>Total Payable</span>
-                <span>₹{cartTotal}</span>
+                <span>₹{safeCartTotal.toLocaleString()}</span>
               </div>
-              <div className="green-text" style={{fontSize: '14px', fontWeight: '600'}}>
+              <div className="savings-text">
                 Your Total Savings on this order ₹0
               </div>
             </div>
           </div>
-          
+
           <div className="secure-badge">
             <FiShield className="secure-icon" />
             <div>
-              Safe and Secure Payments. Easy returns.<br/>
+              Safe and Secure Payments. Easy returns.<br />
               100% Authentic products.
             </div>
           </div>
