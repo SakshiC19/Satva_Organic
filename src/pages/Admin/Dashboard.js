@@ -1,10 +1,68 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 import { FiTrendingUp, FiTrendingDown, FiDollarSign, FiShoppingBag, FiBox, FiUsers, FiFilter } from 'react-icons/fi';
 import './Admin.css';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const [stats, setStats] = useState({
+    totalRevenue: 0,
+    totalOrders: 0,
+    totalProducts: 0,
+    activeCustomers: 0
+  });
+  const [topProducts, setTopProducts] = useState([]);
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch orders
+      const ordersRef = collection(db, 'orders');
+      const ordersQuery = query(ordersRef, orderBy('createdAt', 'desc'), limit(5));
+      const ordersSnapshot = await getDocs(ordersQuery);
+      const ordersData = ordersSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      // Fetch products
+      const productsRef = collection(db, 'products');
+      const productsSnapshot = await getDocs(productsRef);
+      const productsData = productsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      // Calculate stats
+      const totalRevenue = ordersData.reduce((sum, order) => sum + (order.total || 0), 0);
+      const totalOrders = ordersData.length;
+      const totalProducts = productsData.length;
+
+      setStats({
+        totalRevenue,
+        totalOrders,
+        totalProducts,
+        activeCustomers: ordersData.length // Simplified - count unique customers
+      });
+
+      setRecentOrders(ordersData.slice(0, 3));
+      setTopProducts(productsData.slice(0, 3));
+      
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
@@ -14,10 +72,10 @@ const Dashboard = () => {
     }).format(amount || 0);
   };
 
-  const stats = [
+  const statsCards = [
     { 
       label: 'Total Revenue', 
-      value: '₹24,582', 
+      value: formatCurrency(stats.totalRevenue), 
       trend: '+18.2% this week', 
       trendUp: true,
       icon: <FiDollarSign />,
@@ -25,7 +83,7 @@ const Dashboard = () => {
     },
     { 
       label: 'Total Orders', 
-      value: '3,842', 
+      value: stats.totalOrders.toString(), 
       trend: '+12.5% this week', 
       trendUp: true,
       icon: <FiShoppingBag />,
@@ -33,7 +91,7 @@ const Dashboard = () => {
     },
     { 
       label: 'Total Product', 
-      value: '1,247', 
+      value: stats.totalProducts.toString(), 
       trend: '-2.3% this week', 
       trendUp: false,
       icon: <FiBox />,
@@ -41,7 +99,7 @@ const Dashboard = () => {
     },
     { 
       label: 'Active Customers', 
-      value: '8,234', 
+      value: stats.activeCustomers.toString(), 
       trend: '+24.6% this week', 
       trendUp: true,
       icon: <FiUsers />,
@@ -49,17 +107,15 @@ const Dashboard = () => {
     }
   ];
 
-  const topProducts = [
-    { name: 'Fresh Milk', salesCount: 342, revenue: 684.00, image: 'https://images.unsplash.com/photo-1550583724-125581f77833?w=100&h=100&fit=crop' },
-    { name: 'Wheat Bread', salesCount: 256, revenue: 512.00, image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=100&h=100&fit=crop' },
-    { name: 'Emerald Velvet', salesCount: 184, revenue: 355.90, image: 'https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?w=100&h=100&fit=crop' },
-  ];
-
-  const recentOrders = [
-    { id: '1', product: 'Fresh Dairy', date: 'May 5', status: 'Received', price: '₹145.80', customer: 'M-Starlight', image: 'https://images.unsplash.com/photo-1563636619-e9107da5a163?w=50&h=50&fit=crop' },
-    { id: '2', product: 'Vegetables', date: 'May 4', status: 'Received', price: '₹210.30', customer: 'Serene W', image: 'https://images.unsplash.com/photo-1566385101042-1a0aa0c12e8c?w=50&h=50&fit=crop' },
-    { id: '3', product: 'Rang Eggs', date: 'May 3', status: 'Received', price: '₹298.40', customer: 'James D', image: 'https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=50&h=50&fit=crop' },
-  ];
+  if (loading) {
+    return (
+      <div className="admin-dashboard">
+        <div className="dashboard-header">
+          <h1>Loading Dashboard...</h1>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-dashboard">
@@ -92,7 +148,7 @@ const Dashboard = () => {
 
       {/* Stats Grid */}
       <div className="stats-grid">
-        {stats.map((stat, index) => (
+        {statsCards.map((stat, index) => (
           <div key={index} className={`stat-card ${stat.primary ? 'primary' : ''}`}>
             <div className="stat-card-header">
               <div className={`stat-icon ${stat.iconClass || ''}`}>
@@ -204,16 +260,22 @@ const Dashboard = () => {
             </select>
           </div>
           <div className="products-list">
-            {topProducts.length > 0 ? topProducts.map((product, index) => (
-              <div key={index} className="product-item">
-                <img src={product.image} alt={product.name} className="product-thumb" />
-                <div className="product-details">
-                  <span className="product-name">{product.name}</span>
-                  <span className="product-sales">{product.salesCount} sold</span>
+            {topProducts.length > 0 ? topProducts.map((product, index) => {
+              const productImage = product.images && product.images.length > 0 
+                ? (product.images[0].url || product.images[0]) 
+                : product.image || 'https://via.placeholder.com/100';
+              
+              return (
+                <div key={index} className="product-item">
+                  <img src={productImage} alt={product.name} className="product-thumb" />
+                  <div className="product-details">
+                    <span className="product-name">{product.name}</span>
+                    <span className="product-sales">{product.stock || 0} in stock</span>
+                  </div>
+                  <span className="product-price">{formatCurrency(product.price)}</span>
                 </div>
-                <span className="product-price">{formatCurrency(product.revenue)}</span>
-              </div>
-            )) : <p style={{ padding: '20px', color: '#666' }}>No sales data yet.</p>}
+              );
+            }) : <p style={{ padding: '20px', color: '#666' }}>No products yet.</p>}
           </div>
         </div>
 
@@ -236,23 +298,35 @@ const Dashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {recentOrders.map((order) => (
-                <tr key={order.id}>
-                  <td>{order.id}</td>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <img src={order.image} alt={order.product} style={{ width: '30px', height: '30px', borderRadius: '4px' }} />
-                      {order.product}
-                    </div>
+              {recentOrders.length > 0 ? recentOrders.map((order) => {
+                const firstItem = order.items && order.items.length > 0 ? order.items[0] : null;
+                const orderDate = order.createdAt ? new Date(order.createdAt.seconds * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A';
+                
+                return (
+                  <tr key={order.id}>
+                    <td>{order.id.substring(0, 8)}...</td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        {firstItem ? firstItem.name : 'N/A'}
+                      </div>
+                    </td>
+                    <td>{orderDate}</td>
+                    <td>
+                      <span className={`status-badge status-${order.status?.toLowerCase() || 'pending'}`}>
+                        {order.status || 'Pending'}
+                      </span>
+                    </td>
+                    <td>{formatCurrency(order.total)}</td>
+                    <td>{order.customerName || 'Guest'}</td>
+                  </tr>
+                );
+              }) : (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                    No orders yet.
                   </td>
-                  <td>{order.date}</td>
-                  <td>
-                    <span className="status-badge status-received">Received</span>
-                  </td>
-                  <td>{order.price}</td>
-                  <td>{order.customer}</td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
