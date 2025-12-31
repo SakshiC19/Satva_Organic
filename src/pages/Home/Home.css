@@ -1,4 +1,4 @@
-/* ========================================
+﻿/* ========================================
    HOME PAGE - MODERN MOBILE-FIRST DESIGN
    ======================================== */
 
@@ -901,17 +901,5 @@
     .container-fluid {
         max-width: 1400px;
         margin: 0 auto;
-    }
-}
-
-/* Mobile: Hide slider navigation buttons */
-@media (max-width: 767px) {
-    .cat-nav-btn,
-    .flash-nav-btn {
-        display: none !important;
-    }
-    .categories-slider-container,
-    .flash-deals-container {
-        gap: 0;
     }
 }

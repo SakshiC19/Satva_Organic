@@ -27,11 +27,10 @@
     display: flex;
     align-items: center;
     text-decoration: none;
-    background: transparent !important;
+    background: transparent;
     border: none !important;
     outline: none !important;
     padding: 0;
-    box-shadow: none !important;
 }
 
 .logo-image {
@@ -39,18 +38,12 @@
     width: auto;
     object-fit: contain;
     display: block;
-    background: transparent !important;
+    background: transparent;
     border: none !important;
     outline: none !important;
     box-shadow: none !important;
     padding: 0;
     margin: 0;
-    filter: none !important;
-    transition: transform 0.3s ease;
-}
-
-.logo-image:hover {
-    transform: scale(1.05);
 }
 
 /* Mobile Menu Button */
@@ -785,17 +778,6 @@
 
     .header-logo {
         margin-right: auto;
-        background: transparent !important;
-        box-shadow: none !important;
-        border: none !important;
-    }
-
-    .logo-image {
-        height: 55px;
-        filter: none !important;
-        box-shadow: none !important;
-        border: none !important;
-        background: transparent !important;
     }
 
     .header-search {

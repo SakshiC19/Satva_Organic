@@ -287,10 +287,10 @@
 .amount-option-container {
     display: flex;
     justify-content: flex-start;
-    gap: 30px;
     align-items: flex-end;
     width: 100%;
     margin-bottom: 20px;
+    gap: 24px;
 }
 
 .amount-selection {
@@ -302,6 +302,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
+    /* margin-left: auto; Removed to reduce gap */
 }
 
 /* Ensure quantity selector is visible and styled correctly */
@@ -410,7 +411,6 @@
     cursor: pointer;
     transition: background 0.2s;
     height: 40px;
-    display: none;
 }
 
 .btn-buy-now:hover:not(:disabled) {
@@ -651,19 +651,14 @@
         align-items: stretch;
     }
 
-    .btn-add-to-cart {
-        flex: 1;
-        height: 50px;
-        font-size: 14px;
-    }
-
+    .btn-add-to-cart,
     .btn-buy-now {
-        display: flex;
-        flex: 1;
-        height: 50px;
-        font-size: 14px;
-        align-items: center;
-        justify-content: center;
+        flex: 2;
+        width: auto;
+        height: 44px;
+        font-size: 13px;
+        white-space: nowrap;
+        padding: 0 5px;
     }
 
     .secondary-actions {

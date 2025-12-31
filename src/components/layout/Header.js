@@ -143,7 +143,6 @@ const Header = () => {
               </button>
             </div>
           </form>
-
           {/* Search Bar (Desktop) */}
           <form onSubmit={handleSearch} className="header-search">
             <div className="search-wrapper">
