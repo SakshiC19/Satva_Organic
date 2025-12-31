@@ -1,12 +1,23 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FiTrendingUp, FiTrendingDown, FiDollarSign, FiShoppingBag, FiBox, FiUsers, FiFilter } from 'react-icons/fi';
 import './Admin.css';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(amount || 0);
+  };
+
   const stats = [
     { 
       label: 'Total Revenue', 
-      value: '$24,582', 
+      value: '₹24,582', 
       trend: '+18.2% this week', 
       trendUp: true,
       icon: <FiDollarSign />,
@@ -39,15 +50,15 @@ const Dashboard = () => {
   ];
 
   const topProducts = [
-    { name: 'Fresh Milk', sales: '342 sold', price: '$684.00', image: 'https://images.unsplash.com/photo-1550583724-125581f77833?w=100&h=100&fit=crop' },
-    { name: 'Wheat Bread', sales: '256 sold', price: '$512.00', image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=100&h=100&fit=crop' },
-    { name: 'Emerald Velvet', sales: '184 sold', price: '$355.90', image: 'https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?w=100&h=100&fit=crop' },
+    { name: 'Fresh Milk', salesCount: 342, revenue: 684.00, image: 'https://images.unsplash.com/photo-1550583724-125581f77833?w=100&h=100&fit=crop' },
+    { name: 'Wheat Bread', salesCount: 256, revenue: 512.00, image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=100&h=100&fit=crop' },
+    { name: 'Emerald Velvet', salesCount: 184, revenue: 355.90, image: 'https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?w=100&h=100&fit=crop' },
   ];
 
   const recentOrders = [
-    { id: '1', product: 'Fresh Dairy', date: 'May 5', status: 'Received', price: '$145.80', customer: 'M-Starlight', image: 'https://images.unsplash.com/photo-1563636619-e9107da5a163?w=50&h=50&fit=crop' },
-    { id: '2', product: 'Vegetables', date: 'May 4', status: 'Received', price: '$210.30', customer: 'Serene W', image: 'https://images.unsplash.com/photo-1566385101042-1a0aa0c12e8c?w=50&h=50&fit=crop' },
-    { id: '3', product: 'Rang Eggs', date: 'May 3', status: 'Received', price: '$298.40', customer: 'James D', image: 'https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=50&h=50&fit=crop' },
+    { id: '1', product: 'Fresh Dairy', date: 'May 5', status: 'Received', price: '₹145.80', customer: 'M-Starlight', image: 'https://images.unsplash.com/photo-1563636619-e9107da5a163?w=50&h=50&fit=crop' },
+    { id: '2', product: 'Vegetables', date: 'May 4', status: 'Received', price: '₹210.30', customer: 'Serene W', image: 'https://images.unsplash.com/photo-1566385101042-1a0aa0c12e8c?w=50&h=50&fit=crop' },
+    { id: '3', product: 'Rang Eggs', date: 'May 3', status: 'Received', price: '₹298.40', customer: 'James D', image: 'https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=50&h=50&fit=crop' },
   ];
 
   return (
@@ -124,7 +135,7 @@ const Dashboard = () => {
           </div>
           <div className="chart-placeholder">
             <div style={{ position: 'absolute', left: '20px', top: '20px', textAlign: 'left' }}>
-              <span style={{ fontSize: '1.5rem', fontWeight: 800 }}>$18,200.82</span>
+              <span style={{ fontSize: '1.5rem', fontWeight: 800 }}>₹18,200.82</span>
               <span style={{ fontSize: '0.8rem', color: '#10b981', marginLeft: '8px', background: '#dcfce7', padding: '2px 8px', borderRadius: '10px' }}>
                 <FiTrendingUp size={10} /> 8.24%
               </span>
@@ -149,7 +160,7 @@ const Dashboard = () => {
               />
               <circle cx="450" cy="100" r="6" fill="#059669" stroke="white" strokeWidth="2" />
               <rect x="430" y="70" width="60" height="20" rx="10" fill="#059669" />
-              <text x="440" y="84" fill="white" fontSize="10" fontWeight="bold">$4,645.80</text>
+              <text x="440" y="84" fill="white" fontSize="10" fontWeight="bold">₹4,645.80</text>
             </svg>
             <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', padding: '0 20px', marginTop: '10px', color: '#64748b', fontSize: '0.75rem' }}>
               <span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span>

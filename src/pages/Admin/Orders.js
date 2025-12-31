@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, orderBy, getDocs, doc, updateDoc, where, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { FiSearch, FiFilter, FiMoreVertical, FiEdit, FiStar, FiTrash2 } from 'react-icons/fi';
+import { FiSearch, FiFilter, FiMoreVertical, FiEdit, FiStar, FiTrash2, FiClock, FiPackage, FiDownload, FiPrinter, FiX } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import { generateInvoice } from '../../utils/invoiceGenerator';
 import './Orders.css';
@@ -12,6 +12,14 @@ const Orders = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [activeDropdown, setActiveDropdown] = useState(null);
+  const [statsPeriod, setStatsPeriod] = useState('all');
+  const [dateRange, setDateRange] = useState('all');
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedOrders, setSelectedOrders] = useState([]);
+  const [paymentFilter, setPaymentFilter] = useState('all');
+  const [viewingOrder, setViewingOrder] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showOrderDetails, setShowOrderDetails] = useState(false);
   const { currentUser } = useAuth();
 
   useEffect(() => {
@@ -125,12 +133,12 @@ const Orders = () => {
     }
   };
 
-  // Calculate stats
-  const stats = {
-    total: orders.length,
-    pending: orders.filter(o => o.status?.toLowerCase() === 'pending').length,
-    completed: orders.filter(o => o.status?.toLowerCase() === 'delivered').length,
-    cancelled: orders.filter(o => o.status?.toLowerCase() === 'cancelled').length
+  const handleBulkAction = (action) => {
+    alert(`Bulk action "${action}" for ${selectedOrders.length} orders`);
+  };
+
+  const addSampleOrders = async () => {
+    alert('Sample orders functionality coming soon');
   };
 
   // Calculate percentage changes (mock data for now)

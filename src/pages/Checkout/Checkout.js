@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
-import { FiCheck, FiShield } from 'react-icons/fi';
+import { doc, updateDoc, arrayUnion, serverTimestamp, addDoc, collection, getDoc } from 'firebase/firestore';
+import { db } from '../../config/firebase';
+import { FiCheck, FiShield, FiEdit2, FiPlus } from 'react-icons/fi';
 import './Checkout.css';
 
 const Checkout = () => {
@@ -20,6 +22,7 @@ const Checkout = () => {
   const [name, setName] = useState('');
   const [isSignup, setIsSignup] = useState(false);
   const [error, setError] = useState('');
+  const [isPhoneVerified, setIsPhoneVerified] = useState(true); // Default to true for demo
   
   // Check if COD is available for all items in cart
   // Default to true if codAvailable property is missing (backward compatibility)
@@ -91,6 +94,19 @@ const Checkout = () => {
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
+
+  const fetchSavedAddresses = async () => {
+    if (!currentUser) return;
+    try {
+      const userRef = doc(db, 'users', currentUser.uid);
+      const userDoc = await getDoc(userRef);
+      if (userDoc.exists() && userDoc.data().addresses) {
+        setSavedAddresses(userDoc.data().addresses);
+      }
+    } catch (error) {
+      console.error("Error fetching addresses:", error);
+    }
+  };
 
   useEffect(() => {
     if (currentUser) {
