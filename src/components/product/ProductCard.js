@@ -104,9 +104,9 @@ const ProductCard = ({
     }
   }, [isFlashDeal, dealExpiry, dealStockLimit]);
 
-  const displayPrice = isDealActive ? price : (originalPrice || price);
-  const displayDiscount = isDealActive ? discount : 0;
-  const displaySavings = originalPrice ? originalPrice - displayPrice : 0;
+  const displayPrice = price;
+  const displayDiscount = discount;
+  const displaySavings = originalPrice && originalPrice > price ? originalPrice - price : 0;
 
   const productImage = images && images.length > 0
     ? (images[0].url || images[0])

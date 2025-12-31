@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, getDocs, doc, updateDoc, where, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, doc, updateDoc, where } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { FiSearch, FiFilter, FiMoreVertical, FiEdit, FiStar, FiTrash2, FiClock, FiPackage, FiDownload, FiPrinter, FiX } from 'react-icons/fi';
+import { 
+  FiSearch, FiFilter, FiMoreVertical, FiEdit, FiTrash2, FiEye, FiDownload, 
+  FiPrinter, FiTruck, FiX, FiCheck, FiClock, FiPackage, FiDollarSign,
+  FiShoppingBag, FiAlertCircle, FiTrendingUp, FiCalendar, FiRefreshCw
+} from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
-import { generateInvoice } from '../../utils/invoiceGenerator';
 import './Orders.css';
 
 const Orders = () => {
@@ -12,14 +15,11 @@ const Orders = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [activeDropdown, setActiveDropdown] = useState(null);
-  const [statsPeriod, setStatsPeriod] = useState('all');
-  const [dateRange, setDateRange] = useState('all');
-  const [showFilters, setShowFilters] = useState(false);
   const [selectedOrders, setSelectedOrders] = useState([]);
+  const [dateRange, setDateRange] = useState('all');
   const [paymentFilter, setPaymentFilter] = useState('all');
+  const [showFilters, setShowFilters] = useState(false);
   const [viewingOrder, setViewingOrder] = useState(null);
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [showOrderDetails, setShowOrderDetails] = useState(false);
   const { currentUser } = useAuth();
 
   useEffect(() => {
@@ -29,7 +29,6 @@ const Orders = () => {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      console.log('Fetching orders from Firebase...');
       const ordersRef = collection(db, 'orders');
       const q = query(ordersRef, orderBy('createdAt', 'desc'));
       const querySnapshot = await getDocs(q);
@@ -42,7 +41,6 @@ const Orders = () => {
       setOrders(ordersData);
     } catch (error) {
       console.error('Error fetching orders:', error);
-      console.error('Error details:', error.message);
       setOrders([]);
     } finally {
       setLoading(false);
@@ -51,48 +49,48 @@ const Orders = () => {
 
   // Calculate comprehensive stats
   const calculateStats = () => {
+    if (!orders || orders.length === 0) {
+      return {
+        totalRevenue: 0,
+        todayOrders: 0,
+        pendingPayments: 0,
+        refundRequests: 0,
+        avgOrderValue: 0,
+        total: 0,
+        pending: 0,
+        processing: 0,
+        delivered: 0,
+        cancelled: 0
+      };
+    }
+
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    // Total Revenue
     const totalRevenue = orders
       .filter(o => o.status?.toLowerCase() === 'delivered')
-      .reduce((sum, order) => sum + (Number(order.totalAmount) || 0), 0);
+      .reduce((sum, order) => sum + (Number(order.total) || 0), 0);
 
-    // Today's Orders
     const todayOrders = orders.filter(o => {
-      const orderDate = o.createdAt?.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
+      if (!o.createdAt) return false;
+      const orderDate = o.createdAt.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
       return orderDate >= today;
     }).length;
 
-    // Pending Payments (COD orders that are delivered but not marked as paid)
     const pendingPayments = orders.filter(o =>
       o.paymentMethod === 'cod' &&
       o.status?.toLowerCase() === 'delivered' &&
       !o.paymentReceived
     ).length;
 
-    // Refund Requests
     const refundRequests = orders.filter(o =>
-      o.refundStatus === 'requested' || o.refundStatus === 'pending'
+      o.status?.toLowerCase() === 'refunded' || o.refundStatus === 'requested'
     ).length;
 
-    // Average Order Value
     const completedOrders = orders.filter(o => o.status?.toLowerCase() === 'delivered');
     const avgOrderValue = completedOrders.length > 0
       ? totalRevenue / completedOrders.length
       : 0;
-
-    // Status counts
-    const pending = orders.filter(o => o.status?.toLowerCase() === 'pending').length;
-    const confirmed = orders.filter(o => o.status?.toLowerCase() === 'confirmed').length;
-    const processing = orders.filter(o => o.status?.toLowerCase() === 'processing').length;
-    const packed = orders.filter(o => o.status?.toLowerCase() === 'packed').length;
-    const outForDelivery = orders.filter(o => o.status?.toLowerCase() === 'shipped' || o.status?.toLowerCase() === 'out-for-delivery').length;
-    const delivered = orders.filter(o => o.status?.toLowerCase() === 'delivered').length;
-    const cancelled = orders.filter(o => o.status?.toLowerCase() === 'cancelled').length;
-    const returned = orders.filter(o => o.status?.toLowerCase() === 'returned').length;
-    const refunded = orders.filter(o => o.status?.toLowerCase() === 'refunded').length;
 
     return {
       totalRevenue,
@@ -101,15 +99,10 @@ const Orders = () => {
       refundRequests,
       avgOrderValue,
       total: orders.length,
-      pending,
-      confirmed,
-      processing,
-      packed,
-      outForDelivery,
-      delivered,
-      cancelled,
-      returned,
-      refunded
+      pending: orders.filter(o => o.status?.toLowerCase() === 'pending').length,
+      processing: orders.filter(o => o.status?.toLowerCase() === 'processing').length,
+      delivered: orders.filter(o => o.status?.toLowerCase() === 'delivered').length,
+      cancelled: orders.filter(o => o.status?.toLowerCase() === 'cancelled').length
     };
   };
 
@@ -118,13 +111,16 @@ const Orders = () => {
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
       const orderRef = doc(db, 'orders', orderId);
-      await updateDoc(orderRef, { status: newStatus });
+      await updateDoc(orderRef, { 
+        status: newStatus,
+        statusUpdatedAt: new Date(),
+        statusUpdatedBy: currentUser?.email || 'admin'
+      });
       
-      // Update local state
       setOrders(orders.map(order => 
         order.id === orderId ? { ...order, status: newStatus } : order
       ));
-
+      
       setActiveDropdown(null);
       alert(`Order status updated to ${newStatus}`);
     } catch (error) {
@@ -133,48 +129,33 @@ const Orders = () => {
     }
   };
 
-  const handleBulkAction = (action) => {
-    alert(`Bulk action "${action}" for ${selectedOrders.length} orders`);
-  };
-
-  const addSampleOrders = async () => {
-    alert('Sample orders functionality coming soon');
-  };
-
-  // Calculate percentage changes (mock data for now)
-  const getPercentageChange = (current, previous) => {
-    if (previous === 0) return '+0%';
-    const change = ((current - previous) / previous) * 100;
-    return change >= 0 ? `+${change.toFixed(0)}%` : `${change.toFixed(0)}%`;
-  };
-
-  // Filter orders based on active tab and search
+  // Filter orders
   const filteredOrders = orders.filter(order => {
     const matchesSearch = 
       order.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.items?.some(item => item.name?.toLowerCase().includes(searchTerm.toLowerCase()));
+      order.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.phone?.includes(searchTerm);
     
     const matchesTab = 
       activeTab === 'all' || 
-      (activeTab === 'pending' && order.status?.toLowerCase() === 'pending') ||
-      (activeTab === 'processing' && order.status?.toLowerCase() === 'processing') ||
-      (activeTab === 'out-for-delivery' && order.status?.toLowerCase() === 'shipped') ||
-      (activeTab === 'delivered' && order.status?.toLowerCase() === 'delivered');
+      order.status?.toLowerCase() === activeTab.toLowerCase();
+
+    const matchesPayment =
+      paymentFilter === 'all' ||
+      order.paymentMethod?.toLowerCase() === paymentFilter.toLowerCase();
     
-    return matchesSearch && matchesTab;
+    return matchesSearch && matchesTab && matchesPayment;
   });
 
   const formatDate = (timestamp) => {
     if (!timestamp) return 'N/A';
     try {
       const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-      return date.toLocaleDateString('en-US', {
-        month: 'short',
+      return date.toLocaleDateString('en-IN', { 
         day: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+        month: 'short',
+        year: 'numeric'
       });
     } catch (error) {
       return 'Invalid Date';
@@ -191,41 +172,40 @@ const Orders = () => {
 
   const getStatusClass = (status) => {
     switch (status?.toLowerCase()) {
-      case 'pending':
-        return 'status-pending';
-      case 'processing':
-        return 'status-processing';
-      case 'shipped':
-        return 'status-shipped';
-      case 'delivered':
-        return 'status-delivered';
-      case 'cancelled':
-        return 'status-cancelled';
-      default:
-        return 'status-pending';
+      case 'pending': return 'status-pending';
+      case 'confirmed': return 'status-confirmed';
+      case 'processing': return 'status-processing';
+      case 'packed': return 'status-packed';
+      case 'shipped': return 'status-shipped';
+      case 'delivered': return 'status-delivered';
+      case 'cancelled': return 'status-cancelled';
+      case 'refunded': return 'status-refunded';
+      default: return 'status-pending';
     }
   };
 
-  const getStatusText = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'pending':
-        return 'Pending';
-      case 'processing':
-        return 'Accept';
-      case 'shipped':
-        return 'Out for Delivery';
-      case 'delivered':
-        return 'Completed';
-      case 'cancelled':
-        return 'Rejected';
-      default:
-        return 'Pending';
+  const handleBulkAction = (action) => {
+    if (selectedOrders.length === 0) {
+      alert('Please select orders first');
+      return;
     }
+    alert(`Bulk ${action} for ${selectedOrders.length} orders - Feature coming soon`);
   };
 
-  const viewOrderDetails = (order) => {
-    setSelectedOrder(order);
-    setShowOrderDetails(true);
+  const toggleOrderSelection = (orderId) => {
+    setSelectedOrders(prev =>
+      prev.includes(orderId)
+        ? prev.filter(id => id !== orderId)
+        : [...prev, orderId]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedOrders.length === filteredOrders.length) {
+      setSelectedOrders([]);
+    } else {
+      setSelectedOrders(filteredOrders.map(o => o.id));
+    }
   };
 
   if (loading) {
@@ -243,14 +223,14 @@ const Orders = () => {
       <div className="om-header">
         <div className="om-header-left">
           <h1 className="om-title">Order Management</h1>
-          <p className="om-subtitle">Track and manage all grocery orders in real time.</p>
+          <p className="om-subtitle">Track and manage all orders in real-time</p>
         </div>
         <div className="om-header-right">
           <div className="om-search-box">
             <FiSearch className="search-icon" />
             <input
               type="text"
-              placeholder="Search by Order ID, Customer, Phone, Email..."
+              placeholder="Search orders, customers, phone..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -264,125 +244,99 @@ const Orders = () => {
               )}
             </div>
             <div className="admin-info">
-              <span className="admin-name">{currentUser?.displayName || 'Admin User'}</span>
-              <span className="admin-email">{currentUser?.email || 'admin@company.com'}</span>
+              <span className="admin-name">{currentUser?.displayName || 'Admin'}</span>
+              <span className="admin-email">{currentUser?.email || 'admin@satva.com'}</span>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Stats Header with Period Selector */}
-      <div className="om-stats-header">
-        <h2 className="section-title">Business Overview</h2>
-        <div className="period-selector">
-          <button className={statsPeriod === 'today' ? 'active' : ''} onClick={() => setStatsPeriod('today')}>Today</button>
-          <button className={statsPeriod === 'week' ? 'active' : ''} onClick={() => setStatsPeriod('week')}>Week</button>
-          <button className={statsPeriod === 'month' ? 'active' : ''} onClick={() => setStatsPeriod('month')}>Month</button>
-          <button className={statsPeriod === 'all' ? 'active' : ''} onClick={() => setStatsPeriod('all')}>All Time</button>
         </div>
       </div>
 
       {/* Stats Cards */}
+      <div className="om-stats-header">
+        <h2 className="section-title">Business Overview</h2>
+        <div className="date-range-selector">
+          <button className={dateRange === 'today' ? 'active' : ''} onClick={() => setDateRange('today')}>
+            <FiCalendar /> Today
+          </button>
+          <button className={dateRange === 'week' ? 'active' : ''} onClick={() => setDateRange('week')}>
+            This Week
+          </button>
+          <button className={dateRange === 'month' ? 'active' : ''} onClick={() => setDateRange('month')}>
+            This Month
+          </button>
+          <button className={dateRange === 'all' ? 'active' : ''} onClick={() => setDateRange('all')}>
+            All Time
+          </button>
+        </div>
+      </div>
+
       <div className="om-stats">
-        <div className="stat-card stat-new">
-          <div className="stat-icon-wrapper blue">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M20 7H4C2.9 7 2 7.9 2 9V19C2 20.1 2.9 21 4 21H20C21.1 21 22 20.1 22 19V9C22 7.9 21.1 7 20 7Z" stroke="currentColor" strokeWidth="2"/>
-              <path d="M16 7V5C16 3.9 15.1 3 14 3H10C8.9 3 8 3.9 8 5V7" stroke="currentColor" strokeWidth="2"/>
-            </svg>
-          </div>
-          <div className="stat-content">
-            <p className="stat-label">Total New Orders</p>
-            <div className="stat-value-row">
-              <h2 className="stat-value">{stats.total.toLocaleString()}</h2>
-              <span className="stat-change positive">{getPercentageChange(stats.total, stats.total - 100)}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="stat-card stat-pending">
-          <div className="stat-icon-wrapper purple">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
-              <path d="M12 7V12L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-          </div>
-          <div className="stat-content">
-            <p className="stat-label">Total Orders Pending</p>
-            <div className="stat-value-row">
-              <h2 className="stat-value">{stats.pending}</h2>
-              <span className="stat-change negative">-10%</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="stat-card stat-completed">
+        <div className="stat-card stat-revenue">
           <div className="stat-icon-wrapper green">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
-              <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+            <FiDollarSign />
           </div>
           <div className="stat-content">
-            <p className="stat-label">Total Orders Completed</p>
-            <div className="stat-value-row">
-              <h2 className="stat-value">{stats.completed.toLocaleString()}</h2>
-              <span className="stat-change positive">+84%</span>
-            </div>
+            <p className="stat-label">Total Revenue</p>
+            <h2 className="stat-value">{formatCurrency(stats.totalRevenue)}</h2>
+            <span className="stat-change positive">
+              <FiTrendingUp /> +12.5%
+            </span>
           </div>
         </div>
 
-        <div className="stat-card stat-cancelled">
+        <div className="stat-card stat-today">
+          <div className="stat-icon-wrapper blue">
+            <FiShoppingBag />
+          </div>
+          <div className="stat-content">
+            <p className="stat-label">Today's Orders</p>
+            <h2 className="stat-value">{stats.todayOrders}</h2>
+            <span className="stat-change positive">
+              <FiTrendingUp /> +8.2%
+            </span>
+          </div>
+        </div>
+
+        <div className="stat-card stat-pending-payment">
+          <div className="stat-icon-wrapper orange">
+            <FiAlertCircle />
+          </div>
+          <div className="stat-content">
+            <p className="stat-label">Pending Payments</p>
+            <h2 className="stat-value">{stats.pendingPayments}</h2>
+            <span className="stat-change neutral">COD Orders</span>
+          </div>
+        </div>
+
+        <div className="stat-card stat-refund">
           <div className="stat-icon-wrapper red">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
-              <path d="M15 9L9 15M9 9L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
+            <FiRefreshCw />
           </div>
           <div className="stat-content">
-            <p className="stat-label">Total Orders Canceled</p>
-            <div className="stat-value-row">
-              <h2 className="stat-value">{stats.cancelled}</h2>
-              <span className="stat-change positive">+54%</span>
-            </div>
+            <p className="stat-label">Refund Requests</p>
+            <h2 className="stat-value">{stats.refundRequests}</h2>
+            <span className="stat-change neutral">Pending Review</span>
+          </div>
+        </div>
+
+        <div className="stat-card stat-aov">
+          <div className="stat-icon-wrapper purple">
+            <FiTrendingUp />
+          </div>
+          <div className="stat-content">
+            <p className="stat-label">Avg Order Value</p>
+            <h2 className="stat-value">{formatCurrency(stats.avgOrderValue)}</h2>
+            <span className="stat-change positive">+5.3%</span>
           </div>
         </div>
       </div>
 
-      {/* Date Range Selector */}
-      <div className="date-range-selector">
-        <button
-          className={dateRange === 'today' ? 'active' : ''}
-          onClick={() => setDateRange('today')}
-        >
-          Today
-        </button>
-        <button
-          className={dateRange === 'week' ? 'active' : ''}
-          onClick={() => setDateRange('week')}
-        >
-          This Week
-        </button>
-        <button
-          className={dateRange === 'month' ? 'active' : ''}
-          onClick={() => setDateRange('month')}
-        >
-          This Month
-        </button>
-        <button
-          className={dateRange === 'all' ? 'active' : ''}
-          onClick={() => setDateRange('all')}
-        >
-          All Time
-        </button>
-      </div>
-
-      {/* Orders List Section */}
+      {/* Orders Section */}
       <div className="om-orders-section">
         <div className="om-section-header">
           <h2 className="section-title">Orders List ({filteredOrders.length})</h2>
           <div className="header-actions">
-            <button className="filter-toggle-btn" onClick={() => setShowFilters(!showFilters)}>
+            <button className="filter-btn" onClick={() => setShowFilters(!showFilters)}>
               <FiFilter /> Filters
             </button>
             {selectedOrders.length > 0 && (
@@ -401,74 +355,38 @@ const Orders = () => {
           </div>
         </div>
 
-        {/* Advanced Filters */}
+        {/* Filters */}
         {showFilters && (
           <div className="advanced-filters">
             <div className="filter-group">
-              <label>Payment Status</label>
+              <label>Payment Method</label>
               <select value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)}>
                 <option value="all">All Payments</option>
-                <option value="paid">Paid</option>
                 <option value="cod">Cash on Delivery</option>
-                <option value="failed">Failed</option>
+                <option value="online">Online Payment</option>
+                <option value="upi">UPI</option>
               </select>
             </div>
           </div>
         )}
 
-        {/* Enhanced Tabs */}
+        {/* Tabs */}
         <div className="om-tabs-wrapper">
           <div className="om-tabs">
-            <button 
-              className={`om-tab ${activeTab === 'all' ? 'active' : ''}`}
-              onClick={() => setActiveTab('all')}
-            >
-              All Order
+            <button className={`om-tab ${activeTab === 'all' ? 'active' : ''}`} onClick={() => setActiveTab('all')}>
+              All Orders <span className="tab-count">{stats.total}</span>
             </button>
-            <button 
-              className={`om-tab ${activeTab === 'pending' ? 'active' : ''}`}
-              onClick={() => setActiveTab('pending')}
-            >
-              Pending
+            <button className={`om-tab ${activeTab === 'pending' ? 'active' : ''}`} onClick={() => setActiveTab('pending')}>
+              Pending <span className="tab-count">{stats.pending}</span>
             </button>
-            <button 
-              className={`om-tab ${activeTab === 'processing' ? 'active' : ''}`}
-              onClick={() => setActiveTab('processing')}
-            >
-              Processing
+            <button className={`om-tab ${activeTab === 'processing' ? 'active' : ''}`} onClick={() => setActiveTab('processing')}>
+              Processing <span className="tab-count">{stats.processing}</span>
             </button>
-            <button 
-              className={`om-tab ${activeTab === 'out-for-delivery' ? 'active' : ''}`}
-              onClick={() => setActiveTab('out-for-delivery')}
-            >
-              Out for Delivery
+            <button className={`om-tab ${activeTab === 'delivered' ? 'active' : ''}`} onClick={() => setActiveTab('delivered')}>
+              Delivered <span className="tab-count">{stats.delivered}</span>
             </button>
-            <button 
-              className={`om-tab ${activeTab === 'delivered' ? 'active' : ''}`}
-              onClick={() => setActiveTab('delivered')}
-            >
-              Delivered
-            </button>
-          </div>
-          <div className="om-table-actions">
-            <button className="table-action-btn" onClick={() => document.querySelector('.om-search-box input')?.focus()} title="Search">
-              <FiSearch />
-            </button>
-            <button className="table-action-btn">
-              <FiFilter />
-            </button>
-            <button className="table-action-btn" onClick={() => alert('View options coming soon')} title="Grid View">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <rect x="3" y="3" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/>
-                <rect x="11" y="3" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/>
-                <rect x="3" y="11" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/>
-                <rect x="11" y="11" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/>
-              </svg>
-            </button>
-            <button className="table-action-btn" onClick={() => alert('View options coming soon')} title="List View">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M3 6H17M3 10H17M3 14H17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
+            <button className={`om-tab ${activeTab === 'cancelled' ? 'active' : ''}`} onClick={() => setActiveTab('cancelled')}>
+              Cancelled <span className="tab-count">{stats.cancelled}</span>
             </button>
           </div>
         </div>
@@ -478,9 +396,15 @@ const Orders = () => {
           <div className="bulk-actions-bar">
             <span>{selectedOrders.length} orders selected</span>
             <div className="bulk-btns">
-              <button className="bulk-btn" onClick={() => {/* Bulk Print */}}>Print Invoices</button>
-              <button className="bulk-btn" onClick={() => {/* Bulk Export */}}>Export CSV</button>
-              <button className="bulk-btn danger" onClick={() => {/* Bulk Cancel */}}>Cancel Selected</button>
+              <button className="bulk-btn" onClick={() => handleBulkAction('status')}>
+                Update Status
+              </button>
+              <button className="bulk-btn" onClick={() => handleBulkAction('invoice')}>
+                Generate Invoices
+              </button>
+              <button className="bulk-btn danger" onClick={() => handleBulkAction('delete')}>
+                Delete Selected
+              </button>
             </div>
           </div>
         )}
@@ -491,113 +415,98 @@ const Orders = () => {
             <table className="om-table">
               <thead>
                 <tr>
-                  <th>Product Name</th>
-                  <th>Customer Name</th>
-                  <th>Order Id</th>
-                  <th>Amount</th>
+                  <th>
+                    <input
+                      type="checkbox"
+                      checked={selectedOrders.length === filteredOrders.length}
+                      onChange={toggleSelectAll}
+                    />
+                  </th>
+                  <th>Order ID</th>
+                  <th>Customer</th>
+                  <th>Items</th>
+                  <th>Total</th>
+                  <th>Payment</th>
                   <th>Status</th>
-                  <th>Action</th>
+                  <th>Date</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredOrders.map((order) => {
-                  const firstItem = order.items?.[0] || {};
-                  const itemImage = firstItem.images && firstItem.images.length > 0 
-                    ? (firstItem.images[0].url || firstItem.images[0]) 
-                    : firstItem.image;
+                  const firstItem = order.items && order.items.length > 0 ? order.items[0] : null;
                   
                   return (
-                    <tr key={order.id}>
+                    <tr key={order.id} className={selectedOrders.includes(order.id) ? 'selected' : ''}>
                       <td>
-                        <div className="product-cell">
-                          <div className="product-image">
-                            {itemImage ? (
-                              <img src={itemImage} alt={firstItem.name} />
-                            ) : (
-                              <div className="product-placeholder">📦</div>
-                            )}
-                          </div>
-                          <div className="product-info">
-                            <span className="product-name">{firstItem.name || 'Product'}</span>
-                            <span className="product-items">Items {order.items?.length || 1}</span>
-                          </div>
+                        <input
+                          type="checkbox"
+                          checked={selectedOrders.includes(order.id)}
+                          onChange={() => toggleOrderSelection(order.id)}
+                        />
+                      </td>
+                      <td>
+                        <div className="order-id-cell">
+                          <span className="order-id-text">#{order.id.substring(0, 8)}</span>
                         </div>
                       </td>
                       <td>
                         <div className="customer-cell">
-                          <div className="customer-avatar">
-                            {order.customerName?.charAt(0) || 'U'}
-                          </div>
-                          <div className="customer-info">
-                            <span className="customer-name">{order.customerName || 'Customer'}</span>
-                            <span className="customer-type">
-                              {order.orderCount > 10 ? 'Star Customer' : 
-                               order.orderCount > 5 ? 'Pro Customer' : 'New Customer'}
-                            </span>
-                          </div>
+                          <span className="customer-name">{order.customerName || 'Guest'}</span>
+                          <span className="customer-contact">{order.phone || order.email}</span>
                         </div>
                       </td>
                       <td>
                         <div className="items-cell">
-                          <span className="items-count">{order.items?.length || 0} Items</span>
-                          <span className="items-preview">{firstItem.name}</span>
+                          <span className="items-count">{order.items?.length || 0} items</span>
+                          {firstItem && <span className="items-preview">{firstItem.name}</span>}
                         </div>
                       </td>
                       <td>
                         <div className="amount-cell">
-                          <span className="amount-value">₹{order.totalAmount?.toLocaleString() || 0}</span>
-                          <span className="payment-method">
-                            {order.paymentMethod === 'card' ? 'Paid by Mastercard' : 
-                             order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Paid'}
+                          <span className="amount-value">{formatCurrency(order.total)}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="payment-cell">
+                          <span className={`payment-badge ${order.paymentMethod?.toLowerCase()}`}>
+                            {order.paymentMethod === 'cod' ? 'COD' : 'Paid'}
                           </span>
                         </div>
                       </td>
                       <td>
                         <span className={`status-badge ${getStatusClass(order.status)}`}>
-                          {getStatusText(order.status)}
+                          {order.status || 'Pending'}
                         </span>
                       </td>
                       <td>
+                        <span className="date-text">{formatDate(order.createdAt)}</span>
+                      </td>
+                      <td>
                         <div className="action-cell">
-                          <button 
-                            className="action-menu-btn invoice-btn"
-                            onClick={() => generateInvoice(order)}
-                            title="Download Invoice"
-                            style={{ marginRight: '8px', color: '#27ae60' }}
-                          >
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                              <polyline points="7 10 12 15 17 10"></polyline>
-                              <line x1="12" y1="15" x2="12" y2="3"></line>
-                            </svg>
-                          </button>
                           <button
                             className="action-menu-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveDropdown(activeDropdown === order.id ? null : order.id);
-                            }}
-                            style={{ cursor: 'pointer' }}
+                            onClick={() => setActiveDropdown(activeDropdown === order.id ? null : order.id)}
                           >
                             <FiMoreVertical />
                           </button>
                           {activeDropdown === order.id && (
                             <div className="action-dropdown">
-                                <button className="dropdown-item" onClick={() => setViewingOrder(order)}>
-                                  <FiSearch /> View Details
-                                </button>
-                                <button className="dropdown-item" onClick={() => updateOrderStatus(order.id, 'confirmed')}>
-                                  <FiEdit /> Confirm Order
-                                </button>
-                                <button className="dropdown-item" onClick={() => updateOrderStatus(order.id, 'processing')}>
-                                  <FiClock /> Start Processing
-                                </button>
-                                <button className="dropdown-item" onClick={() => updateOrderStatus(order.id, 'shipped')}>
-                                  <FiStar /> Ship Order
-                                </button>
-                                <button className="dropdown-item danger" onClick={() => updateOrderStatus(order.id, 'cancelled')}>
-                                  <FiTrash2 /> Cancel Order
-                                </button>
+                              <button className="dropdown-item" onClick={() => setViewingOrder(order)}>
+                                <FiEye /> View Details
+                              </button>
+                              <button className="dropdown-item" onClick={() => updateOrderStatus(order.id, 'processing')}>
+                                <FiEdit /> Update Status
+                              </button>
+                              <button className="dropdown-item">
+                                <FiDownload /> Invoice
+                              </button>
+                              <button className="dropdown-item">
+                                <FiTruck /> Assign Delivery
+                              </button>
+                              <button className="dropdown-item danger" onClick={() => updateOrderStatus(order.id, 'cancelled')}>
+                                <FiTrash2 /> Cancel Order
+                              </button>
                             </div>
                           )}
                         </div>
@@ -610,29 +519,104 @@ const Orders = () => {
           </div>
         ) : (
           <div className="empty-state">
-            <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-              <rect x="8" y="16" width="48" height="40" rx="4" stroke="#D1D5DB" strokeWidth="2"/>
-              <path d="M24 16V12C24 10.9 24.9 10 26 10H38C39.1 10 40 10.9 40 12V16" stroke="#D1D5DB" strokeWidth="2"/>
-            </svg>
+            <FiPackage size={64} />
             <h3>No Orders Found</h3>
             <p>
               {searchTerm || activeTab !== 'all' 
                 ? 'No orders match your search criteria.' 
                 : 'No orders have been placed yet.'}
             </p>
-            {(searchTerm === '' && activeTab === 'all' && dateRange === 'all') && (
-              <button
-                onClick={addSampleOrders}
-                className="btn-primary"
-                style={{ marginTop: '20px' }}
-              >
-                <FiPackage style={{ marginRight: '8px' }} />
-                Add Sample Orders
-              </button>
-            )}
           </div>
         )}
       </div>
+
+      {/* Order Details Modal */}
+      {viewingOrder && (
+        <div className="modal-overlay" onClick={() => setViewingOrder(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Order Details - #{viewingOrder.id.substring(0, 10)}</h2>
+              <button className="close-btn" onClick={() => setViewingOrder(null)}>
+                <FiX />
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="order-details-grid">
+                <div className="detail-section">
+                  <h3>Customer Information</h3>
+                  <div className="detail-row">
+                    <span>Name:</span>
+                    <strong>{viewingOrder.customerName}</strong>
+                  </div>
+                  <div className="detail-row">
+                    <span>Email:</span>
+                    <strong>{viewingOrder.email}</strong>
+                  </div>
+                  <div className="detail-row">
+                    <span>Phone:</span>
+                    <strong>{viewingOrder.phone}</strong>
+                  </div>
+                </div>
+
+                <div className="detail-section">
+                  <h3>Order Information</h3>
+                  <div className="detail-row">
+                    <span>Order ID:</span>
+                    <strong>#{viewingOrder.id}</strong>
+                  </div>
+                  <div className="detail-row">
+                    <span>Status:</span>
+                    <strong>{viewingOrder.status}</strong>
+                  </div>
+                  <div className="detail-row">
+                    <span>Payment:</span>
+                    <strong>{viewingOrder.paymentMethod}</strong>
+                  </div>
+                </div>
+
+                <div className="detail-section full-width">
+                  <h3>Delivery Address</h3>
+                  <p>{viewingOrder.address?.street}, {viewingOrder.address?.city}, {viewingOrder.address?.state} - {viewingOrder.address?.pincode}</p>
+                </div>
+
+                <div className="detail-section full-width">
+                  <h3>Order Items</h3>
+                  <table className="items-table">
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th>Quantity</th>
+                        <th>Price</th>
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {viewingOrder.items?.map((item, index) => (
+                        <tr key={index}>
+                          <td>{item.name}</td>
+                          <td>{item.quantity}</td>
+                          <td>{formatCurrency(item.price)}</td>
+                          <td>{formatCurrency(item.price * item.quantity)}</td>
+                        </tr>
+                      ))}
+                      <tr>
+                        <td colSpan="3" style={{ textAlign: 'right', fontWeight: 'bold' }}>Total:</td>
+                        <td className="total-amount">{formatCurrency(viewingOrder.total)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={() => setViewingOrder(null)}>Close</button>
+              <button className="btn-primary">
+                <FiDownload /> Download Invoice
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
