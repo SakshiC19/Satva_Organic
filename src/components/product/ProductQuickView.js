@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FiX, FiShoppingCart, FiHeart, FiMinus, FiPlus } from 'react-icons/fi';
+import { useCart } from '../../contexts/CartContext';
+import { useWishlist } from '../../contexts/WishlistContext';
 import './ProductQuickView.css';
 
 const ProductQuickView = ({ product, onClose }) => {
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState('');
+  const { addToCart, openCart } = useCart();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
 
   if (!product) return null;
 
@@ -39,13 +43,21 @@ const ProductQuickView = ({ product, onClose }) => {
   };
 
   const handleAddToCart = () => {
-    console.log('Adding to cart:', { product, quantity, selectedSize });
-    // Add to cart logic here
+    addToCart({
+      ...product,
+      quantity,
+      selectedSize: selectedSize || (packingSizes && packingSizes.length > 0 ? packingSizes[0] : 'Standard')
+    });
+    onClose();
+    openCart();
   };
 
   const handleAddToWishlist = () => {
-    console.log('Adding to wishlist:', product);
-    // Add to wishlist logic here
+    if (isInWishlist(product.id)) {
+      removeFromWishlist(product.id);
+    } else {
+      addToWishlist(product);
+    }
   };
 
   return createPortal(
@@ -154,11 +166,11 @@ const ProductQuickView = ({ product, onClose }) => {
                 Add to Cart
               </button>
               <button
-                className="btn-add-to-wishlist"
+                className={`btn-add-to-wishlist ${isInWishlist(product.id) ? 'active' : ''}`}
                 onClick={handleAddToWishlist}
                 aria-label="Add to wishlist"
               >
-                <FiHeart />
+                <FiHeart className={isInWishlist(product.id) ? 'filled' : ''} />
               </button>
             </div>
 

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { collection, query, where, getDocs, orderBy, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, doc, updateDoc, addDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
-import { generateInvoice } from '../../utils/invoiceGenerator';
+import { downloadInvoice } from '../../utils/invoiceGenerator';
 import Badge from '../../components/common/Badge';
 import { 
   FiDownload, 
@@ -31,28 +31,30 @@ const Orders = () => {
   const [dateFilter, setDateFilter] = useState('All');
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      if (!currentUser) return;
-      try {
-        const q = query(
-          collection(db, 'orders'),
-          where('userId', '==', currentUser.uid),
-          orderBy('createdAt', 'desc')
-        );
-        const querySnapshot = await getDocs(q);
-        const ordersData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setOrders(ordersData);
-      } catch (error) {
-        console.error("Error fetching orders:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (!currentUser) return;
 
-    fetchOrders();
+    const q = query(
+      collection(db, 'orders'),
+      where('userId', '==', currentUser.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const ordersData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })).sort((a, b) => {
+        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+        return dateB - dateA;
+      });
+      setOrders(ordersData);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching orders:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, [currentUser]);
 
   const handleReorder = (order) => {
@@ -70,30 +72,64 @@ const Orders = () => {
     openCart();
   };
 
-  const handleCancelOrder = async (orderId) => {
-    if (window.confirm('Are you sure you want to cancel this order?')) {
-      try {
-        const orderRef = doc(db, 'orders', orderId);
-        await updateDoc(orderRef, {
-          status: 'Cancelled',
-          updatedAt: serverTimestamp(),
-          cancelReason: 'User cancelled'
-        });
-        setOrders(orders.map(o => o.id === orderId ? { ...o, status: 'Cancelled' } : o));
-      } catch (error) {
-        console.error("Error cancelling order:", error);
-      }
+  const [cancelModal, setCancelModal] = useState({ isOpen: false, orderId: null });
+  const [cancelReason, setCancelReason] = useState('');
+  const [customReason, setCustomReason] = useState('');
+
+  const cancellationReasons = [
+    "Changed my mind",
+    "Found a better price",
+    "Ordered by mistake",
+    "Shipping time is too long",
+    "Other"
+  ];
+
+  const handleCancelClick = (orderId) => {
+    setCancelModal({ isOpen: true, orderId });
+    setCancelReason('');
+    setCustomReason('');
+  };
+
+  const submitCancellation = async () => {
+    if (!cancelReason) return;
+    const reason = cancelReason === 'Other' ? customReason : cancelReason;
+    
+    try {
+      const orderRef = doc(db, 'orders', cancelModal.orderId);
+      await updateDoc(orderRef, {
+        cancellationRequest: {
+          status: 'pending',
+          reason: reason,
+          requestedAt: serverTimestamp()
+        }
+      });
+      
+      setOrders(orders.map(o => o.id === cancelModal.orderId ? { 
+        ...o, 
+        cancellationRequest: { status: 'pending', reason, requestedAt: new Date() } 
+      } : o));
+      
+      setCancelModal({ isOpen: false, orderId: null });
+      alert('Cancellation request sent to admin for approval.');
+    } catch (error) {
+      console.error("Error requesting cancellation:", error);
+      alert('Failed to send cancellation request.');
     }
   };
 
   const formatDate = (timestamp) => {
-    if (!timestamp) return 'N/A';
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
+    if (!timestamp) return 'Placed on: N/A';
+    try {
+      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+      if (isNaN(date.getTime())) return 'Placed on: N/A';
+      return `Placed on ${date.toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      })}`;
+    } catch (e) {
+      return 'Placed on: N/A';
+    }
   };
 
   const filteredOrders = useMemo(() => {
@@ -185,6 +221,7 @@ const Orders = () => {
               <option value="Last 30 Days">Last 30 Days</option>
               <option value="Last 6 Months">Last 6 Months</option>
               <option value="2025">2025</option>
+              <option value="2024">2024</option>
             </select>
           </div>
         </div>
@@ -193,94 +230,94 @@ const Orders = () => {
       <div className="orders-list">
         {filteredOrders.length > 0 ? (
           filteredOrders.map(order => (
-            <div key={order.id} className="order-card-premium">
-              <div className="order-card-header">
-                <div className="order-main-info">
-                  <div className="order-id-group">
-                    <span className="label">Order ID</span>
-                    <span className="value">#{order.id.substring(0, 8).toUpperCase()}</span>
-                  </div>
-                  <div className="order-date-group">
-                    <FiCalendar className="icon" />
-                    <span>{formatDate(order.createdAt)}</span>
-                  </div>
+            <div key={order.id} className="order-card-enhanced">
+              {/* Header: Order ID, Date, Status */}
+              <div className="card-header-row">
+                <div className="header-left">
+                  <span className="order-id">Order #{order.id.substring(0, 8).toUpperCase()}</span>
+                  <span className="order-date">{formatDate(order.createdAt)}</span>
                 </div>
-                <div className="order-status-group">
-                  <Badge variant={getStatusColor(order.status)}>
-                    {order.status || 'Processing'}
-                  </Badge>
-                  {order.estimatedDelivery && (
-                    <span className="est-delivery">
-                      Est. Delivery: {order.estimatedDelivery}
-                    </span>
+                <div className="header-right">
+                  <Badge variant={getStatusColor(order.status)}>{order.status || 'Processing'}</Badge>
+                </div>
+              </div>
+
+              {/* Mini Timeline */}
+              <div className="order-mini-timeline">
+                {['Ordered', 'Packed', 'Shipped', 'Delivered'].map((step, index) => {
+                  const status = order.status || 'Processing';
+                  const steps = ['Processing', 'Packed', 'Shipped', 'Delivered'];
+                  const currentStepIndex = steps.indexOf(status) === -1 ? 0 : steps.indexOf(status);
+                  const isCompleted = index <= currentStepIndex;
+                  
+                  return (
+                    <div key={step} className={`timeline-step ${isCompleted ? 'completed' : ''}`}>
+                      <div className="step-dot"></div>
+                      <span className="step-label">{step}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Body: Items, Payment, Address */}
+              <div className="card-body-row">
+                <div className="items-section">
+                  {order.items?.slice(0, 2).map((item, idx) => (
+                    <div key={idx} className="item-row">
+                      <img src={item.image} alt={item.name} className="item-thumb" />
+                      <div className="item-details">
+                        <span className="item-name">{item.name}</span>
+                        <span className="item-meta">Qty: {item.quantity} | {item.selectedSize}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {order.items?.length > 2 && (
+                    <div className="more-items">+{order.items.length - 2} more items</div>
                   )}
                 </div>
-              </div>
-              
-              <div className="order-card-body">
-                <div className="order-items-preview">
-                  <div className="items-list">
-                    {order.items?.map((item, idx) => (
-                      <div key={idx} className="item-mini">
-                        <img src={item.image} alt={item.name} />
-                        <div className="item-info">
-                          <span className="name">{item.name}</span>
-                          <span className="qty">Qty: {item.quantity} | {item.selectedSize || '500g'}</span>
-                        </div>
-                      </div>
-                    ))}
+                
+                <div className="info-section">
+                  <div className="info-block">
+                    <span className="info-label">Payment</span>
+                    <span className="info-value">{order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Online Payment'}</span>
+                  </div>
+                  <div className="info-block">
+                    <span className="info-label">Delivery To</span>
+                    <span className="info-value">{order.shippingAddress?.city || 'N/A'} - {order.shippingAddress?.pincode || ''}</span>
+                  </div>
+                  <div className="info-block">
+                    <span className="info-label">Total Amount</span>
+                    <span className="info-value price">₹{order.totalAmount}</span>
                   </div>
                 </div>
-                
-                <div className="order-summary-actions">
-                  <div className="order-total">
-                    <span className="label">Total Amount</span>
-                    <span className="amount">₹{order.totalAmount}</span>
-                  </div>
-                  <div className="order-actions-grid">
-                    <button 
-                      className="btn-action btn-track"
-                      onClick={() => navigate(`/account/orders/${order.id}`)}
-                    >
-                      <FiTruck /> Track Order
-                    </button>
-                    <button 
-                      className="btn-action btn-reorder"
-                      onClick={() => handleReorder(order)}
-                    >
-                      <FiRefreshCw /> Reorder
-                    </button>
-                    <button 
-                      className="btn-action btn-invoice"
-                      onClick={() => generateInvoice(order)}
-                    >
+              </div>
+
+              {/* Footer: Actions */}
+              <div className="card-footer-row">
+                <div className="footer-actions">
+                  <button className="btn-track" onClick={() => navigate(`/account/orders/${order.id}`)}>
+                    Track Order
+                  </button>
+                  <button className="btn-reorder" onClick={() => handleReorder(order)}>
+                    Reorder
+                  </button>
+                  {['confirmed', 'processing', 'packed', 'shipped', 'out for delivery', 'delivered'].includes(order.status?.toLowerCase()) && (
+                    <button className="btn-text" onClick={() => downloadInvoice(order)}>
                       <FiDownload /> Invoice
                     </button>
-                    
-                    {order.status === 'Processing' && (
-                      <button 
-                        className="btn-action btn-cancel"
-                        onClick={() => handleCancelOrder(order.id)}
-                      >
-                        <FiXCircle /> Cancel
+                  )}
+                  {order.status === 'Processing' && (
+                    order.cancellationRequest?.status === 'pending' ? (
+                      <span className="status-text warning">Cancellation Requested</span>
+                    ) : (
+                      <button className="btn-text danger" onClick={() => handleCancelClick(order.id)}>
+                        Cancel Order
                       </button>
-                    )}
-                    
-                    {order.status === 'Delivered' && (
-                      <button 
-                        className="btn-action btn-return"
-                        onClick={() => navigate(`/account/orders/${order.id}?action=return`)}
-                      >
-                        <FiRotateCcw /> Return
-                      </button>
-                    )}
-                  </div>
+                    )
+                  )}
                 </div>
-              </div>
-              
-              <div className="order-card-footer">
-                <Link to={`/account/orders/${order.id}`} className="view-details-link">
-                  View Full Order Details <FiChevronRight />
+                <Link to={`/account/orders/${order.id}`} className="view-full-details">
+                  View Full Details <FiChevronRight />
                 </Link>
               </div>
             </div>
@@ -298,6 +335,55 @@ const Orders = () => {
           </div>
         )}
       </div>
+
+      
+      {/* Cancellation Modal */}
+      {cancelModal.isOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content small-modal">
+            <div className="modal-header">
+              <h3>Request Cancellation</h3>
+              <button className="close-btn" onClick={() => setCancelModal({ isOpen: false, orderId: null })}>
+                <FiXCircle />
+              </button>
+            </div>
+            <div className="modal-body">
+              <p>Please select a reason for cancellation:</p>
+              <select 
+                className="form-select"
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+              >
+                <option value="">Select Reason</option>
+                {cancellationReasons.map(r => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+              
+              {cancelReason === 'Other' && (
+                <textarea
+                  className="form-textarea"
+                  placeholder="Please specify reason..."
+                  value={customReason}
+                  onChange={(e) => setCustomReason(e.target.value)}
+                  rows="3"
+                  style={{ marginTop: '10px', width: '100%' }}
+                />
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={() => setCancelModal({ isOpen: false, orderId: null })}>Close</button>
+              <button 
+                className="btn-danger" 
+                onClick={submitCancellation}
+                disabled={!cancelReason || (cancelReason === 'Other' && !customReason)}
+              >
+                Submit Request
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

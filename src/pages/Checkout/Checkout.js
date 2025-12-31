@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { doc, updateDoc, arrayUnion, serverTimestamp, addDoc, collection, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { FiCheck, FiShield, FiEdit2, FiPlus } from 'react-icons/fi';
+import { FiCheck, FiShield, FiEdit2, FiPlus, FiTruck } from 'react-icons/fi';
 import './Checkout.css';
 
 const Checkout = () => {
@@ -29,6 +29,7 @@ const Checkout = () => {
   const isCodAvailable = cartItems.every(item => item.codAvailable !== false);
 
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(isCodAvailable ? 'cod' : 'razorpay');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Update payment method if COD becomes unavailable
   useEffect(() => {
@@ -44,7 +45,9 @@ const Checkout = () => {
     locality: '',
     address: '',
     city: '',
-    state: ''
+    state: '',
+    addressType: 'Home',
+    alternatePhone: ''
   });
 
   const [localities, setLocalities] = useState([]);
@@ -215,6 +218,9 @@ const Checkout = () => {
   };
 
   const handleConfirmOrder = async () => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+
     // Sanitize items to ensure no undefined values or complex objects
     const sanitizedItems = cartItems.map(item => ({
       id: item.id || '',
@@ -272,6 +278,7 @@ const Checkout = () => {
           } catch (error) {
             console.error("Error saving order (Razorpay):", error);
             alert("Payment successful but failed to place order. Please contact support.");
+            setIsProcessing(false);
           }
         },
         prefill: {
@@ -297,6 +304,7 @@ const Checkout = () => {
         } catch (error) {
             console.error("Error saving order (Simulated):", error);
             alert("Failed to place order. Please try again.");
+            setIsProcessing(false);
         }
       }, 1500);
       
@@ -311,6 +319,7 @@ const Checkout = () => {
       } catch (error) {
         console.error("Error saving order (COD):", error);
         alert("Failed to place order. Please try again.");
+        setIsProcessing(false);
       }
     }
     
@@ -323,15 +332,16 @@ const Checkout = () => {
   return (
     <div className="checkout-page">
       {showConfirmation && (
-        <div className="order-confirmation-overlay">
-          <div className="order-confirmation-popup">
-            <div className="celebration-gif">
-              <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbmM2Z3g2Z3g2Z3g2Z3g2Z3g2Z3g2Z3g2Z3g2Z3g2Z3g/26tOZ42Mg6pbTpr7W/giphy.gif" alt="Celebration" />
+        <div className="modal-overlay">
+          <div className="modal-content confirmation-modal">
+            <div className="celebration-icon">
+              <FiCheck />
             </div>
             <h2>Order Confirmed!</h2>
             <p>Thank you for shopping with Satva Organics.</p>
+            <p className="order-id-text">Your order has been placed successfully.</p>
             <button onClick={() => navigate('/shop')} className="continue-shopping-btn">
-              Continue Shopping
+              CONTINUE SHOPPING
             </button>
           </div>
         </div>
@@ -385,7 +395,7 @@ const Checkout = () => {
                       {error && <p style={{ color: 'red', fontSize: '12px', marginBottom: '8px' }}>{error}</p>}
 
                       <button type="submit" className="continue-btn">
-                        {isSignup ? 'Signup & Continue' : 'Login & Continue'}
+                        {isSignup ? 'SIGNUP & CONTINUE' : 'LOGIN & CONTINUE'}
                       </button>
 
                       <div style={{ marginTop: '12px', fontSize: '14px', textAlign: 'center' }}>
@@ -442,13 +452,13 @@ const Checkout = () => {
                             className="deliver-here-btn"
                             onClick={() => handleSelectAddress(addr)}
                           >
-                            Deliver Here
+                            DELIVER HERE
                           </button>
                           <button 
                             className="edit-address-btn"
                             onClick={() => handleEditAddress(index)}
                           >
-                            <FiEdit2 /> Edit
+                            <FiEdit2 /> EDIT
                           </button>
                         </div>
                       </div>
@@ -464,11 +474,14 @@ const Checkout = () => {
                         setIsAddingNew(true);
                       }}
                     >
-                      <FiPlus /> Add New Address
+                      <FiPlus /> ADD A NEW ADDRESS
                     </button>
                   </div>
                 ) : (
                   <form className="address-form" onSubmit={handleAddressSubmit}>
+                    <div className="delivery-message">
+                      <FiCheck /> Delivery available in Kolhapur
+                    </div>
                     <input 
                       type="text" 
                       className="checkout-input" 
@@ -549,10 +562,51 @@ const Checkout = () => {
                       value={address.state}
                       onChange={e => setAddress({...address, state: e.target.value})}
                     />
+
+                    <div className="form-row">
+                      <select
+                        className="checkout-input"
+                        value={address.deliverySlot || ''}
+                        onChange={e => setAddress({...address, deliverySlot: e.target.value})}
+                      >
+                        <option value="">Select Delivery Slot</option>
+                        <option value="Morning (8 AM - 11 AM)">Morning (8 AM - 11 AM)</option>
+                        <option value="Afternoon (1 PM - 4 PM)">Afternoon (1 PM - 4 PM)</option>
+                        <option value="Evening (5 PM - 8 PM)">Evening (5 PM - 8 PM)</option>
+                      </select>
+                    </div>
+
+                    <div className="form-row">
+                      <input 
+                        type="tel" 
+                        className="checkout-input" 
+                        placeholder="Alternate Phone (Optional)" 
+                        value={address.alternatePhone || ''}
+                        onChange={e => setAddress({...address, alternatePhone: e.target.value})}
+                      />
+                    </div>
+
+                    <div className="address-type-section">
+                      <label>Address Type</label>
+                      <div className="address-type-options">
+                        {['Home', 'Work', 'Other'].map(type => (
+                          <label key={type} className={`type-option ${address.addressType === type ? 'selected' : ''}`}>
+                            <input 
+                              type="radio" 
+                              name="addressType" 
+                              value={type}
+                              checked={address.addressType === type}
+                              onChange={e => setAddress({...address, addressType: e.target.value})}
+                            />
+                            {type}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
                     
                     <div className="form-actions">
-                      <button type="submit" className="continue-btn" style={{width: '200px'}}>
-                        {editingIndex !== null ? 'Update Address' : 'Save and Deliver Here'}
+                      <button type="submit" className="continue-btn" style={{width: 'auto', minWidth: '200px'}}>
+                        {editingIndex !== null ? 'UPDATE ADDRESS' : 'SAVE AND DELIVER HERE'}
                       </button>
                       {savedAddresses.length > 0 && (
                         <button 
@@ -562,17 +616,8 @@ const Checkout = () => {
                             setIsAddingNew(false);
                             setEditingIndex(null);
                           }}
-                          style={{
-                            marginLeft: '10px',
-                            padding: '12px 24px',
-                            border: '1px solid #e0e0e0',
-                            background: 'white',
-                            color: '#2874f0',
-                            fontWeight: '600',
-                            cursor: 'pointer'
-                          }}
                         >
-                          Cancel
+                          CANCEL
                         </button>
                       )}
                     </div>
@@ -593,16 +638,29 @@ const Checkout = () => {
                     : item.image;
 
                   return (
-                    <div key={`${item.id}-${item.selectedSize || 'default'}`} style={{display: 'flex', gap: '16px', marginBottom: '16px', borderBottom: '1px solid #f0f0f0', paddingBottom: '16px'}}>
-                      <img src={itemImage} alt={item.name} style={{width: '80px', height: '80px', objectFit: 'contain'}} />
-                      <div>
-                        <h4 style={{margin: '0 0 8px 0'}}>{item.name}</h4>
-                        <div style={{fontSize: '14px', color: '#878787'}}>
-                          Size: {item.selectedSize || 'Standard'} | Quantity: {item.quantity}
+                    <div key={`${item.id}-${item.selectedSize || 'default'}`} className="order-summary-item">
+                      <img src={itemImage} alt={item.name} className="summary-item-img" />
+                      <div className="summary-item-details">
+                        <h4>{item.name}</h4>
+                        <div className="summary-item-meta">
+                          Size: {item.selectedSize || 'Standard'}
                         </div>
-                        <div style={{marginTop: '8px', fontWeight: '600'}}>
+                        <div className="summary-item-delivery">
+                          <FiTruck /> Delivery by {new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                        </div>
+                        <div className="summary-item-price">
                           ₹{item.price * item.quantity}
                         </div>
+                      </div>
+                      <div className="summary-item-actions">
+                        <div className="quantity-controls small">
+                          <button onClick={() => updateQuantity(item.id, item.selectedSize, item.quantity - 1)} disabled={item.quantity <= 1}>-</button>
+                          <span>{item.quantity}</span>
+                          <button onClick={() => updateQuantity(item.id, item.selectedSize, item.quantity + 1)}>+</button>
+                        </div>
+                        <button className="remove-item-btn" onClick={() => removeFromCart(item.id, item.selectedSize)}>
+                          REMOVE
+                        </button>
                       </div>
                     </div>
                   );
@@ -619,33 +677,51 @@ const Checkout = () => {
             <StepHeader step={4} title="PAYMENT OPTIONS" />
             {activeStep === 4 && (
               <div className="step-body">
-                <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
-                  <label style={{display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer'}}>
-                    <input type="radio" name="payment" />
-                    <span>UPI</span>
-                  </label>
-                  <label style={{display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer'}}>
-                    <input type="radio" name="payment" />
-                    <span>Wallets</span>
-                  </label>
-                  <label style={{display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer'}}>
-                    <input type="radio" name="payment" />
-                    <span>Credit / Debit / ATM Card</span>
-                  </label>
-                  <label style={{display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer'}}>
-                    <input type="radio" name="payment" />
-                    <span>Net Banking</span>
-                  </label>
-                  <label style={{display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer'}}>
-                    <input type="radio" name="payment" defaultChecked />
-                    <span>Cash on Delivery</span>
-                  </label>
+                <div className="payment-options-container">
+                  {/* Razorpay Option */}
+                  <div 
+                    className={`payment-option ${selectedPaymentMethod === 'razorpay' ? 'selected' : ''}`}
+                    onClick={() => setSelectedPaymentMethod('razorpay')}
+                  >
+                    <div className="payment-label">
+                      <input 
+                        type="radio" 
+                        name="payment" 
+                        checked={selectedPaymentMethod === 'razorpay'}
+                        onChange={() => setSelectedPaymentMethod('razorpay')}
+                      />
+                      <span>Razorpay (Cards, UPI, NetBanking)</span>
+                    </div>
+                  </div>
+
+                  {/* COD Option */}
+                  <div 
+                    className={`payment-option ${selectedPaymentMethod === 'cod' ? 'selected' : ''} ${!isCodAvailable ? 'disabled' : ''}`}
+                    onClick={() => isCodAvailable && setSelectedPaymentMethod('cod')}
+                    style={!isCodAvailable ? { filter: 'blur(0.5px)' } : {}}
+                  >
+                    <div className="payment-label">
+                      <input 
+                        type="radio" 
+                        name="payment" 
+                        checked={selectedPaymentMethod === 'cod'}
+                        onChange={() => isCodAvailable && setSelectedPaymentMethod('cod')}
+                        disabled={!isCodAvailable}
+                      />
+                      <span>Cash on Delivery</span>
+                      {!isCodAvailable && (
+                        <span className="cod-unavailable-badge">Not Available</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
+
                 <button
-                  className="continue-btn confirm-order-btn"
+                  className="confirm-order-btn"
                   onClick={handleConfirmOrder}
+                  disabled={isProcessing}
                 >
-                  Confirm Order
+                  {isProcessing ? 'PROCESSING...' : 'CONFIRM ORDER'}
                 </button>
               </div>
             )}
@@ -717,6 +793,12 @@ const Checkout = () => {
               Safe and Secure Payments. Easy returns.<br />
               100% Authentic products.
             </div>
+          </div>
+          
+          <div className="checkout-footer-links">
+            <a href="/policy/return">Return & Refund Policy</a>
+            <span>•</span>
+            <a href="/support">Need Help?</a>
           </div>
         </div>
       </div>
