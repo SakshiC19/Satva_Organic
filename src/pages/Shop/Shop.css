@@ -261,11 +261,16 @@
     .products-grid.compact-view {
         grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     }
+
+    .pagination,
+    .results-count {
+        display: none;
+    }
 }
 
 @media (max-width: 480px) {
     .products-grid {
         grid-template-columns: repeat(2, 1fr);
-        gap: 8px;
+        gap: 12px;
     }
 }
