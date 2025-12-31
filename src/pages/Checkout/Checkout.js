@@ -2,36 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
-import { FiCheck, FiShield, FiEdit2, FiPlus } from 'react-icons/fi';
-import { generateInvoice } from '../../utils/invoiceGenerator';
-import { doc, getDoc, updateDoc, arrayUnion, addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import { FiCheck, FiShield } from 'react-icons/fi';
 import './Checkout.css';
 
 const Checkout = () => {
   const { currentUser, login, signup } = useAuth();
   const { cartItems, cartTotal } = useCart();
   const navigate = useNavigate();
-  
+
+  // Safety check for cartTotal
+  const safeCartTotal = cartTotal || 0;
+  const safeCartItems = cartItems || [];
+
   const [activeStep, setActiveStep] = useState(1);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [isSignup, setIsSignup] = useState(false);
   const [error, setError] = useState('');
-  
-  // Check if COD is available for all items in cart
-  // Default to true if codAvailable property is missing (backward compatibility)
-  const isCodAvailable = cartItems.every(item => item.codAvailable !== false);
-
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(isCodAvailable ? 'cod' : 'razorpay');
-
-  // Update payment method if COD becomes unavailable
-  useEffect(() => {
-    if (!isCodAvailable && selectedPaymentMethod === 'cod') {
-      setSelectedPaymentMethod('razorpay');
-    }
-  }, [isCodAvailable, selectedPaymentMethod]);
   
   const [address, setAddress] = useState({
     name: '',
@@ -101,29 +89,16 @@ const Checkout = () => {
     }
   }, [currentUser]);
 
-  const fetchSavedAddresses = async () => {
-    if (!currentUser) return;
-    try {
-      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-      if (userDoc.exists() && userDoc.data().addresses) {
-        setSavedAddresses(userDoc.data().addresses);
-      }
-    } catch (error) {
-      console.error("Error fetching addresses:", error);
-    }
-  };
-
   const handleLoginContinue = async (e) => {
     e.preventDefault();
     setError('');
-    
+
     try {
       if (isSignup) {
         await signup(email, password, name);
       } else {
         await login(email, password);
       }
-      // Success is handled by useEffect listening to currentUser
     } catch (err) {
       console.error(err);
       setError('Failed to ' + (isSignup ? 'create account' : 'login') + '. Please check your credentials.');
@@ -192,11 +167,11 @@ const Checkout = () => {
           {isCompleted && info && <span className="step-info">{info}</span>}
         </div>
         {isCompleted && (
-          <button 
+          <button
             className="step-action-btn"
             onClick={() => setActiveStep(step)}
           >
-            Change
+            CHANGE
           </button>
         )}
       </div>
@@ -211,108 +186,14 @@ const Checkout = () => {
   };
 
   const handleConfirmOrder = async () => {
-    // Sanitize items to ensure no undefined values or complex objects
-    const sanitizedItems = cartItems.map(item => ({
-      id: item.id || '',
-      name: item.name || '',
-      price: item.price || 0,
-      quantity: item.quantity || 1,
-      selectedSize: item.selectedSize || 'Standard',
-      image: item.image || (item.images && item.images[0] ? (item.images[0].url || item.images[0]) : ''),
-      // Add other necessary fields but avoid spreading everything if it contains undefined
-    }));
-
-    // Construct the order object
-    const rawOrderData = {
-      customerName: address.name || currentUser?.displayName || 'Guest',
-      email: email || currentUser?.email || '',
-      phoneNumber: address.phone || '',
-      shippingAddress: {
-        name: address.name || '',
-        phone: address.phone || '',
-        pincode: address.pincode || '',
-        locality: address.locality || '',
-        address: address.address || '',
-        city: address.city || '',
-        state: address.state || ''
-      },
-      items: sanitizedItems,
-      totalAmount: cartTotal || 0,
-      paymentMethod: selectedPaymentMethod,
-      status: 'Pending',
-      createdAt: serverTimestamp(),
-      userId: currentUser?.uid || 'guest',
-      orderCount: 1 
-    };
-
-    // Remove any remaining undefined values
-    const orderData = sanitizeData(rawOrderData);
-
-    if (selectedPaymentMethod === 'razorpay') {
-      // Simulate Razorpay payment flow
-      const options = {
-        key: "YOUR_RAZORPAY_KEY", 
-        amount: (cartTotal || 0) * 100, 
-        currency: "INR",
-        name: "Satva Organics",
-        description: "Grocery Purchase",
-        image: "https://example.com/your_logo",
-        handler: async function (response) {
-          try {
-            await addDoc(collection(db, 'orders'), {
-              ...orderData,
-              paymentId: response.razorpay_payment_id,
-              paymentStatus: 'Paid'
-            });
-            setShowConfirmation(true);
-          } catch (error) {
-            console.error("Error saving order (Razorpay):", error);
-            alert("Payment successful but failed to place order. Please contact support.");
-          }
-        },
-        prefill: {
-          name: address.name || currentUser?.displayName,
-          email: email,
-          contact: address.phone
-        },
-        theme: {
-          color: "#27ae60"
-        }
-      };
-      
-      alert("Redirecting to Razorpay Payment Gateway...");
-      setTimeout(async () => {
-        // Simulate success handler
-        try {
-            await addDoc(collection(db, 'orders'), {
-              ...orderData,
-              paymentId: 'pay_' + Date.now(),
-              paymentStatus: 'Paid'
-            });
-            setShowConfirmation(true);
-        } catch (error) {
-            console.error("Error saving order (Simulated):", error);
-            alert("Failed to place order. Please try again.");
-        }
-      }, 1500);
-      
-    } else {
-      // Cash on Delivery
-      try {
-        await addDoc(collection(db, 'orders'), {
-            ...orderData,
-            paymentStatus: 'Pending'
-        });
-        setShowConfirmation(true);
-      } catch (error) {
-        console.error("Error saving order (COD):", error);
-        alert("Failed to place order. Please try again.");
-      }
-    }
+    // In a real app, you would save the order to Firebase here
+    // await saveOrderToFirebase({ ... });
+    
+    setShowConfirmation(true);
     
     // Hide confetti after 5 seconds
     setTimeout(() => {
-      // navigate('/account/orders'); // Redirect to orders page
+      // navigate('/account/orders');
     }, 5000);
   };
 
@@ -356,32 +237,32 @@ const Checkout = () => {
       <div className="checkout-container">
         {/* Main Content */}
         <div className="checkout-main">
-          
+
           {/* Step 1: Login */}
           <div className="checkout-step">
-            <StepHeader 
-              step={1} 
-              title="Login or Signup" 
-              info={currentUser ? `Logged in as ${currentUser.displayName || currentUser.email}` : null} 
+            <StepHeader
+              step={1}
+              title="LOGIN OR SIGNUP"
+              info={currentUser ? `Logged in as ${currentUser.displayName || currentUser.email}` : null}
             />
             {activeStep === 1 && !currentUser && (
               <div className="step-body">
                 <div className="login-step-content">
                   <div className="login-form-container">
                     <form onSubmit={handleLoginContinue}>
-                      <input 
-                        type="email" 
-                        className="checkout-input" 
+                      <input
+                        type="email"
+                        className="checkout-input"
                         placeholder="Enter Email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
                       />
-                      
+
                       {isSignup && (
-                        <input 
-                          type="text" 
-                          className="checkout-input" 
+                        <input
+                          type="text"
+                          className="checkout-input"
                           placeholder="Enter Name"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
@@ -389,36 +270,36 @@ const Checkout = () => {
                         />
                       )}
 
-                      <input 
-                        type="password" 
-                        className="checkout-input" 
+                      <input
+                        type="password"
+                        className="checkout-input"
                         placeholder="Enter Password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
                       />
 
-                      {error && <p style={{color: 'red', fontSize: '12px', marginBottom: '8px'}}>{error}</p>}
+                      {error && <p style={{ color: 'red', fontSize: '12px', marginBottom: '8px' }}>{error}</p>}
 
                       <button type="submit" className="continue-btn">
                         {isSignup ? 'Signup & Continue' : 'Login & Continue'}
                       </button>
-                      
-                      <div style={{marginTop: '12px', fontSize: '14px', textAlign: 'center'}}>
-                        <span style={{color: '#878787'}}>
+
+                      <div style={{ marginTop: '12px', fontSize: '14px', textAlign: 'center' }}>
+                        <span style={{ color: '#878787' }}>
                           {isSignup ? 'Existing User? ' : 'New to Satva Organics? '}
                         </span>
-                        <button 
+                        <button
                           type="button"
                           onClick={() => {
                             setIsSignup(!isSignup);
                             setError('');
                           }}
                           style={{
-                            background: 'none', 
-                            border: 'none', 
-                            color: '#2874f0', 
-                            fontWeight: '600', 
+                            background: 'none',
+                            border: 'none',
+                            color: '#2874f0',
+                            fontWeight: '600',
                             cursor: 'pointer'
                           }}
                         >
@@ -434,197 +315,106 @@ const Checkout = () => {
 
           {/* Step 2: Delivery Address */}
           <div className="checkout-step">
-            <StepHeader 
-              step={2} 
-              title="Delivery Address" 
+            <StepHeader
+              step={2}
+              title="DELIVERY ADDRESS"
               info={activeStep > 2 ? `${address.name}, ${address.pincode}` : null}
             />
             {activeStep === 2 && (
               <div className="step-body">
-                {!isAddingNew && savedAddresses.length > 0 ? (
-                  <div className="saved-addresses-list">
-                    {savedAddresses.map((addr, index) => (
-                      <div key={index} className="saved-address-card">
-                        <div className="address-header">
-                          <span className="address-name">{addr.name}</span>
-                          <span className="address-type">{addr.locality}</span>
-                        </div>
-                        <p className="address-text">
-                          {addr.address}, {addr.city}, {addr.state} - {addr.pincode}
-                        </p>
-                        <p className="address-phone">Phone: {addr.phone}</p>
-                        <div className="address-actions">
-                          <button 
-                            className="deliver-here-btn"
-                            onClick={() => handleSelectAddress(addr)}
-                          >
-                            Deliver Here
-                          </button>
-                          <button 
-                            className="edit-address-btn"
-                            onClick={() => handleEditAddress(index)}
-                          >
-                            <FiEdit2 /> Edit
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    <button 
-                      className="add-new-address-btn"
-                      onClick={() => {
-                        setAddress({
-                          name: '', phone: '', pincode: '', locality: '',
-                          address: '', city: '', state: ''
-                        });
-                        setEditingIndex(null);
-                        setIsAddingNew(true);
-                      }}
-                    >
-                      <FiPlus /> Add New Address
-                    </button>
-                  </div>
-                ) : (
-                  <form className="address-form" onSubmit={handleAddressSubmit}>
-                    <input 
-                      type="text" 
-                      className="checkout-input" 
-                      placeholder="Name" 
-                      required 
-                      value={address.name}
-                      onChange={e => setAddress({...address, name: e.target.value})}
-                    />
-                    <input 
-                      type="text" 
-                      className="checkout-input" 
-                      placeholder="10-digit mobile number" 
-                      required 
-                      value={address.phone}
-                      onChange={e => setAddress({...address, phone: e.target.value})}
-                    />
-                    <div style={{ position: 'relative' }}>
-                      <input 
-                        type="text" 
-                        className="checkout-input" 
-                        placeholder="Pincode" 
-                        required 
-                        value={address.pincode}
-                        onChange={handlePincodeChange}
-                        maxLength={6}
-                      />
-                      {loadingPincode && (
-                        <div style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '12px', color: '#666' }}>
-                          Checking...
-                        </div>
-                      )}
-                    </div>
-                    
-                    {localities.length > 0 ? (
-                      <select
-                        className="checkout-input"
-                        value={address.locality}
-                        onChange={e => setAddress({...address, locality: e.target.value})}
-                        required
-                        style={{ backgroundColor: 'white' }}
-                      >
-                        <option value="">Select Locality</option>
-                        {localities.map((loc, index) => (
-                          <option key={index} value={loc}>{loc}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input 
-                        type="text" 
-                        className="checkout-input" 
-                        placeholder="Locality" 
-                        required 
-                        value={address.locality}
-                        onChange={e => setAddress({...address, locality: e.target.value})}
-                      />
-                    )}
-                    <textarea 
-                      className="checkout-input full-width" 
-                      placeholder="Address (Area and Street)" 
-                      rows="3" 
-                      required
-                      value={address.address}
-                      onChange={e => setAddress({...address, address: e.target.value})}
-                    ></textarea>
-                    <input 
-                      type="text" 
-                      className="checkout-input" 
-                      placeholder="City/District/Town" 
-                      required 
-                      value={address.city}
-                      onChange={e => setAddress({...address, city: e.target.value})}
-                    />
-                    <input 
-                      type="text" 
-                      className="checkout-input" 
-                      placeholder="State" 
-                      required 
-                      value={address.state}
-                      onChange={e => setAddress({...address, state: e.target.value})}
-                    />
-                    
-                    <div className="form-actions">
-                      <button type="submit" className="continue-btn" style={{width: '200px'}}>
-                        {editingIndex !== null ? 'Update Address' : 'Save and Deliver Here'}
-                      </button>
-                      {savedAddresses.length > 0 && (
-                        <button 
-                          type="button" 
-                          className="cancel-btn"
-                          onClick={() => {
-                            setIsAddingNew(false);
-                            setEditingIndex(null);
-                          }}
-                          style={{
-                            marginLeft: '10px',
-                            padding: '12px 24px',
-                            border: '1px solid #e0e0e0',
-                            background: 'white',
-                            color: '#2874f0',
-                            fontWeight: '600',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          Cancel
-                        </button>
-                      )}
-                    </div>
-                  </form>
-                )}
+                <form className="address-form" onSubmit={handleAddressSubmit}>
+                  <input 
+                    type="text" 
+                    className="checkout-input" 
+                    placeholder="Name" 
+                    required 
+                    value={address.name}
+                    onChange={e => setAddress({...address, name: e.target.value})}
+                  />
+                  <input 
+                    type="text" 
+                    className="checkout-input" 
+                    placeholder="10-digit mobile number" 
+                    required 
+                    value={address.phone}
+                    onChange={e => setAddress({...address, phone: e.target.value})}
+                  />
+                  <input 
+                    type="text" 
+                    className="checkout-input" 
+                    placeholder="Pincode" 
+                    required 
+                    value={address.pincode}
+                    onChange={e => setAddress({...address, pincode: e.target.value})}
+                  />
+                  <input 
+                    type="text" 
+                    className="checkout-input" 
+                    placeholder="Locality" 
+                    required 
+                    value={address.locality}
+                    onChange={e => setAddress({...address, locality: e.target.value})}
+                  />
+                  <textarea 
+                    className="checkout-input full-width" 
+                    placeholder="Address (Area and Street)" 
+                    rows="3" 
+                    required
+                    value={address.address}
+                    onChange={e => setAddress({...address, address: e.target.value})}
+                  ></textarea>
+                  <input 
+                    type="text" 
+                    className="checkout-input" 
+                    placeholder="City/District/Town" 
+                    required 
+                    value={address.city}
+                    onChange={e => setAddress({...address, city: e.target.value})}
+                  />
+                  <input 
+                    type="text" 
+                    className="checkout-input" 
+                    placeholder="State" 
+                    required 
+                    value={address.state}
+                    onChange={e => setAddress({...address, state: e.target.value})}
+                  />
+                  
+                  <button type="submit" className="continue-btn" style={{width: '200px'}}>
+                    Save and Deliver Here
+                  </button>
+                </form>
               </div>
             )}
           </div>
 
           {/* Step 3: Order Summary */}
           <div className="checkout-step">
-            <StepHeader step={3} title="Order Summary" info={`${cartItems.length} Items`} />
+            <StepHeader step={3} title="ORDER SUMMARY" info={`${safeCartItems.length} Items`} />
             {activeStep === 3 && (
               <div className="step-body">
-                {cartItems.map(item => {
-                  const itemImage = item.images && item.images.length > 0 
-                    ? (item.images[0].url || item.images[0]) 
+                {safeCartItems.map(item => {
+                  const itemImage = item.images && item.images.length > 0
+                    ? (item.images[0].url || item.images[0])
                     : item.image;
 
                   return (
-                    <div key={`${item.id}-${item.selectedSize || 'default'}`} style={{display: 'flex', gap: '16px', marginBottom: '16px', borderBottom: '1px solid #f0f0f0', paddingBottom: '16px'}}>
-                      <img src={itemImage} alt={item.name} style={{width: '80px', height: '80px', objectFit: 'contain'}} />
-                      <div>
-                        <h4 style={{margin: '0 0 8px 0'}}>{item.name}</h4>
-                        <div style={{fontSize: '14px', color: '#878787'}}>
+                    <div key={`${item.id}-${item.selectedSize || 'default'}`} className="order-summary-item">
+                      <img src={itemImage} alt={item.name} className="summary-item-image" />
+                      <div className="summary-item-details">
+                        <h4>{item.name}</h4>
+                        <div className="summary-item-meta">
                           Size: {item.selectedSize || 'Standard'} | Quantity: {item.quantity}
                         </div>
-                        <div style={{marginTop: '8px', fontWeight: '600'}}>
+                        <div className="summary-item-price">
                           ₹{item.price * item.quantity}
                         </div>
                       </div>
                     </div>
                   );
                 })}
-                <button onClick={handleSummaryContinue} className="continue-btn" style={{width: '200px', marginLeft: 'auto', display: 'block'}}>
-                  Continue
+                <button onClick={handleSummaryContinue} className="continue-btn">
+                  CONTINUE
                 </button>
               </div>
             )}
@@ -632,76 +422,36 @@ const Checkout = () => {
 
           {/* Step 4: Payment Options */}
           <div className="checkout-step">
-            <StepHeader step={4} title="Payment Options" />
+            <StepHeader step={4} title="PAYMENT OPTIONS" />
             {activeStep === 4 && (
               <div className="step-body">
                 <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
-                  {/* Razorpay Option */}
-                  <label 
-                    style={{
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '12px', 
-                      cursor: 'pointer',
-                      padding: '16px',
-                      border: selectedPaymentMethod === 'razorpay' ? '1px solid #2874f0' : '1px solid #e0e0e0',
-                      borderRadius: '4px',
-                      backgroundColor: selectedPaymentMethod === 'razorpay' ? '#f5faff' : 'white'
-                    }}
-                  >
-                    <input 
-                      type="radio" 
-                      name="payment" 
-                      value="razorpay"
-                      checked={selectedPaymentMethod === 'razorpay'}
-                      onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-                    />
-                    <div style={{display: 'flex', flexDirection: 'column'}}>
-                      <span style={{fontWeight: '600'}}>Razorpay (Cards, UPI, NetBanking)</span>
-                      <span style={{fontSize: '12px', color: '#878787'}}>Pay securely online</span>
-                    </div>
+                  <label style={{display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer'}}>
+                    <input type="radio" name="payment" />
+                    <span>UPI</span>
                   </label>
-
-                  {/* Cash on Delivery Option */}
-                  <label 
-                    style={{
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '12px', 
-                      cursor: isCodAvailable ? 'pointer' : 'not-allowed',
-                      padding: '16px',
-                      border: selectedPaymentMethod === 'cod' ? '1px solid #2874f0' : '1px solid #e0e0e0',
-                      borderRadius: '4px',
-                      backgroundColor: !isCodAvailable ? '#f9f9f9' : (selectedPaymentMethod === 'cod' ? '#f5faff' : 'white'),
-                      opacity: isCodAvailable ? 1 : 0.6
-                    }}
-                  >
-                    <input 
-                      type="radio" 
-                      name="payment" 
-                      value="cod"
-                      checked={selectedPaymentMethod === 'cod'}
-                      onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-                      disabled={!isCodAvailable}
-                    />
-                    <div style={{display: 'flex', flexDirection: 'column'}}>
-                      <span style={{fontWeight: '600'}}>Cash on Delivery</span>
-                      {!isCodAvailable ? (
-                        <span style={{fontSize: '12px', color: '#dc2626'}}>
-                          Not available for some items in your cart
-                        </span>
-                      ) : (
-                        <span style={{fontSize: '12px', color: '#878787'}}>Pay when you receive the order</span>
-                      )}
-                    </div>
+                  <label style={{display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer'}}>
+                    <input type="radio" name="payment" />
+                    <span>Wallets</span>
+                  </label>
+                  <label style={{display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer'}}>
+                    <input type="radio" name="payment" />
+                    <span>Credit / Debit / ATM Card</span>
+                  </label>
+                  <label style={{display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer'}}>
+                    <input type="radio" name="payment" />
+                    <span>Net Banking</span>
+                  </label>
+                  <label style={{display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer'}}>
+                    <input type="radio" name="payment" defaultChecked />
+                    <span>Cash on Delivery</span>
                   </label>
                 </div>
-                <button 
-                  className="continue-btn" 
-                  style={{marginTop: '24px', width: '200px'}}
+                <button
+                  className="continue-btn confirm-order-btn"
                   onClick={handleConfirmOrder}
                 >
-                  {selectedPaymentMethod === 'razorpay' ? 'Pay Now' : 'Confirm Order'}
+                  Confirm Order
                 </button>
               </div>
             )}
@@ -712,30 +462,65 @@ const Checkout = () => {
         {/* Sidebar - Price Details */}
         <div className="checkout-sidebar">
           <div className="price-details-card">
-            <div className="price-header">Price Details</div>
+            <div className="price-header">PRICE DETAILS</div>
             <div className="price-content">
+              {/* Product Details Breakdown */}
+              <div className="products-breakdown">
+                <div className="breakdown-header">
+                  Price ({safeCartItems.length} item{safeCartItems.length !== 1 ? 's' : ''})
+                </div>
+                {safeCartItems.map((item, index) => {
+                  const itemImage = item.images && item.images.length > 0
+                    ? (item.images[0].url || item.images[0])
+                    : item.image;
+
+                  return (
+                    <div key={`price-${item.id}-${item.selectedSize || 'default'}-${index}`} className="product-price-item">
+                      <div className="product-price-left">
+                        <img src={itemImage} alt={item.name} className="product-price-thumb" />
+                        <div className="product-price-info">
+                          <div className="product-price-name">{item.name}</div>
+                          <div className="product-price-meta">
+                            {item.selectedSize && <span>{item.selectedSize}</span>}
+                            <span>Qty: {item.quantity}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="product-price-amount">
+                        ₹{(item.price * item.quantity).toLocaleString()}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="price-divider"></div>
+
               <div className="price-row">
-                <span>Price ({cartItems.length} items)</span>
-                <span>₹{cartTotal}</span>
+                <span>Subtotal</span>
+                <span>₹{safeCartTotal.toLocaleString()}</span>
               </div>
               <div className="price-row">
                 <span>Delivery Charges</span>
                 <span className="green-text">FREE</span>
               </div>
+
+              <div className="price-divider"></div>
+
               <div className="price-row total">
                 <span>Total Payable</span>
-                <span>₹{cartTotal}</span>
+                <span>₹{safeCartTotal.toLocaleString()}</span>
               </div>
-              <div className="green-text" style={{fontSize: '14px', fontWeight: '600'}}>
+              <div className="savings-text">
                 Your Total Savings on this order ₹0
               </div>
             </div>
           </div>
-          
+
           <div className="secure-badge">
             <FiShield className="secure-icon" />
             <div>
-              Safe and Secure Payments. Easy returns.<br/>
+              Safe and Secure Payments. Easy returns.<br />
               100% Authentic products.
             </div>
           </div>

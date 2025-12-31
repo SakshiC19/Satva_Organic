@@ -621,6 +621,16 @@
     color: #f97316;
 }
 
+.status-shipped {
+    background: #dbeafe;
+    color: #0284c7;
+}
+
+.status-cancelled {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
 /* Products Page Compatibility */
 .admin-page-header {
     display: flex;
