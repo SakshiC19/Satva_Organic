@@ -28,7 +28,9 @@ const AddProduct = () => {
     codAvailable: false,
     refundPolicyAvailable: false,
     originalPrice: '',
-    discountPercentage: ''
+    discountPercentage: '',
+    dealExpiry: '',
+    dealStockLimit: ''
   });
 
   const { categories: contextCategories, loading: categoriesLoading } = useCategories();
@@ -127,6 +129,8 @@ const AddProduct = () => {
         refundPolicyAvailable: formData.refundPolicyAvailable,
         originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
         discount: formData.discountPercentage ? parseFloat(formData.discountPercentage) : 0,
+        dealExpiry: formData.dealExpiry || null,
+        dealStockLimit: formData.dealStockLimit ? parseInt(formData.dealStockLimit) : null,
         images: uploadedImages.map(img => ({
           url: img.url,
           path: img.path
@@ -269,6 +273,32 @@ const AddProduct = () => {
                   min="0"
                   step="0.01"
                   placeholder="0.00"
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="dealExpiry">Deal Expiry Date</label>
+                <input
+                  type="datetime-local"
+                  id="dealExpiry"
+                  name="dealExpiry"
+                  value={formData.dealExpiry}
+                  onChange={handleInputChange}
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="dealStockLimit">Deal Stock Limit</label>
+                <input
+                  type="number"
+                  id="dealStockLimit"
+                  name="dealStockLimit"
+                  value={formData.dealStockLimit}
+                  onChange={handleInputChange}
+                  min="0"
+                  placeholder="0"
                 />
               </div>
             </div>

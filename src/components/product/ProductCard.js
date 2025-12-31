@@ -77,8 +77,36 @@ const ProductCard = ({
     deliveryDays = '2-3 days',
     priceAlert = null,
     productType,
-    flashDealExpiry = new Date(Date.now() + 86400000).toISOString() // Mock expiry
+    dealExpiry = null,
+    dealStockLimit = null
   } = product;
+
+  const [isDealActive, setIsDealActive] = React.useState(isFlashDeal);
+
+  React.useEffect(() => {
+    if (isFlashDeal) {
+      const checkDealStatus = () => {
+        const now = new Date().getTime();
+        const expiryTime = dealExpiry ? new Date(dealExpiry).getTime() : null;
+        const isExpired = expiryTime && now > expiryTime;
+        const isStockOut = dealStockLimit !== null && dealStockLimit <= 0;
+        
+        if (isExpired || isStockOut) {
+          setIsDealActive(false);
+        } else {
+          setIsDealActive(true);
+        }
+      };
+
+      checkDealStatus();
+      const interval = setInterval(checkDealStatus, 10000); // Check every 10 seconds
+      return () => clearInterval(interval);
+    }
+  }, [isFlashDeal, dealExpiry, dealStockLimit]);
+
+  const displayPrice = isDealActive ? price : (originalPrice || price);
+  const displayDiscount = isDealActive ? discount : 0;
+  const displaySavings = originalPrice ? originalPrice - displayPrice : 0;
 
   const productImage = images && images.length > 0
     ? (images[0].url || images[0])
@@ -86,7 +114,6 @@ const ProductCard = ({
 
   const isInStock = stock !== undefined ? stock > 0 : inStock;
   const isItemInWishlist = isInWishlist(id);
-  const savings = originalPrice ? originalPrice - price : 0;
 
   const handleProductClick = () => {
     if (id) {
@@ -124,10 +151,10 @@ const ProductCard = ({
   };
 
   return (
-    <div className={`product-card ${compact ? 'product-card-compact' : ''} ${isFlashDeal ? 'flash-deal-card' : ''} ${!isInStock ? 'out-of-stock-card' : ''}`} onClick={handleProductClick}>
+    <div className={`product-card ${compact ? 'product-card-compact' : ''} ${isDealActive ? 'flash-deal-card' : ''} ${!isInStock ? 'out-of-stock-card' : ''}`} onClick={handleProductClick}>
       {/* Product Image Section */}
       <div className="product-card-image">
-        {isFlashDeal && (
+        {isDealActive && (
           <div className="flash-badge-overlay">
             <FiShoppingBag /> Flash Deal
           </div>
@@ -147,6 +174,10 @@ const ProductCard = ({
               <FiEye />
             </button>
           )}
+
+          <button className="action-btn cart-btn" onClick={handleAddToCart} title="Add to Cart">
+            <FiShoppingCart />
+          </button>
         </div>
 
         <img src={productImage} alt={name} loading="lazy" />
@@ -155,7 +186,7 @@ const ProductCard = ({
         
 
 
-        {isFlashDeal && <FlashDealTimer expiryDate={flashDealExpiry} />}
+        {isDealActive && dealExpiry && <FlashDealTimer expiryDate={dealExpiry} />}
       </div>
 
       {/* Product Info Section */}
@@ -174,19 +205,20 @@ const ProductCard = ({
 
         <div className="product-price-container">
           <div className="price-main-row">
-            <span className="current-price">₹{price}</span>
-            {originalPrice && (
-              <div className="discount-pill">-{discount}%</div>
+            <span className="current-price">₹{displayPrice}</span>
+            {originalPrice && displayDiscount > 0 && (
+              <div className="discount-pill">-{displayDiscount}%</div>
             )}
           </div>
           
-          {originalPrice && (
+          {originalPrice && displaySavings > 0 && (
             <div className="price-secondary-row">
               <span className="original-price">₹{originalPrice}</span>
-              <span className="savings-text">Save ₹{savings}</span>
+              <span className="savings-text">You save ₹{displaySavings}</span>
             </div>
           )}
         </div>
+
 
 
 

@@ -36,6 +36,8 @@ import { CategoryProvider } from './contexts/CategoryContext';
 import { WishlistProvider } from './contexts/WishlistContext';
 import './styles/index.css';
 
+import StickyCartBar from './components/cart/StickyCartBar';
+
 // Layout component to wrap pages that need Header and Footer
 const Layout = ({ children }) => {
   return (
@@ -44,6 +46,7 @@ const Layout = ({ children }) => {
       <main className="main-content">
         {children}
       </main>
+      <StickyCartBar />
       <Footer />
     </>
   );
