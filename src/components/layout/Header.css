@@ -425,6 +425,7 @@
     left: 0;
     width: 100%;
     height: 100%;
+    height: 100dvh;
     background: rgba(0, 0, 0, 0.5);
     z-index: 2999;
     opacity: 0;
@@ -443,6 +444,7 @@
     left: -320px;
     width: 320px;
     height: 100%;
+    height: 100dvh;
     background: linear-gradient(180deg, #f8faf9 0%, #ffffff 100%);
     z-index: 3000;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -565,7 +567,8 @@
 
 .mobile-sidebar-footer {
     margin-top: auto;
-    padding-top: 20px;
+    padding: 20px;
+    padding-bottom: 30px;
     border-top: 2px solid #f0f0f0;
 }
 

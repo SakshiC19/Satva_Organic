@@ -509,7 +509,7 @@
 
 .products-grid-compact>* {
     flex: 0 0 auto;
-    width: 300px;
+    width: 280px;
 }
 
 
@@ -903,22 +903,27 @@
         margin: 0 auto;
     }
 }
+
 /* Mobile Featured Products Optimization */
 @media (max-width: 480px) {
     .products-grid-compact .product-card {
-        width: 160px;
-        min-width: 160px;
+        width: 150px;
+        min-width: 150px;
     }
+
     .products-grid-compact .product-card-image {
         height: 140px;
     }
+
     .products-grid-compact .product-name {
         font-size: 13px;
         height: 36px;
     }
+
     .products-grid-compact .current-price {
         font-size: 16px;
     }
+
     .products-grid-compact .card-btn {
         height: 36px;
         font-size: 12px;

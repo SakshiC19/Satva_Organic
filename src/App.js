@@ -34,6 +34,7 @@ import Checkout from './pages/Checkout/Checkout';
 import CartDrawer from './components/cart/CartDrawer';
 import { CategoryProvider } from './contexts/CategoryContext';
 import { WishlistProvider } from './contexts/WishlistContext';
+import ScrollToTop from './components/common/ScrollToTop';
 import './styles/index.css';
 
 import StickyCartBar from './components/cart/StickyCartBar';
@@ -59,6 +60,7 @@ function App() {
         <WishlistProvider>
           <CartProvider>
             <Router>
+              <ScrollToTop />
             <div className="app">
               <CartDrawer />
               <Routes>

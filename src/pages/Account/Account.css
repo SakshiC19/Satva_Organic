@@ -456,7 +456,8 @@
     .account-nav {
         flex-direction: row;
         overflow-x: auto;
-        padding-bottom: 4px;
+        padding: 0 16px 8px 0;
+        /* Added padding */
         gap: 12px;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
@@ -1186,18 +1187,19 @@
         text-align: left;
     }
 }
+
 /* Enhanced Order Card */
 .order-card-enhanced {
     background: white;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
     margin-bottom: 24px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     transition: all 0.2s;
 }
 
 .order-card-enhanced:hover {
-    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
     transform: translateY(-2px);
 }
 
@@ -1377,7 +1379,8 @@
     gap: 12px;
 }
 
-.btn-track, .btn-reorder {
+.btn-track,
+.btn-reorder {
     padding: 8px 16px;
     border-radius: 6px;
     font-weight: 600;
@@ -1443,22 +1446,26 @@
         flex-direction: column;
         gap: 24px;
     }
+
     .info-section {
         flex-direction: column;
         gap: 16px;
     }
+
     .card-footer-row {
         flex-direction: column;
         gap: 16px;
         align-items: flex-start;
     }
+
     .footer-actions {
         width: 100%;
         flex-wrap: wrap;
     }
-    .btn-track, .btn-reorder {
+
+    .btn-track,
+    .btn-reorder {
         flex: 1;
         text-align: center;
     }
 }
-
