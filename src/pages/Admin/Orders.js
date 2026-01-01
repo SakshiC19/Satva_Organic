@@ -19,6 +19,7 @@ const Orders = () => {
   const [selectedOrders, setSelectedOrders] = useState([]);
   const [dateRange, setDateRange] = useState('all');
   const [paymentFilter, setPaymentFilter] = useState('all');
+  const [specialFilter, setSpecialFilter] = useState(null); // 'pending_payments', 'refund_requests'
   const [showFilters, setShowFilters] = useState(false);
   const [viewingOrder, setViewingOrder] = useState(null);
   const { currentUser } = useAuth();
@@ -144,6 +145,37 @@ const Orders = () => {
     }
   };
 
+  const handleStatClick = (type) => {
+    // Reset other filters
+    setSearchTerm('');
+    setDateRange('all');
+    setPaymentFilter('all');
+    setSpecialFilter(null);
+
+    switch (type) {
+      case 'revenue':
+        setActiveTab('delivered');
+        break;
+      case 'today':
+        setDateRange('today');
+        setActiveTab('all');
+        break;
+      case 'pending_payments':
+        setSpecialFilter('pending_payments');
+        setActiveTab('all');
+        break;
+      case 'refunds':
+        setSpecialFilter('refund_requests');
+        setActiveTab('all');
+        break;
+      default:
+        setActiveTab('all');
+    }
+    
+    // Scroll to orders section
+    document.querySelector('.om-orders-section')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
       const orderRef = doc(db, 'orders', orderId);
@@ -181,7 +213,14 @@ const Orders = () => {
       paymentFilter === 'all' ||
       order.paymentMethod?.toLowerCase() === paymentFilter.toLowerCase();
     
-    return matchesSearch && matchesTab && matchesPayment;
+    let matchesSpecial = true;
+    if (specialFilter === 'pending_payments') {
+      matchesSpecial = order.paymentMethod === 'cod' && order.status?.toLowerCase() === 'delivered' && !order.paymentReceived;
+    } else if (specialFilter === 'refund_requests') {
+      matchesSpecial = order.status?.toLowerCase() === 'refunded' || order.refundStatus === 'requested' || order.status?.toLowerCase() === 'returned';
+    }
+
+    return matchesSearch && matchesTab && matchesPayment && matchesSpecial;
   });
 
   const formatDate = (timestamp) => {
@@ -310,7 +349,7 @@ const Orders = () => {
       </div>
 
       <div className="om-stats">
-        <div className="stat-card stat-revenue">
+        <div className="stat-card stat-revenue" onClick={() => handleStatClick('revenue')}>
           <div className="stat-icon-wrapper green">
             <FiDollarSign />
           </div>
@@ -323,7 +362,7 @@ const Orders = () => {
           </div>
         </div>
 
-        <div className="stat-card stat-today">
+        <div className="stat-card stat-today" onClick={() => handleStatClick('today')}>
           <div className="stat-icon-wrapper blue">
             <FiShoppingBag />
           </div>
@@ -336,7 +375,7 @@ const Orders = () => {
           </div>
         </div>
 
-        <div className="stat-card stat-pending-payment">
+        <div className="stat-card stat-pending-payment" onClick={() => handleStatClick('pending_payments')}>
           <div className="stat-icon-wrapper orange">
             <FiAlertCircle />
           </div>
@@ -347,7 +386,7 @@ const Orders = () => {
           </div>
         </div>
 
-        <div className="stat-card stat-refund">
+        <div className="stat-card stat-refund" onClick={() => handleStatClick('refunds')}>
           <div className="stat-icon-wrapper red">
             <FiRefreshCw />
           </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { FiX, FiShoppingCart, FiMinus, FiPlus } from 'react-icons/fi';
 import { useCart } from '../../contexts/CartContext';
@@ -8,6 +8,15 @@ const ProductSelectionModal = ({ product, isOpen, onClose }) => {
   const { addToCart, openCart } = useCart();
   const [selectedWeight, setSelectedWeight] = useState(product.weight || '500g');
   const [quantity, setQuantity] = useState(1);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+    return () => document.body.classList.remove('modal-open');
+  }, [isOpen]);
 
   if (!isOpen || !product) return null;
 

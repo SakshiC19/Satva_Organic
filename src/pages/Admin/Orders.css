@@ -1066,3 +1066,26 @@
     opacity: 0.7;
 }
 
+
+/* Stat Cards Clickable */
+.stat-card {
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .om-stats {
+        grid-template-columns: 1fr;
+    }
+    .stat-card {
+        margin-bottom: 12px;
+    }
+}
+

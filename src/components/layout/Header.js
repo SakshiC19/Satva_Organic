@@ -84,7 +84,7 @@ const Header = () => {
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/login');
+      navigate('/');
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -215,7 +215,7 @@ const Header = () => {
               {currentUser ? (
                 <button className="login-btn logged-in">
                   <FiUser />
-                  <span>{currentUser.displayName || 'My Account'}</span>
+                  <span>{currentUser.displayName ? currentUser.displayName.split(' ')[0] : 'Account'}</span>
                   <FiChevronDown className={`chevron ${activeMenu === 'login' ? 'rotate' : ''}`} />
                 </button>
               ) : (
@@ -359,7 +359,7 @@ const Header = () => {
               <div className="mobile-user-info">
                 <div className="user-greeting">
                   <FiUser />
-                  <span>Hello, {currentUser.displayName || 'User'}</span>
+                  <span>Hello, {currentUser.displayName ? currentUser.displayName.split(' ')[0] : 'User'}</span>
                 </div>
                 <div className="mobile-user-links">
                   <Link to="/account/profile" onClick={() => setMobileMenuOpen(false)}>My Profile</Link>

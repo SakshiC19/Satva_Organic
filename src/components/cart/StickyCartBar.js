@@ -8,7 +8,7 @@ const StickyCartBar = () => {
   const { cartItems, cartTotal, openCart } = useCart();
   const location = useLocation();
 
-  const isVisiblePage = location.pathname.startsWith('/shop') || location.pathname.startsWith('/product');
+  const isVisiblePage = location.pathname === '/shop' || location.pathname.startsWith('/shop/');
 
   if (cartItems.length === 0 || !isVisiblePage) return null;
 
