@@ -769,14 +769,15 @@
 
 @media (max-width: 768px) {
     .header-container {
-        padding: 0 16px;
-        gap: 16px;
+        padding: 0 12px;
+        gap: 4px;
         width: 100%;
     }
 
     .mobile-menu-btn {
         display: block;
         order: -1;
+        padding: 4px;
     }
 
     .header-logo {

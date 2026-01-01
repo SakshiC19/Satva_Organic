@@ -42,7 +42,9 @@ const ProductSelectionModal = ({ product, isOpen, onClose }) => {
       quantity
     });
     onClose();
-    openCart();
+    if (window.innerWidth > 768) {
+      openCart();
+    }
   };
 
   return createPortal(

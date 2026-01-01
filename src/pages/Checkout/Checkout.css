@@ -793,6 +793,45 @@
     text-decoration: underline;
 }
 
+.secure-badge {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    margin-top: 24px;
+    color: #475569;
+    font-size: 13px;
+    line-height: 1.5;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.secure-icon {
+    font-size: 32px;
+    color: #27ae60;
+    flex-shrink: 0;
+}
+
+.secure-badge div {
+    font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    .secure-badge {
+        margin: 16px;
+        padding: 16px;
+        background: #fff;
+        border: 1px solid #27ae60;
+        border-radius: 8px;
+    }
+
+    .secure-icon {
+        font-size: 24px;
+    }
+}
+
 /* Force Green Theme Overrides */
 .step-header.active {
     background-color: #27ae60 !important;
