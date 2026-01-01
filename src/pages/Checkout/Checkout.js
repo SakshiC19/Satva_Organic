@@ -9,6 +9,17 @@ import './Checkout.css';
 
 const Checkout = () => {
   const { currentUser, login, signup } = useAuth();
+  
+  // Load Razorpay Script
+  const loadRazorpay = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
   const { cartItems, cartTotal, updateQuantity, removeFromCart } = useCart();
   const navigate = useNavigate();
 
@@ -232,7 +243,7 @@ const Checkout = () => {
       // Add other necessary fields but avoid spreading everything if it contains undefined
     }));
 
-    // Construct the order object
+    // Construct the order object (without serverTimestamp)
     const rawOrderData = {
       customerName: address.name || currentUser?.displayName || 'Guest',
       email: email || currentUser?.email || '',
@@ -250,7 +261,6 @@ const Checkout = () => {
       totalAmount: cartTotal || 0,
       paymentMethod: selectedPaymentMethod,
       status: 'Pending',
-      createdAt: serverTimestamp(),
       userId: currentUser?.uid || 'guest',
       orderCount: 1 
     };
@@ -259,25 +269,55 @@ const Checkout = () => {
     const orderData = sanitizeData(rawOrderData);
 
     if (selectedPaymentMethod === 'razorpay') {
-      // Simulate Razorpay payment flow
+      const res = await loadRazorpay();
+      
+      if (!res) {
+        alert('Razorpay SDK failed to load. Are you online?');
+        setIsProcessing(false);
+        return;
+      }
+
       const options = {
-        key: "YOUR_RAZORPAY_KEY", 
-        amount: (cartTotal || 0) * 100, 
+        key: "rzp_test_RyAk3DGa85x3tr", 
+        amount: Math.round((cartTotal || 0) * 100), // Amount in paise
         currency: "INR",
         name: "Satva Organics",
         description: "Grocery Purchase",
-        image: "https://example.com/your_logo",
+        image: "https://firebasestorage.googleapis.com/v0/b/satva-organic.appspot.com/o/logo.png?alt=media", // Use your logo URL if available
         handler: async function (response) {
+          console.log('Razorpay payment response:', response);
           try {
-            await addDoc(collection(db, 'orders'), {
+            // In a real production app, you should verify the signature on your backend here
+            // using the payment_id, order_id, and signature.
+            
+            const orderToSave = {
               ...orderData,
+              createdAt: serverTimestamp(),
               paymentId: response.razorpay_payment_id,
-              paymentStatus: 'Paid'
+              paymentStatus: 'Paid',
+              razorpayOrderId: response.razorpay_order_id || '',
+              razorpaySignature: response.razorpay_signature || ''
+            };
+            
+            console.log('Attempting to save order:', orderToSave);
+            
+            const docRef = await addDoc(collection(db, 'orders'), orderToSave);
+            
+            console.log('Order saved successfully with ID:', docRef.id);
+            
+            // Clear cart after successful order
+            cartItems.forEach(item => {
+              removeFromCart(item.id, item.selectedSize);
             });
+            
             setShowConfirmation(true);
+            setIsProcessing(false);
           } catch (error) {
-            console.error("Error saving order (Razorpay):", error);
-            alert("Payment successful but failed to place order. Please contact support.");
+            console.error("Detailed error saving order (Razorpay):", error);
+            console.error("Error code:", error.code);
+            console.error("Error message:", error.message);
+            console.error("Error stack:", error.stack);
+            alert(`Payment successful but failed to place order. Error: ${error.message}. Please contact support with payment ID: ${response.razorpay_payment_id}`);
             setIsProcessing(false);
           }
         },
@@ -288,31 +328,23 @@ const Checkout = () => {
         },
         theme: {
           color: "#27ae60"
+        },
+        modal: {
+            ondismiss: function() {
+                setIsProcessing(false);
+            }
         }
       };
       
-      alert("Redirecting to Razorpay Payment Gateway...");
-      setTimeout(async () => {
-        // Simulate success handler
-        try {
-            await addDoc(collection(db, 'orders'), {
-              ...orderData,
-              paymentId: 'pay_' + Date.now(),
-              paymentStatus: 'Paid'
-            });
-            setShowConfirmation(true);
-        } catch (error) {
-            console.error("Error saving order (Simulated):", error);
-            alert("Failed to place order. Please try again.");
-            setIsProcessing(false);
-        }
-      }, 1500);
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
       
     } else {
       // Cash on Delivery
       try {
         await addDoc(collection(db, 'orders'), {
             ...orderData,
+            createdAt: serverTimestamp(), // Add timestamp here
             paymentStatus: 'Pending'
         });
         setShowConfirmation(true);
@@ -679,50 +711,68 @@ const Checkout = () => {
               <div className="step-body">
                 <div className="payment-options-container">
                   {/* Razorpay Option */}
-                  <div 
-                    className={`payment-option ${selectedPaymentMethod === 'razorpay' ? 'selected' : ''}`}
-                    onClick={() => setSelectedPaymentMethod('razorpay')}
-                  >
-                    <div className="payment-label">
-                      <input 
-                        type="radio" 
-                        name="payment" 
-                        checked={selectedPaymentMethod === 'razorpay'}
-                        onChange={() => setSelectedPaymentMethod('razorpay')}
-                      />
-                      <span>Razorpay (Cards, UPI, NetBanking)</span>
+                  <div className={`payment-method-group ${selectedPaymentMethod === 'razorpay' ? 'active' : ''}`}>
+                    <div 
+                      className={`payment-option ${selectedPaymentMethod === 'razorpay' ? 'selected' : ''}`}
+                      onClick={() => setSelectedPaymentMethod('razorpay')}
+                    >
+                      <div className="payment-label">
+                        <input 
+                          type="radio" 
+                          name="payment" 
+                          checked={selectedPaymentMethod === 'razorpay'}
+                          onChange={() => setSelectedPaymentMethod('razorpay')}
+                        />
+                        <span>Razorpay (Cards, UPI, NetBanking)</span>
+                      </div>
                     </div>
+                    {selectedPaymentMethod === 'razorpay' && (
+                      <div className="payment-action-container">
+                        <button 
+                          className="pay-now-btn" 
+                          onClick={handleConfirmOrder}
+                          disabled={isProcessing}
+                        >
+                          {isProcessing ? 'PROCESSING...' : `PAY ₹${safeCartTotal.toLocaleString()}`}
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* COD Option */}
-                  <div 
-                    className={`payment-option ${selectedPaymentMethod === 'cod' ? 'selected' : ''} ${!isCodAvailable ? 'disabled' : ''}`}
-                    onClick={() => isCodAvailable && setSelectedPaymentMethod('cod')}
-                    style={!isCodAvailable ? { filter: 'blur(0.5px)' } : {}}
-                  >
-                    <div className="payment-label">
-                      <input 
-                        type="radio" 
-                        name="payment" 
-                        checked={selectedPaymentMethod === 'cod'}
-                        onChange={() => isCodAvailable && setSelectedPaymentMethod('cod')}
-                        disabled={!isCodAvailable}
-                      />
-                      <span>Cash on Delivery</span>
-                      {!isCodAvailable && (
-                        <span className="cod-unavailable-badge">Not Available</span>
-                      )}
+                  <div className={`payment-method-group ${selectedPaymentMethod === 'cod' ? 'active' : ''}`}>
+                    <div 
+                      className={`payment-option ${selectedPaymentMethod === 'cod' ? 'selected' : ''} ${!isCodAvailable ? 'disabled' : ''}`}
+                      onClick={() => isCodAvailable && setSelectedPaymentMethod('cod')}
+                      style={!isCodAvailable ? { filter: 'blur(0.5px)' } : {}}
+                    >
+                      <div className="payment-label">
+                        <input 
+                          type="radio" 
+                          name="payment" 
+                          checked={selectedPaymentMethod === 'cod'}
+                          onChange={() => isCodAvailable && setSelectedPaymentMethod('cod')}
+                          disabled={!isCodAvailable}
+                        />
+                        <span>Cash on Delivery</span>
+                        {!isCodAvailable && (
+                          <span className="cod-unavailable-badge">Not Available</span>
+                        )}
+                      </div>
                     </div>
+                    {selectedPaymentMethod === 'cod' && (
+                      <div className="payment-action-container">
+                        <button 
+                          className="pay-now-btn" 
+                          onClick={handleConfirmOrder}
+                          disabled={isProcessing}
+                        >
+                          {isProcessing ? 'PROCESSING...' : `PAY ₹${safeCartTotal.toLocaleString()}`}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
-
-                <button
-                  className="confirm-order-btn"
-                  onClick={handleConfirmOrder}
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? 'PROCESSING...' : 'CONFIRM ORDER'}
-                </button>
               </div>
             )}
           </div>

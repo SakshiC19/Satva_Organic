@@ -165,10 +165,10 @@
 
 /* Info Section */
 .product-card-info {
-    padding: 12px;
+    padding: 12px 12px 8px 12px;
     display: flex;
     flex-direction: column;
-    gap: 0;
+    gap: 6px;
     flex: 1;
     background: white;
 }
@@ -222,7 +222,7 @@
 
 /* Price Section */
 .product-price-container {
-    margin: 0;
+    margin: 4px 0 0 0;
 }
 
 .price-main-row {
@@ -269,7 +269,7 @@
 .meta-info-row {
     display: flex;
     gap: 12px;
-    margin-top: 0;
+    margin-top: 6px;
     padding-top: 8px;
     border-top: 1px solid #f1f5f9;
 }
@@ -285,7 +285,8 @@
 
 /* Action Area */
 .product-card-actions {
-    margin-top: 5px;
+    margin-top: 8px;
+    margin-bottom: 0;
 }
 
 .action-controls {
@@ -412,7 +413,8 @@
     }
 
     .product-card-info {
-        padding: 8px;
+        padding: 8px 8px 6px 8px;
+        gap: 4px;
     }
 
     .product-name {
@@ -426,7 +428,7 @@
 
     .main-buttons {
         flex-direction: column;
-        gap: 6px;
+        gap: 8px;
     }
 
     .buy-now-btn {
@@ -468,5 +470,17 @@
 
     .review-count {
         font-size: 11px;
+    }
+}
+
+/* Mobile Overrides */
+@media (max-width: 768px) {
+    .meta-info-row {
+        display: none !important;
+    }
+
+    .card-btn {
+        height: 42px !important;
+        font-size: 13px !important;
     }
 }

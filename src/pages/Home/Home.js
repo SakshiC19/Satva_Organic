@@ -43,14 +43,29 @@ const Home = () => {
 
   useEffect(() => {
     const productsCollection = collection(db, 'products');
-    const productsQuery = query(productsCollection, limit(12));
+    const productsQuery = query(productsCollection);
     
     const unsubscribe = onSnapshot(productsQuery, (snapshot) => {
       const productsList = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
-      setFeaturedProducts(productsList);
+      
+      // Filter out products with discounts for featured section
+      const productsWithoutDeals = productsList.filter(product => 
+        !product.discount || parseFloat(product.discount) === 0
+      );
+      
+      // Shuffle products based on current day for daily rotation
+      const today = new Date().toDateString();
+      const seed = today.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      const shuffled = [...productsWithoutDeals].sort(() => {
+        const random = Math.sin(seed) * 10000;
+        return random - Math.floor(random);
+      });
+      
+      // Take first 12 for featured
+      setFeaturedProducts(shuffled.slice(0, 12));
       setLoadingProducts(false);
     }, (error) => {
       console.error('Error fetching products:', error);

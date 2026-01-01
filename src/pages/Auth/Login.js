@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { FiEye, FiEyeOff, FiUser, FiLock } from 'react-icons/fi';
@@ -15,6 +15,9 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const { login, loginWithGoogle, findUserByPhone } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const redirect = searchParams.get('redirect');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -69,7 +72,7 @@ const Login = () => {
       if (userData?.role === 'admin') {
         navigate('/admin/dashboard');
       } else {
-        navigate('/');
+        navigate(redirect ? `/${redirect}` : '/');
       }
     } catch (error) {
       setError('Failed to log in. Please check your credentials.');
@@ -92,7 +95,7 @@ const Login = () => {
       if (userData?.role === 'admin') {
         navigate('/admin/dashboard');
       } else {
-        navigate('/');
+        navigate(redirect ? `/${redirect}` : '/');
       }
     } catch (error) {
       setError('Failed to log in with Google');

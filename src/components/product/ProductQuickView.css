@@ -461,3 +461,11 @@
     background: #c1c1c1;
     border-radius: 3px;
 }
+/* Mobile Quick View Optimization */
+@media (max-width: 768px) {
+    .quick-view-modal {
+        width: 90% !important;
+        margin: auto !important;
+        max-height: 80vh !important;
+    }
+}

@@ -262,9 +262,19 @@
         grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     }
 
-    .pagination,
+    .pagination {
+        gap: 8px;
+        margin-top: 24px;
+    }
+
+    .pagination-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+    }
+
     .results-count {
-        display: none;
+        font-size: 12px;
     }
 }
 
