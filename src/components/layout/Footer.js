@@ -87,11 +87,11 @@ const Footer = () => {
             <div className="footer-column">
               <h4 className="footer-title">Company</h4>
               <ul className="footer-links">
-                <li><Link to="/about">About</Link></li>
-                <li><Link to="/blogs">Blogs</Link></li>
-                <li><Link to="/products">All products</Link></li>
-                <li><Link to="/locations">Locations Map</Link></li>
-                <li><Link to="/faq">Faq</Link></li>
+                <li><Link to="/">About</Link></li>
+                <li><Link to="/">Blogs</Link></li>
+                <li><Link to="/shop">All products</Link></li>
+                <li><Link to="/">Locations Map</Link></li>
+                <li><Link to="/">Faq</Link></li>
                 <li><Link to="/contact">Contact</Link></li>
               </ul>
             </div>
@@ -100,12 +100,12 @@ const Footer = () => {
             <div className="footer-column">
               <h4 className="footer-title">Services</h4>
               <ul className="footer-links">
-                <li><Link to="/track-order">Order tracking</Link></li>
-                <li><Link to="/wishlist">Wishlist</Link></li>
+                <li><Link to="/account/orders">Order tracking</Link></li>
+                <li><Link to="/account/wishlist">Wishlist</Link></li>
                 <li><Link to="/login">Login</Link></li>
                 <li><Link to="/account" className="highlight-link">My Account</Link></li>
-                <li><Link to="/terms">Terms of Service</Link></li>
-                <li><Link to="/offers">Promotional Offers</Link></li>
+                <li><Link to="/">Terms of Service</Link></li>
+                <li><Link to="/flash-deals">Promotional Offers</Link></li>
               </ul>
             </div>
 
@@ -113,12 +113,12 @@ const Footer = () => {
             <div className="footer-column">
               <h4 className="footer-title">Customer Care</h4>
               <ul className="footer-links">
-                <li><Link to="/track-order">Order tracking</Link></li>
-                <li><Link to="/wishlist">Wishlist</Link></li>
+                <li><Link to="/account/orders">Order tracking</Link></li>
+                <li><Link to="/account/wishlist">Wishlist</Link></li>
                 <li><Link to="/login">Login</Link></li>
                 <li><Link to="/account">My Account</Link></li>
-                <li><Link to="/terms">Terms of Service</Link></li>
-                <li><Link to="/offers">Promotional Offers</Link></li>
+                <li><Link to="/">Terms of Service</Link></li>
+                <li><Link to="/flash-deals">Promotional Offers</Link></li>
               </ul>
             </div>
 

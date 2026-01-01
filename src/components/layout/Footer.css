@@ -9,7 +9,7 @@
 }
 
 .footer-main {
-    padding: 40px 0;
+    padding: 20px 0 10px;
     border-bottom: 1px solid #454d5e;
 }
 
@@ -151,7 +151,7 @@
 /* Footer Bottom */
 .footer-bottom {
     background-color: #172337;
-    padding: 24px 0;
+    padding: 16px 0;
 }
 
 .footer-bottom .container {
@@ -210,15 +210,34 @@
 /* Responsive */
 @media (max-width: 768px) {
     .footer-content {
-        grid-template-columns: 1fr;
-        gap: 32px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 24px;
     }
 
     .footer-newsletter {
+        grid-column: span 2;
         border-left: none;
         padding-left: 0;
         border-top: 1px solid #454d5e;
-        padding-top: 24px;
+        padding-top: 20px;
+        margin-top: 10px;
+    }
+
+    .footer-about {
+        grid-column: span 2;
+        margin-bottom: 5px;
+    }
+
+    .footer-description {
+        display: none;
+    }
+
+    .footer-title {
+        margin-bottom: 10px;
+    }
+
+    .footer-links {
+        gap: 6px;
     }
 
     .footer-bottom .container {

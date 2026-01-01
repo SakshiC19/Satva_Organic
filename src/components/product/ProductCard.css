@@ -97,7 +97,7 @@
     z-index: 5;
 }
 
-/* Image Actions Overlay - FIXED */
+/* Image Actions Overlay */
 .image-actions-overlay {
     position: absolute;
     top: 16px;
@@ -436,51 +436,43 @@
     }
 
     .card-btn {
-        height: 36px;
-        font-size: 12px;
+        height: 42px !important;
+        font-size: 13px !important;
+    }
+
+    .meta-info-row {
+        display: none !important;
     }
 }
 
 @media (max-width: 480px) {
     .product-card-image {
-        height: 140px;
+        height: 130px;
     }
 
     .product-name {
-        font-size: 13px;
-        height: 36px;
+        font-size: 12px;
+        height: 34px;
     }
 
     .current-price {
-        font-size: 16px;
+        font-size: 15px;
     }
 
     .original-price {
-        font-size: 12px;
+        font-size: 11px;
     }
 
     .savings-text {
-        font-size: 10px;
+        font-size: 9px;
     }
 
     .product-rating-badge {
-        padding: 2px 6px;
-        font-size: 11px;
+        padding: 2px 4px;
+        font-size: 10px;
     }
 
     .review-count {
-        font-size: 11px;
-    }
-}
-
-/* Mobile Overrides */
-@media (max-width: 768px) {
-    .meta-info-row {
-        display: none !important;
-    }
-
-    .card-btn {
-        height: 42px !important;
-        font-size: 13px !important;
+        font-size: 10px;
     }
 }

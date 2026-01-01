@@ -441,14 +441,15 @@ const Header = () => {
             ))}
           </div>
           
-          {currentUser && (
-            <div className="mobile-sidebar-footer">
-              <button onClick={() => { handleLogout(); setMobileMenuOpen(false); }} className="mobile-logout-btn">
-                Logout
-              </button>
-            </div>
-          )}
         </div>
+        
+        {currentUser && (
+          <div className="mobile-sidebar-footer">
+            <button onClick={() => { handleLogout(); setMobileMenuOpen(false); }} className="mobile-logout-btn">
+              Logout
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );
