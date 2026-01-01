@@ -64,7 +64,9 @@ const ProductDetail = () => {
       selectedSize,
       quantity
     });
-    openCart();
+    if (window.innerWidth > 768) {
+      openCart();
+    }
   };
 
   const handleBuyNow = () => {
@@ -285,9 +287,6 @@ const ProductDetail = () => {
                       <FiPlus />
                     </button>
                   </div>
-                  <button className="secondary-btn wishlist-inline-btn" title="Add to Wishlist">
-                    <FiHeart />
-                  </button>
                 </div>
               </div>
             ) : (
@@ -319,9 +318,6 @@ const ProductDetail = () => {
                       <FiPlus />
                     </button>
                   </div>
-                  <button className="secondary-btn wishlist-inline-btn" title="Add to Wishlist">
-                    <FiHeart />
-                  </button>
                 </div>
               </div>
             )}
@@ -334,11 +330,10 @@ const ProductDetail = () => {
               >
                 Add to cart
               </button>
-
-
+              <button className="secondary-btn wishlist-inline-btn mobile-action-wishlist" title="Add to Wishlist">
+                <FiHeart />
+              </button>
             </div>
-
-
           </div>
         </div>
 
