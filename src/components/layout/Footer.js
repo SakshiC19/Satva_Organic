@@ -161,7 +161,7 @@ const Footer = () => {
       {/* Sticky WhatsApp Icon */}
       {!hideWhatsApp && (
         <a 
-          href="https://wa.me/919876543210" 
+          href="https://wa.me/7517555383" 
           className="whatsapp-sticky" 
           target="_blank" 
           rel="noopener noreferrer"

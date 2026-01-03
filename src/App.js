@@ -9,6 +9,9 @@ import Shop from './pages/Shop/Shop';
 import Contact from './pages/Contact/Contact';
 import Login from './pages/Auth/Login';
 import Signup from './pages/Auth/Signup';
+import OTPVerification from './pages/Auth/OTPVerification';
+import ForgotPassword from './pages/Auth/ForgotPassword';
+import ResetPassword from './pages/Auth/ResetPassword';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AdminRoute from './components/auth/AdminRoute';
 import AccountLayout from './pages/Account/AccountLayout';
@@ -74,6 +77,9 @@ function App() {
                 {/* Auth Routes (Standalone) */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
+                <Route path="/verify-otp" element={<OTPVerification />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/make-admin" element={<MakeAdmin />} />
                 <Route path="/checkout" element={<Layout><Checkout /></Layout>} />
                 

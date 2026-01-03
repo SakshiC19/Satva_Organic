@@ -34,9 +34,10 @@ const AccountLayout = () => {
   ];
 
   const isWishlistPage = location.pathname.includes('/wishlist');
+  const pageClass = location.pathname.split('/').pop();
 
   return (
-    <div className={`account-layout container ${isWishlistPage ? 'wishlist-layout' : ''}`}>
+    <div className={`account-layout container ${isWishlistPage ? 'wishlist-layout' : ''} page-${pageClass}`}>
       {!isWishlistPage && (
         <aside className="account-sidebar">
           <nav className="account-nav">

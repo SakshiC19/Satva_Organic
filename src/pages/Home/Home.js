@@ -32,11 +32,11 @@ import organicItemsImg from '../../assets/productsImages/organic-items/organic-i
 const Home = () => {
   const navigate = useNavigate();
   const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [flashDeals, setFlashDeals] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [flashDealFilter, setFlashDealFilter] = useState({
-    category: 'All',
-    discount: 0
+    category: 'All'
   });
 
   const [specialOffer, setSpecialOffer] = useState(null);
@@ -51,7 +51,13 @@ const Home = () => {
         ...doc.data()
       }));
       
-      // Filter out products with discounts for featured section
+      // Filter products with discounts for Flash Deals section
+      const deals = productsList.filter(product => 
+        product.discount && parseFloat(product.discount) > 0
+      );
+      setFlashDeals(deals);
+      
+      // Filter out products with discounts for featured section (or keep as mixed, but preserving previous logic of "productsWithoutDeals")
       const productsWithoutDeals = productsList.filter(product => 
         !product.discount || parseFloat(product.discount) === 0
       );
@@ -89,11 +95,9 @@ const Home = () => {
     }
   };
 
-  const flashDealsProducts = featuredProducts.filter(product => {
-    const hasDiscount = product.discount && parseFloat(product.discount) > 0;
+  const flashDealsProducts = flashDeals.filter(product => {
     const matchesCategory = flashDealFilter.category === 'All' || product.category === flashDealFilter.category;
-    const matchesDiscount = parseFloat(product.discount || 0) >= flashDealFilter.discount;
-    return hasDiscount && matchesCategory && matchesDiscount;
+    return matchesCategory;
   });
 
   const { categories: contextCategories } = useCategories();
@@ -392,18 +396,7 @@ const Home = () => {
                 ))}
               </select>
             </div>
-            <div className="filter-group">
-              <select 
-                className="discount-select"
-                value={flashDealFilter.discount}
-                onChange={(e) => setFlashDealFilter({ ...flashDealFilter, discount: parseInt(e.target.value) })}
-              >
-                <option value="0">All Discounts</option>
-                <option value="10">10% Off & Above</option>
-                <option value="20">20% Off & Above</option>
-                <option value="30">30% Off & Above</option>
-              </select>
-            </div>
+
           </div>
 
           <div className="flash-deals-container">
