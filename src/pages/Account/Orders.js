@@ -16,7 +16,8 @@ import {
   FiXCircle, 
   FiRotateCcw,
   FiTruck,
-  FiChevronRight
+  FiChevronRight,
+  FiHome
 } from 'react-icons/fi';
 import './Account.css';
 
@@ -185,6 +186,15 @@ const Orders = () => {
 
   return (
     <div className="account-section">
+      {/* Breadcrumb */}
+      <div className="breadcrumb">
+        <Link to="/" className="breadcrumb-item">
+          <FiHome /> Home
+        </Link>
+        <FiChevronRight className="breadcrumb-separator" />
+        <span className="breadcrumb-item active">My Orders</span>
+      </div>
+
       <div className="account-header">
         <h2 className="account-title">My Orders ({filteredOrders.length})</h2>
       </div>

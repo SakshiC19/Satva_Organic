@@ -53,6 +53,52 @@ const ProductDetail = () => {
     }
   };
 
+  const calculateDynamicPrice = (prod, size) => {
+    if (!size || !prod) return prod?.price || 0;
+    
+    // Check for explicit price override first
+    if (prod.sizePrices && prod.sizePrices[size]) {
+      return parseFloat(prod.sizePrices[size]);
+    }
+
+    // Fallback to auto-calculation based on base price
+    const match = size.match(/(\d+(?:\.\d+)?)\s*([a-zA-Z]+)/);
+    if (!match) return prod.price;
+
+    const value = parseFloat(match[1]);
+    const unit = match[2].toLowerCase();
+    
+    let multiplier = 1;
+    
+    // Base unit is 100g or 100ml
+    if (unit === 'g' || unit === 'gm' || unit === 'ml') {
+      multiplier = value / 100;
+    } else if (unit === 'kg' || unit === 'l' || unit === 'liter') {
+      multiplier = (value * 1000) / 100;
+    } else if (unit === 'pc' || unit === 'pcs' || unit === 'pack') {
+       // For packs, if no override, maybe just base price? 
+       // Or if base price is "per piece", then multiplier is value?
+       // Let's assume base price is per 1 unit if it's a pack type
+       multiplier = value; 
+    } else {
+      return prod.price;
+    }
+
+    let finalPrice = prod.price * multiplier;
+
+    // Legacy support for sizeDiscounts (percentage)
+    if (prod.sizeDiscounts && prod.sizeDiscounts[size]) {
+      const discount = parseFloat(prod.sizeDiscounts[size]);
+      if (!isNaN(discount) && discount > 0) {
+        finalPrice = finalPrice * (1 - discount / 100);
+      }
+    }
+
+    return Math.round(finalPrice);
+  };
+
+  const currentPrice = product ? calculateDynamicPrice(product, selectedSize) : 0;
+
   const { addToCart, openCart } = useCart();
 
   const handleAddToCart = () => {
@@ -60,9 +106,11 @@ const ProductDetail = () => {
     
     addToCart({
       ...product,
+      price: currentPrice, // Use calculated price
       selectedBrand,
       selectedSize,
-      quantity
+      quantity,
+      basePrice: product.price // Store base price reference
     });
     if (window.innerWidth > 768) {
       openCart();
@@ -156,40 +204,29 @@ const ProductDetail = () => {
 
             <div className="product-price-group">
               <div className="product-price">
-                <span className="current-price">₹{product.price}</span>
-                {product.originalPrice && product.originalPrice > product.price && (
-                  <>
-                    <span className="original-price" style={{ textDecoration: 'line-through', color: '#999', marginLeft: '10px' }}>
-                      ₹{product.originalPrice}
-                    </span>
-                    <span className="discount-badge" style={{ color: '#dc2626', marginLeft: '10px', fontWeight: '600' }}>
-                      {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
-                    </span>
-                  </>
+                <span className="current-price">₹{currentPrice}</span>
+                {/* Show base price info */}
+                <span className="unit-price-label" style={{ fontSize: '14px', color: '#6b7280', marginLeft: '8px', fontWeight: 'normal' }}>
+                   (₹{product.price} / 100{product.unit === 'ml' || product.unit === 'l' ? 'ml' : 'g'})
+                </span>
+                
+                {product.sizeDiscounts && product.sizeDiscounts[selectedSize] && (
+                   <span className="discount-badge" style={{ color: '#dc2626', marginLeft: '10px', fontWeight: '600', fontSize: '14px' }}>
+                      {product.sizeDiscounts[selectedSize]}% OFF
+                   </span>
                 )}
-              </div>
-              <div className="unit-price" style={{ fontSize: '14px', color: '#6b7280', marginTop: '-8px', marginBottom: '12px' }}>
+                
+                {/* General Discount - Handle both number and object formats */}
                 {(() => {
-                   const size = selectedSize || (product.packingSizes && product.packingSizes[0]) || product.weight;
-                   if (!size) return null;
-                   const match = size.match(/(\d+(?:\.\d+)?)\s*([a-zA-Z]+)/);
-                   if (match) {
-                     const val = parseFloat(match[1]);
-                     const unit = match[2].toLowerCase();
-                     if (val > 0) {
-                       let unitPrice = product.price / val;
-                       let unitLabel = unit;
-                       if (unit === 'g' || unit === 'gm') {
-                         unitPrice = unitPrice * 1000;
-                         unitLabel = 'kg';
-                       } else if (unit === 'ml') {
-                         unitPrice = unitPrice * 1000;
-                         unitLabel = 'L';
-                       }
-                       return `(₹${unitPrice.toFixed(2)} / ${unitLabel})`;
-                     }
-                   }
-                   return null;
+                  const discVal = typeof product.discount === 'object' ? product.discount?.value : product.discount;
+                  if (discVal > 0 && !product.sizeDiscounts?.[selectedSize]) {
+                    return (
+                      <span className="discount-badge" style={{ color: '#dc2626', marginLeft: '10px', fontWeight: '600', fontSize: '14px' }}>
+                        {discVal}% OFF
+                      </span>
+                    );
+                  }
+                  return null;
                 })()}
               </div>
             </div>
@@ -329,6 +366,24 @@ const ProductDetail = () => {
                 disabled={product.stock <= 0}
               >
                 Add to cart
+              </button>
+              <button 
+                className="btn-buy-now"
+                onClick={handleBuyNow}
+                disabled={product.stock <= 0}
+                style={{
+                  flex: 1,
+                  backgroundColor: '#f59e0b',
+                  color: 'white',
+                  border: 'none',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  marginLeft: '10px'
+                }}
+              >
+                Buy Now
               </button>
               <button className="secondary-btn wishlist-inline-btn mobile-action-wishlist" title="Add to Wishlist">
                 <FiHeart />

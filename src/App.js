@@ -28,6 +28,7 @@ import EditProduct from './pages/Admin/EditProduct';
 import AdminOrders from './pages/Admin/Orders';
 import HeroBanners from './pages/Admin/HeroBanners';
 import SpecialOffer from './pages/Admin/SpecialOffer';
+import DiscountsAndDeals from './pages/Admin/DiscountsAndDeals';
 import Categories from './pages/Admin/Categories';
 import Users from './pages/Admin/Users';
 import MakeAdmin from './components/admin/MakeAdmin';
@@ -113,6 +114,7 @@ function App() {
                   <Route path="orders" element={<AdminOrders />} />
                   <Route path="banners" element={<HeroBanners />} />
                   <Route path="special-offer" element={<SpecialOffer />} />
+                  <Route path="discounts" element={<DiscountsAndDeals />} />
                   <Route path="categories" element={<Categories />} />
                   <Route path="users" element={<Users />} />
                 </Route>

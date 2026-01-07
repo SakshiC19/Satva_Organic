@@ -308,33 +308,8 @@ const Header = () => {
                 <Link to={item.path} className="category-nav-item text-only">
                   <span className="category-name">
                     {item.name}
-                    {item.subcategories && <FiChevronDown className="cat-chevron" />}
                   </span>
                 </Link>
-                {item.subcategories && (
-                  <div className="category-dropdown">
-                    {item.subcategories.map((sub, subIndex) => {
-                      // Find if there's a product with this name
-                      const matchingProduct = products.find(p => 
-                        p.name.toLowerCase() === sub.toLowerCase()
-                      );
-                      
-                      const linkTo = matchingProduct 
-                        ? `/product/${matchingProduct.id}`
-                        : `${item.path}&subcategory=${encodeURIComponent(sub)}`;
-
-                      return (
-                        <Link 
-                          key={subIndex} 
-                          to={linkTo}
-                          className="category-dropdown-item"
-                        >
-                          {sub}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
             ))}
           </div>
@@ -447,7 +422,7 @@ const Header = () => {
                   else if (lowerName.includes('seeds')) CategoryIcon = FiDisc;
 
                   return (
-                    <div key={index} className={`mobile-category-item ${expandedCategories[index] ? 'active' : ''}`}>
+                    <div key={index} className="mobile-category-item">
                       <div className="mobile-category-header">
                         <div 
                           className="category-label"
@@ -460,44 +435,8 @@ const Header = () => {
                           <CategoryIcon className="category-icon" />
                           <span className="category-text">{item.name}</span>
                         </div>
-                        {item.subcategories ? (
-                          <div 
-                            className="mobile-cat-toggle-wrapper"
-                            onClick={() => toggleCategory(index)}
-                            style={{ cursor: 'pointer', padding: '10px' }}
-                          >
-                            <FiChevronDown className={`mobile-cat-toggle-icon ${expandedCategories[index] ? 'expanded' : ''}`} />
-                          </div>
-                        ) : (
-                          <FiChevronRight className="mobile-cat-arrow" />
-                        )}
+                        <FiChevronRight className="mobile-cat-arrow" />
                       </div>
-                      
-                      {item.subcategories && (
-                        <div className={`mobile-subcategories ${expandedCategories[index] ? 'open' : ''}`}>
-
-                          {item.subcategories.map((sub, subIndex) => {
-                            const matchingProduct = products.find(p => 
-                              p.name.toLowerCase() === sub.toLowerCase()
-                            );
-                            
-                            const linkTo = matchingProduct 
-                              ? `/product/${matchingProduct.id}`
-                              : `${item.path}&subcategory=${encodeURIComponent(sub)}`;
-
-                            return (
-                              <Link 
-                                key={subIndex}
-                                to={linkTo}
-                                className="mobile-subcategory-link"
-                                onClick={() => setMobileMenuOpen(false)}
-                              >
-                                {sub}
-                              </Link>
-                            );
-                          })}
-                        </div>
-                      )}
                     </div>
                   );
                 })}

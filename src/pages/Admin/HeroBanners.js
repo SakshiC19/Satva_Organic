@@ -11,10 +11,14 @@ const HeroBanners = () => {
   const [uploading, setUploading] = useState(false);
   const [newBanner, setNewBanner] = useState({
     image: '',
-    alt: '',
+    title: '',
+    subtitle: '',
+    buttonText: '',
     link: ''
   });
   const [selectedImage, setSelectedImage] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [uploadKey, setUploadKey] = useState(0); // To force reset ImageUpload
 
   useEffect(() => {
     fetchBanners();
@@ -69,13 +73,82 @@ const HeroBanners = () => {
         type: 'image'
       });
       
-      setNewBanner({ image: '', alt: '', link: '' });
+      setNewBanner({ image: '', title: '', subtitle: '', buttonText: '', link: '' });
       setSelectedImage(null);
+      setUploadKey(prev => prev + 1); // Reset ImageUpload
       fetchBanners();
       alert('Banner added successfully!');
     } catch (error) {
       console.error('Error adding banner:', error);
       alert('Failed to add banner: ' + error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleEditClick = (banner) => {
+    setEditingId(banner.id);
+    setNewBanner({
+      image: banner.image,
+      title: banner.title || '',
+      subtitle: banner.subtitle || '',
+      buttonText: banner.buttonText || '',
+      link: banner.link || ''
+    });
+    setSelectedImage(null);
+    setUploadKey(prev => prev + 1); // Reset upload component
+    
+    // Scroll to form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setNewBanner({ image: '', title: '', subtitle: '', buttonText: '', link: '' });
+    setSelectedImage(null);
+    setUploadKey(prev => prev + 1);
+  };
+
+  const handleUpdateBanner = async (e) => {
+    e.preventDefault();
+    if (!editingId) return;
+
+    try {
+      setUploading(true);
+      let imageUrl = newBanner.image;
+      let imagePath = null;
+
+      // If new image selected, upload it
+      if (selectedImage) {
+        const { uploadImage } = await import('../../services/storageService');
+        const uploadResult = await uploadImage(selectedImage, 'banners');
+        imageUrl = uploadResult.url;
+        imagePath = uploadResult.path;
+      }
+
+      const updateData = {
+        ...newBanner,
+        image: imageUrl,
+        updatedAt: new Date().toISOString()
+      };
+
+      if (imagePath) {
+        updateData.imagePath = imagePath;
+      }
+
+      // Use updateDoc from firestore
+      const { updateDoc } = await import('firebase/firestore');
+      await updateDoc(doc(db, 'heroBanners', editingId), updateData);
+      
+      setEditingId(null);
+      setNewBanner({ image: '', title: '', subtitle: '', buttonText: '', link: '' });
+      setSelectedImage(null);
+      setUploadKey(prev => prev + 1);
+      fetchBanners();
+      alert('Banner updated successfully!');
+    } catch (error) {
+      console.error('Error updating banner:', error);
+      alert('Failed to update banner: ' + error.message);
     } finally {
       setUploading(false);
     }
@@ -100,27 +173,52 @@ const HeroBanners = () => {
       </div>
 
       <div className="admin-content">
-        {/* Add New Banner Section */}
+        {/* Add/Edit Banner Section */}
         <div className="add-banner-section card">
-          <h3>Add New Banner</h3>
-          <form onSubmit={handleAddBanner} className="add-banner-form">
+          <h3>{editingId ? 'Edit Banner' : 'Add New Banner'}</h3>
+          <form className="add-banner-form">
             <div className="form-group">
               <label>Banner Image</label>
               <ImageUpload 
+                key={uploadKey}
                 onImagesSelected={handleImagesSelected}
                 maxImages={1}
-                label="Select Banner Image"
+                label={editingId ? "Change Banner Image (Optional)" : "Select Banner Image"}
+                existingImages={editingId && !selectedImage ? [{ url: newBanner.image }] : []}
               />
             </div>
             
             <div className="form-row">
               <div className="form-group">
-                <label>Alt Text (Description)</label>
+                <label>Title</label>
                 <input
                   type="text"
-                  value={newBanner.alt}
-                  onChange={(e) => setNewBanner({ ...newBanner, alt: e.target.value })}
-                  placeholder="e.g., Big Sale on Organic Fruits"
+                  value={newBanner.title}
+                  onChange={(e) => setNewBanner({ ...newBanner, title: e.target.value })}
+                  placeholder="e.g., Fresh & Organic"
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label>Subtitle</label>
+                <input
+                  type="text"
+                  value={newBanner.subtitle}
+                  onChange={(e) => setNewBanner({ ...newBanner, subtitle: e.target.value })}
+                  placeholder="e.g., Premium quality products..."
+                  className="form-input"
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>Button Text</label>
+                <input
+                  type="text"
+                  value={newBanner.buttonText}
+                  onChange={(e) => setNewBanner({ ...newBanner, buttonText: e.target.value })}
+                  placeholder="e.g., Shop Now"
                   className="form-input"
                 />
               </div>
@@ -136,13 +234,27 @@ const HeroBanners = () => {
               </div>
             </div>
 
-            <button 
-              type="submit" 
-              className="btn btn-primary"
-              disabled={uploading || !selectedImage}
-            >
-              {uploading ? 'Adding...' : 'Add Banner'}
-            </button>
+            <div className="form-actions" style={{ display: 'flex', gap: '10px' }}>
+              <button 
+                type="submit" 
+                className="btn btn-primary"
+                onClick={editingId ? handleUpdateBanner : handleAddBanner}
+                disabled={uploading || (!selectedImage && !editingId)}
+              >
+                {uploading ? (editingId ? 'Updating...' : 'Adding...') : (editingId ? 'Update Banner' : 'Add Banner')}
+              </button>
+              
+              {editingId && (
+                <button 
+                  type="button" 
+                  className="btn btn-secondary"
+                  onClick={handleCancelEdit}
+                  disabled={uploading}
+                >
+                  Cancel Edit
+                </button>
+              )}
+            </div>
           </form>
         </div>
 
@@ -161,13 +273,22 @@ const HeroBanners = () => {
                     <img src={banner.image} alt={banner.alt} />
                   </div>
                   <div className="banner-info">
-                    <p className="banner-alt">{banner.alt || 'No description'}</p>
+                    <p className="banner-title" style={{ fontWeight: 'bold' }}>{banner.title || 'No Title'}</p>
+                    <p className="banner-subtitle" style={{ fontSize: '0.9em', color: '#666' }}>{banner.subtitle}</p>
                     <button 
                       onClick={() => handleDeleteBanner(banner.id)}
                       className="btn-icon delete"
                       title="Delete Banner"
                     >
                       <FiTrash2 />
+                    </button>
+                    <button 
+                      onClick={() => handleEditClick(banner)}
+                      className="btn-icon edit"
+                      title="Edit Banner"
+                      style={{ marginLeft: '8px', color: '#2563eb' }}
+                    >
+                      Edit
                     </button>
                   </div>
                 </div>

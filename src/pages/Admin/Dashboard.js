@@ -79,7 +79,8 @@ const Dashboard = () => {
       trend: '+18.2% this week', 
       trendUp: true,
       icon: <FiDollarSign />,
-      primary: true
+      primary: true,
+      path: '/admin/orders'
     },
     { 
       label: 'Total Orders', 
@@ -87,7 +88,8 @@ const Dashboard = () => {
       trend: '+12.5% this week', 
       trendUp: true,
       icon: <FiShoppingBag />,
-      iconClass: 'blue'
+      iconClass: 'blue',
+      path: '/admin/orders'
     },
     { 
       label: 'Total Product', 
@@ -95,7 +97,8 @@ const Dashboard = () => {
       trend: '-2.3% this week', 
       trendUp: false,
       icon: <FiBox />,
-      iconClass: 'purple'
+      iconClass: 'purple',
+      path: '/admin/products'
     },
     { 
       label: 'Active Customers', 
@@ -103,7 +106,8 @@ const Dashboard = () => {
       trend: '+24.6% this week', 
       trendUp: true,
       icon: <FiUsers />,
-      iconClass: 'orange'
+      iconClass: 'orange',
+      path: '/admin/users'
     }
   ];
 
@@ -149,7 +153,11 @@ const Dashboard = () => {
       {/* Stats Grid */}
       <div className="stats-grid">
         {statsCards.map((stat, index) => (
-          <div key={index} className={`stat-card ${stat.primary ? 'primary' : ''}`}>
+          <div 
+            key={index} 
+            className={`stat-card clickable ${stat.primary ? 'primary' : ''}`}
+            onClick={() => navigate(stat.path)}
+          >
             <div className="stat-card-header">
               <div className={`stat-icon ${stat.iconClass || ''}`}>
                 {stat.icon}

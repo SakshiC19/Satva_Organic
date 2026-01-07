@@ -277,67 +277,95 @@ const Checkout = () => {
         return;
       }
 
-      const options = {
-        key: "rzp_test_RyAk3DGa85x3tr", 
-        amount: Math.round((cartTotal || 0) * 100), // Amount in paise
-        currency: "INR",
-        name: "Satva Organics",
-        description: "Grocery Purchase",
-        image: "https://firebasestorage.googleapis.com/v0/b/satva-organic.appspot.com/o/logo.png?alt=media", // Use your logo URL if available
-        handler: async function (response) {
-          console.log('Razorpay payment response:', response);
-          try {
-            // In a real production app, you should verify the signature on your backend here
-            // using the payment_id, order_id, and signature.
-            
-            const orderToSave = {
-              ...orderData,
-              createdAt: serverTimestamp(),
-              paymentId: response.razorpay_payment_id,
-              paymentStatus: 'Paid',
-              razorpayOrderId: response.razorpay_order_id || '',
-              razorpaySignature: response.razorpay_signature || ''
-            };
-            
-            console.log('Attempting to save order:', orderToSave);
-            
-            const docRef = await addDoc(collection(db, 'orders'), orderToSave);
-            
-            console.log('Order saved successfully with ID:', docRef.id);
-            
-            // Clear cart after successful order
-            cartItems.forEach(item => {
-              removeFromCart(item.id, item.selectedSize);
-            });
-            
-            setShowConfirmation(true);
-            setIsProcessing(false);
-          } catch (error) {
-            console.error("Detailed error saving order (Razorpay):", error);
-            console.error("Error code:", error.code);
-            console.error("Error message:", error.message);
-            console.error("Error stack:", error.stack);
-            alert(`Payment successful but failed to place order. Error: ${error.message}. Please contact support with payment ID: ${response.razorpay_payment_id}`);
-            setIsProcessing(false);
-          }
-        },
-        prefill: {
-          name: address.name || currentUser?.displayName,
-          email: email,
-          contact: address.phone
-        },
-        theme: {
-          color: "#27ae60"
-        },
-        modal: {
-            ondismiss: function() {
-                setIsProcessing(false);
-            }
+      // Call PHP Backend to create order
+      try {
+        const response = await fetch('http://localhost/satva-api/create_order.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            amount: Math.round((cartTotal || 0) * 100)
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to create order on backend');
         }
-      };
-      
-      const paymentObject = new window.Razorpay(options);
-      paymentObject.open();
+
+        const razorpayOrder = await response.json();
+        console.log('Order Created:', razorpayOrder);
+
+        const options = {
+          key: "rzp_test_RyAk3DGa85x3tr", 
+          amount: razorpayOrder.amount, // Amount from backend
+          currency: razorpayOrder.currency,
+          name: "Satva Organics",
+          description: "Grocery Purchase",
+          image: "https://firebasestorage.googleapis.com/v0/b/satva-organic.appspot.com/o/logo.png?alt=media",
+          order_id: razorpayOrder.id, // Pass the Order ID from backend
+          handler: async function (response) {
+            console.log('Razorpay payment response:', response);
+            try {
+              // In a real production app, you should verify the signature on your backend here
+              // using the payment_id, order_id, and signature.
+              
+              const orderToSave = {
+                ...orderData,
+                createdAt: serverTimestamp(),
+                paymentId: response.razorpay_payment_id,
+                paymentStatus: 'Paid',
+                razorpayOrderId: response.razorpay_order_id || '',
+                razorpaySignature: response.razorpay_signature || ''
+              };
+              
+              console.log('Attempting to save order:', orderToSave);
+              
+              const docRef = await addDoc(collection(db, 'orders'), orderToSave);
+              
+              console.log('Order saved successfully with ID:', docRef.id);
+              
+              // Clear cart after successful order
+              cartItems.forEach(item => {
+                removeFromCart(item.id, item.selectedSize);
+              });
+              
+              setShowConfirmation(true);
+              setIsProcessing(false);
+            } catch (error) {
+              console.error("Detailed error saving order (Razorpay):", error);
+              console.error("Error code:", error.code);
+              console.error("Error message:", error.message);
+              console.error("Error stack:", error.stack);
+              alert(`Payment successful but failed to place order. Error: ${error.message}. Please contact support with payment ID: ${response.razorpay_payment_id}`);
+              setIsProcessing(false);
+            }
+          },
+          prefill: {
+            name: address.name || currentUser?.displayName,
+            email: email,
+            contact: address.phone
+          },
+          theme: {
+            color: "#27ae60"
+          },
+          modal: {
+              ondismiss: function() {
+                  setIsProcessing(false);
+              }
+          }
+        };
+        
+        const paymentObject = new window.Razorpay(options);
+        paymentObject.open();
+
+      } catch (err) {
+        console.error("Error creating order:", err);
+        alert("Failed to initiate payment. Please check if your backend server is running. Error: " + err.message);
+        setIsProcessing(false);
+        return;
+      }
       
     } else {
       // Cash on Delivery

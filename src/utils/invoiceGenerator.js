@@ -1,195 +1,306 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { logoBase64 } from './logo';
 
 export const generateInvoice = (order) => {
   const doc = new jsPDF();
   
-  // Company/Store Details
-  const companyName = 'Satva Organics';
-  const companyAddress = 'Organic Products Store';
-  const companyPhone = '+91 1234567890';
-  const companyEmail = 'info@satvaorganics.com';
-  const companyGST = 'GSTIN: 27XXXXX1234X1ZX';
+  // --- Constants & Config ---
+  const startX = 14;
+  const startY = 10;
+  const fullWidth = 182;
+  const headerHeight = 35;
+  const logoBoxWidth = 41;
+  const logoBoxRightX = startX + logoBoxWidth; // 55
   
-  // Colors
-  const primaryColor = [39, 174, 96]; // #27ae60
-  const darkColor = [31, 45, 38]; // #1F2D26
-  const lightGray = [248, 249, 250];
+  // Fonts
+  doc.setFont('helvetica');
   
-  // Header Background
-  doc.setFillColor(...primaryColor);
-  doc.rect(0, 0, 210, 40, 'F');
+  // --- Header Section ---
+  // Outer Box
+  doc.rect(startX, startY, fullWidth, headerHeight);
   
-  // Company Name
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(24);
+  // Vertical Line for Logo
+  doc.line(logoBoxRightX, startY, logoBoxRightX, startY + headerHeight);
+  
+  // Logo
+  if (logoBase64) {
+    try {
+      // Center logo in the 41mm wide box
+      doc.addImage(logoBase64, 'JPEG', startX + 2, startY + 5, 37, 25); 
+    } catch (e) {
+      console.error("Error adding logo", e);
+    }
+  }
+  
+  // Header Text Content
+  const textLeftX = logoBoxRightX + 2;
+  
+  // "Tax Invoice" - Centered in the right section
+  // Right section width = 182 - 41 = 141. Center is 55 + (141/2) = 125.5
+  doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text(companyName, 15, 20);
+  doc.text('Tax Invoice', 125.5, startY + 5, { align: 'center' });
   
-  // Invoice Title
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'normal');
-  doc.text('TAX INVOICE', 15, 30);
-  
-  // Invoice Number and Date (Right aligned)
-  doc.setFontSize(10);
-  doc.text(`Invoice #: ${order.id.substring(0, 10)}`, 140, 20);
-  doc.text(`Date: ${formatDate(order.createdAt)}`, 140, 27);
-  doc.text(`Status: ${order.status || 'Pending'}`, 140, 34);
-  
-  // Reset text color
-  doc.setTextColor(...darkColor);
-  
-  // Company Details Box
+  // Sold By
   doc.setFontSize(9);
-  doc.setFont('helvetica', 'bold');
-  doc.text('From:', 15, 50);
-  doc.setFont('helvetica', 'normal');
-  doc.text(companyName, 15, 56);
-  doc.text(companyAddress, 15, 61);
-  doc.text(`Phone: ${companyPhone}`, 15, 66);
-  doc.text(`Email: ${companyEmail}`, 15, 71);
-  doc.text(companyGST, 15, 76);
+  doc.text('Sold By:  Satva Organics', textLeftX, startY + 12);
   
-  // Customer Details Box
-  doc.setFont('helvetica', 'bold');
-  doc.text('Bill To:', 120, 50);
+  // Address Label
+  doc.text('Billed And Ship from Addresss:', textLeftX, startY + 17);
+  
+  // Address Value
   doc.setFont('helvetica', 'normal');
-  doc.text(order.customerName || 'Guest Customer', 120, 56);
+  const addressText = 'Sangli-kolhapur Byepass Road, Village - Jainapur (Jaysingpur), Kolhapur, Maharashtra - 416101';
+  // Calculate available width: Total Width (182) - Logo Box (41) - Label Offset (~50) - Margin (2)
+  const maxAddressWidth = 85; 
+  const addressLines = doc.splitTextToSize(addressText, maxAddressWidth);
+  doc.text(addressLines, textLeftX + 50, startY + 17);
+  
+  // GSTIN
+  doc.setFont('helvetica', 'bold');
+  doc.text('GSTIN:', textLeftX, startY + 29);
+  doc.setFont('helvetica', 'normal');
+  doc.text('27XXXXX1234X1ZX', textLeftX + 15, startY + 29);
+  
+  // Invoice Number (Right aligned roughly)
+  doc.setFont('helvetica', 'bold');
+  doc.text('Invoice Number:', 140, startY + 12);
+  doc.setFont('helvetica', 'normal');
+  doc.text(order.id.substring(0, 10).toUpperCase(), 168, startY + 12);
+  
+  // --- Order Details Grid ---
+  const gridY = startY + headerHeight; // 45
+  const gridHeight = 50;
+  const col1W = 55;
+  const col2W = 63.5;
+  const col3W = 63.5;
+  
+  // Main Box
+  doc.rect(startX, gridY, fullWidth, gridHeight);
+  
+  // Vertical Lines
+  doc.line(startX + col1W, gridY, startX + col1W, gridY + gridHeight);
+  doc.line(startX + col1W + col2W, gridY, startX + col1W + col2W, gridY + gridHeight);
+  
+  // Column 1: Order Details
+  let lineY = gridY + 8;
+  const gap = 7;
+  const labelX = startX + 2;
+  const valX = startX + 25;
+  
+  doc.setFontSize(9);
+  
+  // Order Id
+  doc.setFont('helvetica', 'bold');
+  doc.text('Order Id:', labelX, lineY);
+  doc.setFont('helvetica', 'normal');
+  doc.text(order.id.substring(0, 8).toUpperCase(), valX, lineY);
+  
+  lineY += gap;
+  // Order Date
+  doc.setFont('helvetica', 'bold');
+  doc.text('Order Date:', labelX, lineY);
+  doc.setFont('helvetica', 'normal');
+  doc.text(formatDate(order.createdAt), valX, lineY);
+  
+  lineY += gap;
+  // Invoice Date
+  doc.setFont('helvetica', 'bold');
+  doc.text('Invoice Date:', labelX, lineY);
+  doc.setFont('helvetica', 'normal');
+  doc.text(formatDate(new Date()), valX, lineY);
+  
+  lineY += gap;
+  // PAN
+  doc.setFont('helvetica', 'bold');
+  doc.text('PAN:', labelX, lineY);
+  
+  lineY += gap;
+  // CIN
+  doc.setFont('helvetica', 'bold');
+  doc.text('CIN:', labelX, lineY);
+  
+  // Column 2: Bill To
+  const col2X = startX + col1W + 2;
+  doc.setFont('helvetica', 'bold');
+  doc.text('Bill To:', col2X, gridY + 8);
+  doc.setFont('helvetica', 'normal');
   
   if (order.address) {
-    const addressLines = [
+    const billAddress = [
+      order.customerName || 'Guest',
       order.address.street,
       `${order.address.city}, ${order.address.state}`,
       `PIN: ${order.address.pincode}`,
+      `Phone: ${order.phone || ''}`
     ].filter(Boolean);
     
-    addressLines.forEach((line, index) => {
-      doc.text(line, 120, 61 + (index * 5));
+    billAddress.forEach((line, i) => {
+      doc.text(line, col2X, gridY + 15 + (i * 5));
     });
   }
   
-  if (order.phone) {
-    doc.text(`Phone: ${order.phone}`, 120, 76);
-  }
-  if (order.email) {
-    doc.text(`Email: ${order.email}`, 120, 81);
+  // Column 3: Ship To
+  const col3X = startX + col1W + col2W + 2;
+  doc.setFont('helvetica', 'bold');
+  doc.text('Ship To:', col3X, gridY + 8);
+  doc.setFont('helvetica', 'normal');
+  
+  if (order.address) {
+    const shipAddress = [
+      order.customerName || 'Guest',
+      order.address.street,
+      `${order.address.city}, ${order.address.state}`,
+      `PIN: ${order.address.pincode}`,
+      `Phone: ${order.phone || ''}`
+    ].filter(Boolean);
+    
+    shipAddress.forEach((line, i) => {
+      doc.text(line, col3X, gridY + 15 + (i * 5));
+    });
   }
   
-  // Items Table
-  const tableStartY = 90;
+  // --- Numbers Of Items Row ---
+  const itemsRowY = gridY + gridHeight; // 95
+  const itemsRowHeight = 8;
+  doc.rect(startX, itemsRowY, fullWidth, itemsRowHeight);
   
-  // Prepare table data
-  const tableData = order.items?.map((item, index) => [
-    index + 1,
-    item.name || 'Product',
-    item.size || '-',
-    item.quantity || 1,
-    `₹${(item.price || 0).toFixed(2)}`,
-    `₹${((item.price || 0) * (item.quantity || 1)).toFixed(2)}`
-  ]) || [];
-
-  // Add table
-  autoTable(doc, {
-    startY: tableStartY,
-    head: [['#', 'Product Name', 'Size', 'Qty', 'Price', 'Total']],
-    body: tableData,
-    theme: 'grid',
-    headStyles: {
-      fillColor: primaryColor,
-      textColor: [255, 255, 255],
-      fontStyle: 'bold',
-      fontSize: 10
-    },
-    bodyStyles: {
-      fontSize: 9,
-      textColor: darkColor
-    },
-    columnStyles: {
-      0: { cellWidth: 10, halign: 'center' },
-      1: { cellWidth: 70 },
-      2: { cellWidth: 25, halign: 'center' },
-      3: { cellWidth: 15, halign: 'center' },
-      4: { cellWidth: 30, halign: 'right' },
-      5: { cellWidth: 35, halign: 'right' }
-    },
-    margin: { left: 15, right: 15 }
+  doc.setFont('helvetica', 'bold');
+  doc.text('Numbers Of Items:', startX + 2, itemsRowY + 5.5);
+  doc.setFont('helvetica', 'normal');
+  doc.text(String(order.items?.length || 0), startX + 35, itemsRowY + 5.5);
+  
+  // --- Items Table ---
+  const tableY = itemsRowY + itemsRowHeight; // 103
+  
+  // Prepare Table Data
+  const minRows = 8;
+  const items = order.items || [];
+  const tableData = [];
+  
+  let subtotal = 0;
+  
+  items.forEach(item => {
+    const price = item.price || 0;
+    const qty = item.quantity || 1;
+    const gross = price * qty;
+    subtotal += gross;
+    
+    tableData.push([
+      item.name || 'Product',
+      item.name || 'Product', // Title
+      qty,
+      `Rs. ${gross.toFixed(2)}`,
+      '0.00', // Discount
+      `Rs. ${gross.toFixed(2)}`, // Taxable
+      '0.00', // CGST
+      '0.00', // SGST
+      `Rs. ${gross.toFixed(2)}` // Total
+    ]);
   });
   
-  // Calculate totals
-  const finalY = doc.lastAutoTable.finalY + 10;
-  const subtotal = order.items?.reduce((sum, item) => 
-    sum + ((item.price || 0) * (item.quantity || 1)), 0) || 0;
+  // Fill remaining rows
+  for (let i = tableData.length; i < minRows; i++) {
+    tableData.push(['', '', '', '', '', '', '', '', '']);
+  }
+  
+  autoTable(doc, {
+    startY: tableY,
+    head: [['Product', 'Title', 'Qty', 'Gross\nAmount', 'Discount', 'Taxble\nValue', 'CGST', 'SGST', 'Total']],
+    body: tableData,
+    theme: 'plain', 
+    styles: {
+      fontSize: 8,
+      cellPadding: 3,
+      lineColor: [0, 0, 0],
+      lineWidth: 0.1,
+      textColor: [0, 0, 0],
+      valign: 'middle',
+      minCellHeight: 8
+    },
+    headStyles: {
+      fillColor: [255, 255, 255],
+      textColor: [0, 0, 0],
+      fontStyle: 'bold',
+      halign: 'center',
+      valign: 'middle',
+      lineWidth: 0.1,
+      lineColor: [0, 0, 0]
+    },
+    bodyStyles: {
+      lineWidth: 0.1,
+      lineColor: [0, 0, 0]
+    },
+    columnStyles: {
+      0: { cellWidth: 35 },
+      1: { cellWidth: 35 },
+      2: { cellWidth: 10, halign: 'center' },
+      3: { cellWidth: 18, halign: 'right' },
+      4: { cellWidth: 15, halign: 'right' },
+      5: { cellWidth: 18, halign: 'right' },
+      6: { cellWidth: 15, halign: 'right' },
+      7: { cellWidth: 15, halign: 'right' },
+      8: { cellWidth: 21, halign: 'right' }
+    },
+    margin: { left: startX, right: 14 } 
+  });
+  
+  // --- Total Row (Below Table) ---
+  const finalY = doc.lastAutoTable.finalY;
+  const totalRowHeight = 8;
+  
+  doc.rect(startX, finalY, fullWidth, totalRowHeight);
+  
+  // Vertical lines for Total row
+  let currentX = startX;
+  const colWidths = [35, 35, 10, 18, 15, 18, 15, 15, 21];
+  
+  colWidths.forEach(w => {
+    currentX += w;
+    doc.line(currentX, finalY, currentX, finalY + totalRowHeight);
+  });
+  
+  // "Total" Text
+  doc.setFont('helvetica', 'bold');
+  doc.text('Total', startX + 35 + 2, finalY + 5.5); 
+  
+  // --- Footer Section ---
+  const footerY = finalY + totalRowHeight;
+  const footerHeight = 60;
+  
+  // Outer Footer Box
+  doc.rect(startX, footerY, fullWidth, footerHeight);
+  
+  // Vertical Line splitting Left (Empty) and Right (Totals/Signatory)
+  const footerSplitX = 135;
+  doc.line(footerSplitX, footerY, footerSplitX, footerY + footerHeight);
+  
+  // Grand Total Box (Inside Right Footer)
+  const grandTotalBoxY = footerY + 10;
+  const grandTotalBoxHeight = 8;
+  doc.rect(footerSplitX, grandTotalBoxY, fullWidth - (footerSplitX - startX), grandTotalBoxHeight);
+  
+  doc.setFontSize(10);
+  doc.text('Grand Total:', footerSplitX + 2, grandTotalBoxY + 5.5);
+  
+  // Calculate Grand Total Value
   const deliveryCharge = order.deliveryCharge || 0;
   const discount = order.discount || 0;
-  const tax = order.tax || 0;
-  const total = order.total || subtotal + deliveryCharge - discount + tax;
+  const finalTotal = subtotal + deliveryCharge - discount;
   
-  // Totals Box
-  const totalsX = 130;
-  doc.setFontSize(10);
+  doc.text(`Rs. ${finalTotal.toFixed(2)}`, startX + fullWidth - 2, grandTotalBoxY + 5.5, { align: 'right' });
   
-  doc.text('Subtotal:', totalsX, finalY);
-  doc.text(`₹${subtotal.toFixed(2)}`, 185, finalY, { align: 'right' });
-  
-  if (deliveryCharge > 0) {
-    doc.text('Delivery Charge:', totalsX, finalY + 6);
-    doc.text(`₹${deliveryCharge.toFixed(2)}`, 185, finalY + 6, { align: 'right' });
-  }
-  
-  if (discount > 0) {
-    doc.text('Discount:', totalsX, finalY + 12);
-    doc.text(`-₹${discount.toFixed(2)}`, 185, finalY + 12, { align: 'right' });
-  }
-  
-  if (tax > 0) {
-    doc.text('Tax (GST):', totalsX, finalY + 18);
-    doc.text(`₹${tax.toFixed(2)}`, 185, finalY + 18, { align: 'right' });
-  }
-  
-  // Total line
-  doc.setDrawColor(...primaryColor);
-  doc.setLineWidth(0.5);
-  doc.line(totalsX, finalY + 24, 195, finalY + 24);
-  
+  // Satva Organics Text
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.text('Total Amount:', totalsX, finalY + 31);
-  doc.text(`₹${total.toFixed(2)}`, 185, finalY + 31, { align: 'right' });
+  doc.text('Satva Organics', startX + fullWidth - 25, grandTotalBoxY + 20, { align: 'center' });
   
-  // Payment Information
-  doc.setFont('helvetica', 'normal');
+  // Authorized Signatory
   doc.setFontSize(9);
-  const paymentY = finalY + 40;
-  doc.text('Payment Method:', 15, paymentY);
-  doc.setFont('helvetica', 'bold');
-  doc.text(order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Online Payment', 50, paymentY);
-  
-  if (order.paymentMethod !== 'cod') {
-    doc.setFont('helvetica', 'normal');
-    doc.text('Payment Status:', 15, paymentY + 6);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...primaryColor);
-    doc.text('PAID', 50, paymentY + 6);
-    doc.setTextColor(...darkColor);
-  }
-  
-  // Footer
-  const footerY = 270;
-  doc.setFillColor(...lightGray);
-  doc.rect(0, footerY, 210, 27, 'F');
-  
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'italic');
-  doc.setTextColor(100, 100, 100);
-  doc.text('Thank you for shopping with Satva Organics!', 105, footerY + 8, { align: 'center' });
-  doc.text('For any queries, contact us at ' + companyEmail, 105, footerY + 14, { align: 'center' });
-  
-  // Terms and Conditions
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7);
-  doc.text('Terms: All sales are final. Returns accepted within 7 days with original packaging.', 105, footerY + 20, { align: 'center' });
-  
+  doc.text('Authorized Signatory', startX + fullWidth - 25, footerY + footerHeight - 5, { align: 'center' });
+
   return doc;
 };
 

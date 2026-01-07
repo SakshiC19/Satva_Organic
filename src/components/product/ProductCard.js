@@ -105,7 +105,7 @@ const ProductCard = ({
   }, [isFlashDeal, dealExpiry, dealStockLimit]);
 
   const displayPrice = price;
-  const displayDiscount = discount;
+  const displayDiscount = typeof discount === 'object' ? discount?.value : discount;
   const displaySavings = originalPrice && originalPrice > price ? originalPrice - price : 0;
 
   const productImage = images && images.length > 0
@@ -205,7 +205,14 @@ const ProductCard = ({
 
         <div className="product-price-container">
           <div className="price-main-row">
-            <span className="current-price">₹{displayPrice}</span>
+            <span className="current-price">
+              ₹{displayPrice}
+              {(product.unit === 'g' || product.unit === 'kg' || product.unit === 'ml' || product.unit === 'l') && (
+                <span style={{ fontSize: '0.6em', color: '#666', fontWeight: 'normal' }}>
+                   / 100{product.unit === 'ml' || product.unit === 'l' ? 'ml' : 'g'}
+                </span>
+              )}
+            </span>
             {originalPrice && displayDiscount > 0 && (
               <div className="discount-pill">-{displayDiscount}%</div>
             )}

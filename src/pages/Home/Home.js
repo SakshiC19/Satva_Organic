@@ -15,7 +15,7 @@ import {
 } from 'react-icons/fi';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Autoplay, Pagination } from 'swiper/modules';
-import { collection, getDocs, limit, query, doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, limit, query, doc, getDoc, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import 'swiper/css';
 import 'swiper/css/navigation';
@@ -33,11 +33,9 @@ const Home = () => {
   const navigate = useNavigate();
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [flashDeals, setFlashDeals] = useState([]);
+  const [heroSlides, setHeroSlides] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [flashDealFilter, setFlashDealFilter] = useState({
-    category: 'All'
-  });
 
   const [specialOffer, setSpecialOffer] = useState(null);
 
@@ -79,9 +77,32 @@ const Home = () => {
     });
 
     fetchSpecialOffer();
+    fetchHeroBanners();
 
     return () => unsubscribe();
   }, []);
+
+  const fetchHeroBanners = async () => {
+    try {
+      const bannersRef = collection(db, 'heroBanners');
+      const q = query(bannersRef, orderBy('createdAt', 'desc'));
+      const snapshot = await getDocs(q);
+      const bannersList = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      if (bannersList.length > 0) {
+        setHeroSlides(bannersList);
+      } else {
+        // Fallback to default slides if no dynamic slides exist
+        setHeroSlides(defaultHeroSlides);
+      }
+    } catch (error) {
+      console.error('Error fetching hero banners:', error);
+      setHeroSlides(defaultHeroSlides);
+    }
+  };
 
   const fetchSpecialOffer = async () => {
     try {
@@ -95,10 +116,7 @@ const Home = () => {
     }
   };
 
-  const flashDealsProducts = flashDeals.filter(product => {
-    const matchesCategory = flashDealFilter.category === 'All' || product.category === flashDealFilter.category;
-    return matchesCategory;
-  });
+
 
   const { categories: contextCategories } = useCategories();
 
@@ -160,7 +178,7 @@ const Home = () => {
     }
   ];
 
-  const heroSlides = [
+  const defaultHeroSlides = [
     {
       id: 1,
       image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1920&q=80',
@@ -191,18 +209,22 @@ const Home = () => {
     <div className="home-page-modern">
       {/* Hero Slider Section */}
       <section className="hero-slider-section">
-        <Swiper
-          modules={[Navigation, Autoplay, Pagination]}
-          spaceBetween={0}
-          slidesPerView={1}
-          autoplay={{
-            delay: 5000,
-            disableOnInteraction: false,
-          }}
-          pagination={{ clickable: true }}
-          loop={true}
-          className="hero-swiper"
-        >
+        {heroSlides.length > 0 && (
+          <Swiper
+            modules={[Navigation, Autoplay, Pagination]}
+            spaceBetween={0}
+            slidesPerView={1}
+            autoplay={{
+              delay: 3000,
+              disableOnInteraction: false,
+              pauseOnMouseEnter: true
+            }}
+            pagination={{ clickable: true }}
+            loop={heroSlides.length > 1}
+            observer={true}
+            observeParents={true}
+            className="hero-swiper"
+          >
           {heroSlides.map((slide) => (
             <SwiperSlide key={slide.id}>
               <div 
@@ -223,7 +245,8 @@ const Home = () => {
               </div>
             </SwiperSlide>
           ))}
-        </Swiper>
+          </Swiper>
+        )}
       </section>
 
 
@@ -382,23 +405,6 @@ const Home = () => {
             </button>
           </div>
 
-          {/* Flash Deal Filters */}
-          <div className="flash-filters">
-            <div className="filter-group">
-              <select 
-                className="category-select"
-                value={flashDealFilter.category}
-                onChange={(e) => setFlashDealFilter({ ...flashDealFilter, category: e.target.value })}
-              >
-                <option value="All">All Categories</option>
-                {uniqueCategories.map(cat => (
-                  <option key={cat.id} value={cat.name}>{cat.name}</option>
-                ))}
-              </select>
-            </div>
-
-          </div>
-
           <div className="flash-deals-container">
             <button className="flash-nav-btn flash-prev" aria-label="Previous">
               <FiChevronLeft />
@@ -417,7 +423,7 @@ const Home = () => {
                 prevEl: '.flash-prev',
                 nextEl: '.flash-next',
               }}
-              loop={flashDealsProducts.length > 5}
+              loop={flashDeals.length > 5}
               breakpoints={{
                 320: { slidesPerView: 1.5, spaceBetween: 12 },
                 480: { slidesPerView: 2.2, spaceBetween: 12 },
@@ -427,7 +433,7 @@ const Home = () => {
               }}
               className="flash-deals-slider"
             >
-              {flashDealsProducts.map(product => (
+              {flashDeals.map(product => (
                 <SwiperSlide key={product.id}>
                   <ProductCard 
                     product={product} 
