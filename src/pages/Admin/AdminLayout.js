@@ -31,8 +31,8 @@ const AdminLayout = () => {
       snapshot.docs.forEach(doc => {
         const order = { id: doc.id, ...doc.data() };
         
-        // Check for new orders (Processing) - assuming 'Processing' means just placed/confirmed
-        if (order.status === 'Processing') {
+        // Check for new orders (Pending)
+        if (order.status === 'Pending' || order.status === 'Processing') {
           newNotifications.push({
             id: `new-${order.id}`,
             type: 'new_order',

@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { doc, updateDoc, arrayUnion, serverTimestamp, addDoc, collection, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
+import config from '../../config';
 import { FiCheck, FiShield, FiEdit2, FiPlus, FiTruck } from 'react-icons/fi';
 import './Checkout.css';
 
@@ -279,7 +280,12 @@ const Checkout = () => {
 
       // Call PHP Backend to create order
       try {
-        const response = await fetch('http://localhost/satva-api/create_order.php', {
+        // Try to use a more flexible URL or the one provided in environment
+        const backendUrl = config.API_URL;
+        
+        console.log('Initiating payment with backend:', backendUrl);
+        
+        const response = await fetch(backendUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -290,8 +296,14 @@ const Checkout = () => {
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to create order on backend');
+          let errorMessage = 'Failed to create order on backend';
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } catch (e) {
+            errorMessage = `Server error: ${response.status} ${response.statusText}`;
+          }
+          throw new Error(errorMessage);
         }
 
         const razorpayOrder = await response.json();
@@ -362,7 +374,7 @@ const Checkout = () => {
 
       } catch (err) {
         console.error("Error creating order:", err);
-        alert("Failed to initiate payment. Please check if your backend server is running. Error: " + err.message);
+        alert(`Failed to initiate payment. \n\nTechnical Error: ${err.message}\n\nPlease ensure your PHP backend is running at ${config.API_URL}. \n\nIf using XAMPP, make sure Apache is running and the file is in htdocs/satva-api.`);
         setIsProcessing(false);
         return;
       }

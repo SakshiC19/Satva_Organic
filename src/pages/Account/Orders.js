@@ -30,6 +30,7 @@ const Orders = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [dateFilter, setDateFilter] = useState('All');
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -145,7 +146,15 @@ const Orders = () => {
       if (dateFilter !== 'All') {
         const orderDate = order.createdAt?.toDate ? order.createdAt.toDate() : new Date(order.createdAt);
         const now = new Date();
-        if (dateFilter === 'Last 30 Days') {
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        if (dateFilter === 'Today') {
+          matchesDate = orderDate >= today;
+        } else if (dateFilter === 'This Week') {
+          matchesDate = (now - orderDate) / (1000 * 60 * 60 * 24) <= 7;
+        } else if (dateFilter === 'This Month') {
+          matchesDate = (now - orderDate) / (1000 * 60 * 60 * 24) <= 30;
+        } else if (dateFilter === 'Last 30 Days') {
           matchesDate = (now - orderDate) / (1000 * 60 * 60 * 24) <= 30;
         } else if (dateFilter === 'Last 6 Months') {
           matchesDate = (now - orderDate) / (1000 * 60 * 60 * 24) <= 180;
@@ -163,6 +172,7 @@ const Orders = () => {
       case 'Delivered': return 'success';
       case 'Cancelled': return 'danger';
       case 'Processing': return 'warning';
+      case 'Accepted': return 'success';
       case 'Shipped': return 'info';
       case 'Out for Delivery': return 'primary';
       case 'Returned': return 'secondary';
@@ -210,12 +220,16 @@ const Orders = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="filters-group">
+        <button className="filter-toggle-btn" onClick={() => setShowFilters(!showFilters)}>
+          <FiFilter /> {showFilters ? 'Hide Filters' : 'Show Filters'}
+        </button>
+        <div className={`filters-group ${showFilters ? 'show' : ''}`}>
           <div className="filter-item">
             <FiFilter className="filter-icon" />
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               <option value="All">All Status</option>
               <option value="Processing">Processing</option>
+              <option value="Accepted">Accepted</option>
               <option value="Packed">Packed</option>
               <option value="Shipped">Shipped</option>
               <option value="Out for Delivery">Out for Delivery</option>
@@ -228,10 +242,12 @@ const Orders = () => {
             <FiCalendar className="filter-icon" />
             <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value)}>
               <option value="All">All Time</option>
+              <option value="Today">Today</option>
+              <option value="This Week">This Week</option>
+              <option value="This Month">This Month</option>
               <option value="Last 30 Days">Last 30 Days</option>
               <option value="Last 6 Months">Last 6 Months</option>
               <option value="2025">2025</option>
-              <option value="2024">2024</option>
             </select>
           </div>
         </div>
@@ -254,9 +270,9 @@ const Orders = () => {
 
               {/* Mini Timeline */}
               <div className="order-mini-timeline">
-                {['Ordered', 'Packed', 'Shipped', 'Delivered'].map((step, index) => {
-                  const status = order.status || 'Processing';
-                  const steps = ['Processing', 'Packed', 'Shipped', 'Delivered'];
+                {['Ordered', 'Accepted', 'Shipped', 'Delivered'].map((step, index) => {
+                  const status = order.status || 'Pending';
+                  const steps = ['Pending', 'Accepted', 'Shipped', 'Delivered'];
                   const currentStepIndex = steps.indexOf(status) === -1 ? 0 : steps.indexOf(status);
                   const isCompleted = index <= currentStepIndex;
                   

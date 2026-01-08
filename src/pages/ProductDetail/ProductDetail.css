@@ -541,6 +541,16 @@
         padding: 8px;
     }
 
+    .product-price {
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .current-price {
+        font-size: 24px;
+    }
+
     .amount-option-container {
         display: flex;
         flex-direction: row;
@@ -597,7 +607,7 @@
     .product-actions {
         display: flex;
         flex-direction: row;
-        gap: 12px;
+        gap: 10px;
         margin-top: 14px;
         margin-bottom: 16px;
         align-items: center;
@@ -605,13 +615,25 @@
 
     .btn-add-to-cart {
         flex: 1;
-        height: 52px;
-        font-size: 16px;
+        height: 48px;
+        font-size: 14px;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        border-radius: 12px;
+        border-radius: 8px;
         min-width: auto;
+    }
+
+    .btn-buy-now {
+        flex: 1;
+        height: 48px;
+        font-size: 14px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-radius: 8px;
+        min-width: auto;
+        background-color: #f39c12;
     }
 
     .mobile-action-wishlist {

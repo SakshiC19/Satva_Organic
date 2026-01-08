@@ -8,10 +8,7 @@ import {
 } from 'react-icons/fi';
 import { 
   FaFacebookF, 
-  FaTwitter, 
   FaInstagram, 
-  FaYoutube,
-  FaTiktok,
   FaCcPaypal,
   FaCcVisa,
   FaCcMastercard,
@@ -52,15 +49,15 @@ const Footer = () => {
               <div className="footer-contact">
                 <div className="footer-contact-item">
                   <FiMapPin />
-                  <span>Mumbai, Maharashtra, India</span>
+                  <span>Flat No. 1001, Gala Eternia, Thakur Village, Kandivali East, Mumbai - 400101, Maharashtra, India</span>
                 </div>
                 <div className="footer-contact-item">
                   <FiPhone />
-                  <a href="tel:+919876543210">+91 98765 43210</a>
+                  <a href="tel:+917517555383">+91 75175 55383</a>
                 </div>
                 <div className="footer-contact-item">
                   <FiMail />
-                  <a href="mailto:info@satvaorganics.com">info@satvaorganics.com</a>
+                  <a href="mailto:satvaorganics@gmail.com">satvaorganics@gmail.com</a>
                 </div>
               </div>
 
@@ -68,17 +65,8 @@ const Footer = () => {
                 <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
                   <FaFacebookF />
                 </a>
-                <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
-                  <FaTwitter />
-                </a>
-                <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
-                  <FaYoutube />
-                </a>
                 <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
                   <FaInstagram />
-                </a>
-                <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" aria-label="TikTok">
-                  <FaTiktok />
                 </a>
               </div>
             </div>
@@ -88,10 +76,7 @@ const Footer = () => {
               <h4 className="footer-title">Company</h4>
               <ul className="footer-links">
                 <li><Link to="/">About</Link></li>
-                <li><Link to="/">Blogs</Link></li>
                 <li><Link to="/shop">All products</Link></li>
-                <li><Link to="/">Locations Map</Link></li>
-                <li><Link to="/">Faq</Link></li>
                 <li><Link to="/contact">Contact</Link></li>
               </ul>
             </div>
@@ -104,21 +89,6 @@ const Footer = () => {
                 <li><Link to="/account/wishlist">Wishlist</Link></li>
                 <li><Link to="/login">Login</Link></li>
                 <li><Link to="/account" className="highlight-link">My Account</Link></li>
-                <li><Link to="/">Terms of Service</Link></li>
-                <li><Link to="/flash-deals">Promotional Offers</Link></li>
-              </ul>
-            </div>
-
-            {/* Customer Care Links */}
-            <div className="footer-column">
-              <h4 className="footer-title">Customer Care</h4>
-              <ul className="footer-links">
-                <li><Link to="/account/orders">Order tracking</Link></li>
-                <li><Link to="/account/wishlist">Wishlist</Link></li>
-                <li><Link to="/login">Login</Link></li>
-                <li><Link to="/account">My Account</Link></li>
-                <li><Link to="/">Terms of Service</Link></li>
-                <li><Link to="/flash-deals">Promotional Offers</Link></li>
               </ul>
             </div>
 

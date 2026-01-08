@@ -128,7 +128,7 @@ const Header = () => {
     <header className="header">
       {/* Top Header (Logo, Search, Actions) */}
       <div className="header-main">
-        <div className="container header-container">
+        <div className="header-container">
           {/* Mobile Menu Button */}
           <button 
             className="mobile-menu-btn"

@@ -237,7 +237,7 @@ const Home = () => {
                   <p className="hero-subtitle-slider">{slide.subtitle}</p>
                   <button 
                     className="hero-btn-slider"
-                    onClick={() => navigate(slide.link)}
+                    onClick={() => navigate('/shop')}
                   >
                     {slide.buttonText}
                   </button>
@@ -374,7 +374,7 @@ const Home = () => {
                   className="promo-btn"
                   onClick={() => navigate(specialOffer.buttonLink || '/shop')}
                 >
-                  {specialOffer.buttonText}
+                  {specialOffer.buttonText === 'Buy Now' ? 'Get Now' : specialOffer.buttonText}
                 </button>
               </div>
               <div className="promo-visual">
@@ -415,7 +415,7 @@ const Home = () => {
               spaceBetween={16}
               slidesPerView="auto"
               autoplay={{
-                delay: 4000,
+                delay: 2500,
                 disableOnInteraction: false,
                 pauseOnMouseEnter: true
               }}
@@ -423,7 +423,7 @@ const Home = () => {
                 prevEl: '.flash-prev',
                 nextEl: '.flash-next',
               }}
-              loop={flashDeals.length > 5}
+              loop={true}
               breakpoints={{
                 320: { slidesPerView: 1.5, spaceBetween: 12 },
                 480: { slidesPerView: 2.2, spaceBetween: 12 },
@@ -438,6 +438,8 @@ const Home = () => {
                   <ProductCard 
                     product={product} 
                     isFlashDeal={true}
+                    showCategory={false}
+                    showBuyNow={false}
                   />
                 </SwiperSlide>
               ))}
@@ -474,7 +476,7 @@ const Home = () => {
           ) : (
             <div className="products-grid-compact">
               {featuredProducts.map(product => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard key={product.id} product={product} showCategory={false} showBuyNow={false} />
               ))}
             </div>
           )}

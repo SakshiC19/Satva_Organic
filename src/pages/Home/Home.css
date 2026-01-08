@@ -10,8 +10,10 @@
 /* Container Utilities */
 .container-fluid {
     width: 100%;
+    max-width: 100%;
     margin: 0 auto;
     padding: 0 16px;
+    overflow: hidden;
 }
 
 /* ========================================
@@ -787,30 +789,19 @@
         font-size: 14px;
     }
 
-    .category-card-compact {
-        padding: 12px 6px;
-    }
-
-    .category-image-wrapper {
-        width: 60px;
-        height: 60px;
-    }
-
-    .section-title-small {
-        font-size: 16px;
-    }
-
     .view-all-link {
         font-size: 13px;
     }
 
     .promo-banner-modern {
-        padding: 24px 20px;
-        min-height: 160px;
+        padding: 16px 12px;
+        min-height: 140px;
+        flex-direction: column;
+        align-items: flex-start;
     }
 
     .promo-content {
-        max-width: 65%;
+        max-width: 100%;
     }
 
     .promo-title {
@@ -824,6 +815,23 @@
     .promo-btn {
         padding: 10px 20px;
         font-size: 13px;
+    }
+
+    .flash-header {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 0 12px;
+    }
+
+    .flash-title-group {
+        gap: 8px;
+        flex: 1;
+    }
+
+    .flash-timer {
+        padding: 4px 10px;
+        font-size: 11px;
     }
 
     .feature-card-modern {
@@ -845,7 +853,8 @@
         font-size: 11px;
     }
 
-    .cat-nav-btn {
+    .cat-nav-btn,
+    .flash-nav-btn {
         display: none !important;
     }
 }
@@ -891,7 +900,8 @@
         min-width: 75px;
     }
 
-    .cat-nav-btn {
+    .cat-nav-btn,
+    .flash-nav-btn {
         display: none !important;
     }
 }
@@ -927,5 +937,43 @@
     .products-grid-compact .card-btn {
         height: 36px;
         font-size: 12px;
+    }
+}
+
+/* Mobile Vertical Spacing Optimization */
+@media (max-width: 768px) {
+    .categories-quick {
+        padding: 12px 0;
+    }
+
+    .flash-deals {
+        padding: 12px 0;
+        margin-top: 4px;
+    }
+
+    .featured-products {
+        padding: 12px 0;
+    }
+
+    .promo-banner-section {
+        padding: 8px 0;
+    }
+
+    .section-header-compact {
+        margin-bottom: 8px;
+        padding: 4px 0;
+    }
+
+    .container-fluid {
+        padding: 0 12px;
+    }
+
+    .home-page-modern {
+        padding-top: 0;
+    }
+
+    .cat-nav-btn,
+    .flash-nav-btn {
+        display: none !important;
     }
 }

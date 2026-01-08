@@ -9,7 +9,7 @@ export const generateInvoice = (order) => {
   const startX = 14;
   const startY = 10;
   const fullWidth = 182;
-  const headerHeight = 35;
+  const headerHeight = 40;
   const logoBoxWidth = 41;
   const logoBoxRightX = startX + logoBoxWidth; // 55
   
@@ -62,6 +62,12 @@ export const generateInvoice = (order) => {
   doc.text('GSTIN:', textLeftX, startY + 29);
   doc.setFont('helvetica', 'normal');
   doc.text('27XXXXX1234X1ZX', textLeftX + 15, startY + 29);
+
+  // Email
+  doc.setFont('helvetica', 'bold');
+  doc.text('Email us at :', textLeftX, startY + 34);
+  doc.setFont('helvetica', 'normal');
+  doc.text('info@satvaorganics.com', textLeftX + 25, startY + 34);
   
   // Invoice Number (Right aligned roughly)
   doc.setFont('helvetica', 'bold');
@@ -74,7 +80,6 @@ export const generateInvoice = (order) => {
   const gridHeight = 50;
   const col1W = 55;
   const col2W = 63.5;
-  const col3W = 63.5;
   
   // Main Box
   doc.rect(startX, gridY, fullWidth, gridHeight);
@@ -276,16 +281,30 @@ export const generateInvoice = (order) => {
   const footerSplitX = 135;
   doc.line(footerSplitX, footerY, footerSplitX, footerY + footerHeight);
   
-  // Grand Total Box (Inside Right Footer)
-  const grandTotalBoxY = footerY + 10;
-  const grandTotalBoxHeight = 8;
-  doc.rect(footerSplitX, grandTotalBoxY, fullWidth - (footerSplitX - startX), grandTotalBoxHeight);
+  // Shipping Charges Box (Top of Right Footer)
+  const shippingBoxY = footerY;
+  const shippingBoxHeight = 8;
+  // Draw bottom line for shipping charges (separator between shipping and grand total)
+  doc.line(footerSplitX, shippingBoxY + shippingBoxHeight, startX + fullWidth, shippingBoxY + shippingBoxHeight);
   
   doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Shipping Charges:', footerSplitX + 2, shippingBoxY + 5.5);
+  
+  const deliveryCharge = order.deliveryCharge || 0;
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Rs. ${deliveryCharge.toFixed(2)}`, startX + fullWidth - 2, shippingBoxY + 5.5, { align: 'right' });
+  
+  // Grand Total Box (Below Shipping Charges)
+  const grandTotalBoxY = shippingBoxY + shippingBoxHeight;
+  const grandTotalBoxHeight = 8;
+  // Draw bottom line for Grand Total
+  doc.line(footerSplitX, grandTotalBoxY + grandTotalBoxHeight, startX + fullWidth, grandTotalBoxY + grandTotalBoxHeight);
+  
+  doc.setFont('helvetica', 'bold');
   doc.text('Grand Total:', footerSplitX + 2, grandTotalBoxY + 5.5);
   
   // Calculate Grand Total Value
-  const deliveryCharge = order.deliveryCharge || 0;
   const discount = order.discount || 0;
   const finalTotal = subtotal + deliveryCharge - discount;
   
