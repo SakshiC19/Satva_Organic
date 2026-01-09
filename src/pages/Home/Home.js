@@ -127,12 +127,12 @@ const Home = () => {
 
   // Category images mapping (fallback/override)
   const categoryImages = {
-    'organic-exotic-products': exoticProductImg,
-    'organic-wood-cold-press-oils': 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=800&q=80',
+    'vegetable-basket': exoticProductImg,
+    'satva-pure-oils': 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=800&q=80',
     'millets-of-india': 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=800&q=80',
     'organic-items': organicItemsImg,
     'seeds-and-nuts': seedsNutImg,
-    'organic-powder': 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=800&q=80',
+    'healthy-life-powders': 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=800&q=80',
   };
 
   const getCategoryImage = (category) => {
@@ -198,10 +198,10 @@ const Home = () => {
     {
       id: 3,
       image: 'https://images.unsplash.com/photo-1518843875459-f738682238a6?auto=format&fit=crop&w=1920&q=80',
-      title: 'Exotic Flavors',
-      subtitle: 'Taste the difference with our exotic collection',
+      title: 'Vegetable Basket',
+      subtitle: 'Fresh and organic exotic vegetables delivered to you',
       buttonText: 'View Products',
-      link: '/shop?category=organic-exotic-products'
+      link: '/shop?category=vegetable-basket'
     }
   ];
 

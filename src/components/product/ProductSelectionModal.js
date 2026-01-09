@@ -137,7 +137,7 @@ const ProductSelectionModal = ({ product, isOpen, onClose }) => {
             </div>
 
             <button className="modal-add-btn" onClick={handleAddToCart}>
-              <FiShoppingCart /> Add to Cart
+              <FiShoppingCart /> Add to Basket
             </button>
           </div>
         </div>

@@ -151,6 +151,13 @@
     margin-left: auto;
 }
 
+@media (min-width: 1025px) {
+    .header-actions {
+        gap: 30px;
+        margin-left: 0;
+    }
+}
+
 .action-item {
     display: flex;
     align-items: center;

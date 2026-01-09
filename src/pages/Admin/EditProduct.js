@@ -240,12 +240,12 @@ const EditProduct = () => {
   };
 
   const categoryPackingSizes = {
-    'organic exotic products': ['500g', '750g', '1kg'],
-    'organic Woodcold press Oils products': ['250ml', '500ml', '750ml', '1L'],
+    'Vegetable Basket': ['500g', '750g', '1kg'],
+    'Satva Pure Oils': ['250ml', '500ml', '750ml', '1L'],
     'Millets Of India': ['2kg', '5kg'],
-    'Organic Iteams': ['500g', '1kg'],
+    'Organic Items': ['500g', '1kg'],
     'Seeds And Nuts': ['100g', '250g', '500g'],
-    'Organic Powder': ['250g', '500g', '1kg']
+    'Healthy Life Powders': ['250g', '500g', '1kg']
   };
 
   const handleRemoveExistingImage = (index) => {

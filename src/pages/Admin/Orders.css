@@ -293,8 +293,15 @@
 
 .header-actions {
     display: flex;
-    gap: 35px;
+    gap: 12px;
     align-items: center;
+}
+
+@media (min-width: 1025px) {
+    .header-actions {
+        gap: 35px;
+        margin-left: 0;
+    }
 }
 
 .filter-btn {

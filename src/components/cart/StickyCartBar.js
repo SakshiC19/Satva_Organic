@@ -27,7 +27,7 @@ const StickyCartBar = () => {
         </div>
       </div>
       <button className="view-cart-btn">
-        View Cart <FiChevronRight />
+        View Basket <FiChevronRight />
       </button>
     </div>
   );

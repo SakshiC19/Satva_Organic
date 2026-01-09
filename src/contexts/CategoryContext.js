@@ -103,8 +103,8 @@ export const CategoryProvider = ({ children }) => {
 const defaultCategories = [
   {
     id: 1,
-    name: 'Organic Exotic Products',
-    slug: 'organic-exotic-products',
+    name: 'Vegetable Basket',
+    slug: 'vegetable-basket',
     image: exoticProductImg,
     subcategories: [
       'Broccoli',
@@ -122,8 +122,8 @@ const defaultCategories = [
   },
   {
     id: 2,
-    name: 'Organic Wood Cold Press Oils Products',
-    slug: 'organic-wood-cold-press-oils',
+    name: 'Satva Pure Oils',
+    slug: 'satva-pure-oils',
     image: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=800&q=80',
     subcategories: [
       'Coconut Oil',
@@ -170,8 +170,8 @@ const defaultCategories = [
   },
   {
     id: 6,
-    name: 'Organic Powder',
-    slug: 'organic-powder',
+    name: 'Healthy Life Powders',
+    slug: 'healthy-life-powders',
     image: 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=800&q=80',
     subcategories: [
       'Moringa Leaf Powder',

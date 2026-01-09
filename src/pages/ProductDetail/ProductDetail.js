@@ -365,7 +365,7 @@ const ProductDetail = () => {
                 onClick={handleAddToCart}
                 disabled={product.stock <= 0}
               >
-                Add to cart
+                Add to Basket
               </button>
               <button 
                 className="btn-buy-now"

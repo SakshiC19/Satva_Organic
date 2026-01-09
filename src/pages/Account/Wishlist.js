@@ -120,7 +120,7 @@ const Wishlist = () => {
             <FiTrash2 /> Clear Wishlist
           </button>
           <button className="btn-primary" onClick={handleMoveAllToCart}>
-            <FiShoppingCart /> Move All to Cart
+            <FiShoppingCart /> Move All to Basket
           </button>
         </div>
       </div>

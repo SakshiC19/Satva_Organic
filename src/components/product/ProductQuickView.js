@@ -165,7 +165,7 @@ const ProductQuickView = ({ product, onClose }) => {
                 disabled={!isInStock}
               >
                 <FiShoppingCart />
-                Add to Cart
+                Add to Basket
               </button>
               <button
                 className={`btn-add-to-wishlist ${isInWishlist(product.id) ? 'active' : ''}`}

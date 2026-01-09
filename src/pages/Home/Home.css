@@ -934,9 +934,11 @@
         font-size: 16px;
     }
 
-    .products-grid-compact .card-btn {
-        height: 36px;
-        font-size: 12px;
+    .products-grid-compact .card-btn,
+    .flash-deals-slider .card-btn {
+        height: 48px !important;
+        font-size: 14px !important;
+        border-radius: 12px !important;
     }
 }
 

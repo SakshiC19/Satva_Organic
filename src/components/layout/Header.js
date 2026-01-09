@@ -417,7 +417,7 @@ const Header = () => {
                   if (lowerName.includes('organic items')) CategoryIcon = FiPackage;
                   else if (lowerName.includes('millets')) CategoryIcon = FiGrid;
                   else if (lowerName.includes('oil')) CategoryIcon = FiDroplet;
-                  else if (lowerName.includes('exotic')) CategoryIcon = FiStar;
+                  else if (lowerName.includes('vegetable') || lowerName.includes('basket')) CategoryIcon = FiStar;
                   else if (lowerName.includes('powder')) CategoryIcon = FiLayers;
                   else if (lowerName.includes('seeds')) CategoryIcon = FiDisc;
 

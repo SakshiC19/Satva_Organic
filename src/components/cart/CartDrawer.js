@@ -36,7 +36,7 @@ const CartDrawer = () => {
       <div className="cart-overlay" onClick={closeCart}></div>
       <div className="cart-drawer">
         <div className="cart-header">
-          <h2>My Cart</h2>
+          <h2>My Basket</h2>
           <button className="close-cart-btn" onClick={closeCart}>
             <FiX />
           </button>
@@ -45,7 +45,7 @@ const CartDrawer = () => {
         {cartItems.length === 0 ? (
           <div className="empty-cart">
             <FiShoppingBag className="empty-cart-icon" />
-            <p>Your cart is empty</p>
+            <p>Your basket is empty</p>
             <button className="btn-start-shopping" onClick={closeCart}>
               Start Shopping
             </button>
@@ -129,7 +129,7 @@ const CartDrawer = () => {
                 </div>
                 {smallCartCharge > 0 && (
                   <div className="bill-row">
-                    <span>🛒 Small cart charge <span className="info-icon">i</span></span>
+                    <span>🛒 Small basket charge <span className="info-icon">i</span></span>
                     <span>₹{smallCartCharge}</span>
                   </div>
                 )}

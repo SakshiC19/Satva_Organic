@@ -238,7 +238,7 @@ const ProductCard = ({
               
               <div className="main-buttons">
                 <button className="card-btn add-cart-btn" onClick={handleAddToCart}>
-                  Add to Cart
+                  Add to Basket
                 </button>
                 {showBuyNow && (
                   <button className="card-btn buy-now-btn" onClick={(e) => {
