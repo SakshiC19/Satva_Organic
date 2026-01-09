@@ -5,8 +5,8 @@ import { db } from '../../config/firebase';
 import { uploadMultipleImages, deleteImage, getPathFromURL } from '../../services/storageService';
 import ImageUpload from '../../components/admin/ImageUpload';
 import { useCategories } from '../../contexts/CategoryContext';
-import { FiSave, FiX, FiTrash2 } from 'react-icons/fi';
-import '../Admin/Admin.css';
+import { FiSave, FiX, FiTrash2, FiArrowLeft } from 'react-icons/fi';
+import './EditProduct.css';
 
 const EditProduct = () => {
   const { id } = useParams();
@@ -239,14 +239,7 @@ const EditProduct = () => {
     setSelectedImages(files);
   };
 
-  const categoryPackingSizes = {
-    'Vegetable Basket': ['500g', '750g', '1kg'],
-    'Satva Pure Oils': ['250ml', '500ml', '750ml', '1L'],
-    'Millets Of India': ['2kg', '5kg'],
-    'Organic Items': ['500g', '1kg'],
-    'Seeds And Nuts': ['100g', '250g', '500g'],
-    'Healthy Life Powders': ['250g', '500g', '1kg']
-  };
+
 
   const handleRemoveExistingImage = (index) => {
     const imageToRemove = existingImages[index];
@@ -365,12 +358,15 @@ const EditProduct = () => {
   return (
     <div className="admin-edit-product">
       <div className="admin-page-header">
-        <h1 className="admin-page-title">Edit Product</h1>
+        <div className="header-title-section">
+          <h1 className="admin-page-title">Edit Product</h1>
+          <p className="header-subtitle">Update product details, pricing and images</p>
+        </div>
         <button
           onClick={() => navigate('/admin/products')}
           className="btn btn-secondary"
         >
-          <FiX /> Cancel
+          <FiArrowLeft /> Back to Products
         </button>
       </div>
 
@@ -441,7 +437,7 @@ const EditProduct = () => {
                 name="productForm"
                 value={formData.productForm}
                 onChange={handleInputChange}
-                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                className="form-select"
               >
                 <option value="powder">Powder (Weight)</option>
                 <option value="liquid">Liquid (Volume)</option>
@@ -590,7 +586,7 @@ const EditProduct = () => {
                               value={item.customPrice}
                               onChange={(e) => updateSizeField(index, 'customPrice', e.target.value)}
                               placeholder=""
-                              style={{ width: '80px', padding: '4px', border: '1px solid #ddd', borderRadius: '4px' }}
+                              className="size-price-input"
                             />
                           </td>
                         </tr>

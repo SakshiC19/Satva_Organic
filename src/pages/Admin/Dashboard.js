@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { FiTrendingUp, FiTrendingDown, FiDollarSign, FiShoppingBag, FiBox, FiUsers, FiFilter } from 'react-icons/fi';
-import './Admin.css';
+import { FiTrendingUp, FiTrendingDown, FiDollarSign, FiShoppingBag, FiBox, FiUsers, FiFilter, FiArrowRight } from 'react-icons/fi';
+import './Dashboard.css';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -124,29 +124,19 @@ const Dashboard = () => {
   return (
     <div className="admin-dashboard">
       <div className="dashboard-header">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-          <div>
+        <div className="header-content">
+          <div className="header-text">
             <h1>Dashboard Overview</h1>
-            <p>Welcome back! Your grocery store's performance view</p>
+            <p>Welcome back! Here's what's happening with your store today.</p>
           </div>
-          <button 
-            onClick={() => navigate('/')}
-            className="view-website-btn"
-            style={{
-              padding: '10px 20px',
-              backgroundColor: '#27ae60',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: '600',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-          >
-            <FiShoppingBag /> View Website
-          </button>
+          <div className="header-actions">
+            <button 
+              onClick={() => navigate('/')}
+              className="btn btn-primary"
+            >
+              <FiShoppingBag /> View Website
+            </button>
+          </div>
         </div>
       </div>
 

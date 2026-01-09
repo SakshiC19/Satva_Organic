@@ -4,9 +4,9 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { uploadMultipleImages } from '../../services/storageService';
 import ImageUpload from '../../components/admin/ImageUpload';
-import { FiSave, FiX, FiPlus, FiTrash2 } from 'react-icons/fi';
+import { FiSave, FiX, FiPlus, FiTrash2, FiArrowLeft } from 'react-icons/fi';
 import { useCategories } from '../../contexts/CategoryContext';
-import '../Admin/Admin.css';
+import './EditProduct.css';
 
 const AddProduct = () => {
   const navigate = useNavigate();
@@ -247,9 +247,12 @@ const AddProduct = () => {
   return (
     <div className="admin-add-product">
       <div className="admin-page-header">
-        <h1 className="admin-page-title">Add New Product</h1>
+        <div className="header-title-section">
+          <h1 className="admin-page-title">Add New Product</h1>
+          <p className="header-subtitle">Create a new product with details, pricing and images</p>
+        </div>
         <button onClick={() => navigate('/admin/products')} className="btn btn-secondary">
-          <FiX /> Cancel
+          <FiArrowLeft /> Back to Products
         </button>
       </div>
 
@@ -320,7 +323,7 @@ const AddProduct = () => {
                 name="productForm"
                 value={formData.productForm}
                 onChange={handleInputChange}
-                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                className="form-select"
               >
                 <option value="powder">Powder (Weight)</option>
                 <option value="liquid">Liquid (Volume)</option>
@@ -471,7 +474,7 @@ const AddProduct = () => {
                               value={item.customPrice}
                               onChange={(e) => updateSizeField(index, 'customPrice', e.target.value)}
                               placeholder=""
-                              style={{ width: '80px', padding: '4px', border: '1px solid #ddd', borderRadius: '4px' }}
+                              className="size-price-input"
                             />
                           </td>
                         </tr>

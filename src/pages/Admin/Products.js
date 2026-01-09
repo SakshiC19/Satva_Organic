@@ -1,26 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { deleteMultipleImages, getPathFromURL } from '../../services/storageService';
-import { FiPlus, FiEdit2, FiTrash2, FiSearch, FiPackage, FiX, FiStar } from 'react-icons/fi';
-import '../Admin/Admin.css';
+import { FiPlus, FiEdit2, FiTrash2, FiSearch, FiPackage, FiX, FiStar, FiEye } from 'react-icons/fi';
+import { useCategories } from '../../contexts/CategoryContext';
+import './Products.css';
 
 const Products = () => {
+  const [searchParams] = useSearchParams();
+  const initialCategory = searchParams.get('category') || 'all';
+
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterCategory, setFilterCategory] = useState('all');
+  const [filterCategory, setFilterCategory] = useState(initialCategory);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const { categories: contextCategories } = useCategories();
 
   useEffect(() => {
     fetchProducts();
   }, []);
 
+  // Update filterCategory if searchParams change
+  useEffect(() => {
+    const cat = searchParams.get('category');
+    if (cat) {
+      setFilterCategory(cat);
+    }
+  }, [searchParams]);
+
   const handleProductClick = (product) => {
     setSelectedProduct(product);
   };
-
 
   const fetchProducts = async () => {
     try {
@@ -46,10 +58,8 @@ const Products = () => {
     }
 
     try {
-      // Delete product from Firestore
       await deleteDoc(doc(db, 'products', productId));
 
-      // Delete associated images from Storage
       if (productImages && productImages.length > 0) {
         const imagePaths = productImages
           .map(img => getPathFromURL(img.url || img))
@@ -60,7 +70,6 @@ const Products = () => {
         }
       }
 
-      // Update local state
       setProducts(products.filter(p => p.id !== productId));
       alert('Product deleted successfully');
     } catch (error) {
@@ -69,7 +78,6 @@ const Products = () => {
     }
   };
 
-  // Filter products
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.description?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -77,8 +85,7 @@ const Products = () => {
     return matchesSearch && matchesCategory;
   });
 
-  // Get unique categories
-  const categories = ['all', ...new Set(products.map(p => p.category).filter(Boolean))];
+  const categories = ['all', ...contextCategories.map(cat => cat.name)];
 
   if (loading) {
     return (
@@ -98,7 +105,6 @@ const Products = () => {
         </Link>
       </div>
 
-      {/* Filters */}
       <div className="admin-filters">
         <div className="search-box">
           <FiSearch />
@@ -123,144 +129,143 @@ const Products = () => {
         </select>
       </div>
 
-      {/* Products Grid */}
       {filteredProducts.length === 0 ? (
         <div className="empty-state">
           <FiPackage size={64} />
           <h3>No products found</h3>
-          <p>Start by adding your first product</p>
-          <Link to="/admin/products/add" className="btn btn-primary">
-            <FiPlus /> Add Product
-          </Link>
+          <p>Try adjusting your search or filters</p>
         </div>
       ) : (
-        <div className="products-grid-admin">
-          {filteredProducts.map(product => (
-            <div
-              key={product.id}
-              className="product-card-admin"
-              onClick={() => handleProductClick(product)}
-              style={{ cursor: 'pointer' }}
-            >
-              <div className="product-image-admin">
-                {product.images && product.images.length > 0 ? (
-                  <img
-                    src={product.images[0].url || product.images[0]}
-                    alt={product.name}
-                  />
-                ) : (
-                  <div className="no-image">
-                    <FiPackage size={48} />
-                  </div>
-                )}
-              </div>
-
-              <div className="product-info-admin">
-                <h3>{product.name}</h3>
-                <p className="product-description-preview">
-                  {product.description || 'No description available'}
-                </p>
-                <p className="product-category">{product.category}</p>
-                <div className="product-price-group">
-                  <span className="product-price">₹{product.price}</span>
-                  {product.originalPrice && product.originalPrice > product.price && (
-                    <span className="product-discount" style={{ color: '#dc2626', fontSize: '12px', marginLeft: '8px', fontWeight: '600' }}>
-                      {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
+        <div className="products-table-container">
+          <table className="products-table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredProducts.map(product => (
+                <tr key={product.id}>
+                  <td>
+                    <div className="product-cell">
+                      <img 
+                        src={product.images?.[0]?.url || product.images?.[0] || 'https://via.placeholder.com/50'} 
+                        alt={product.name} 
+                        className="product-table-img"
+                      />
+                      <div className="product-name-cell">
+                        <span className="product-name-text">{product.name}</span>
+                        <span className="product-id-text">ID: {product.id.substring(0, 8)}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span className="category-badge">{product.category}</span>
+                  </td>
+                  <td>
+                    <div className="price-group">
+                      <span className="price-text">₹{product.price}</span>
+                      {product.originalPrice > product.price && (
+                        <div className="discount-tag">
+                          {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    <span className={`stock-badge ${
+                      product.stock === 0 ? 'out-of-stock' : 
+                      product.stock < 10 ? 'low-stock' : 'in-stock'
+                    }`}>
+                      {product.stock === 0 ? 'Out of Stock' : `${product.stock} in stock`}
                     </span>
-                  )}
-                </div>
-                {product.stock !== undefined && (
-                  <p className={`product-stock ${product.stock === 0 ? 'out-of-stock' : ''}`}>
-                    {product.stock === 0 ? 'Out of Stock' : `Stock: ${product.stock}`}
-                  </p>
-                )}
-              </div>
-
-              <div className="product-actions" onClick={(e) => e.stopPropagation()}>
-                <Link
-                  to={`/admin/products/edit/${product.id}`}
-                  className="btn-icon btn-edit"
-                  title="Edit"
-                >
-                  <FiEdit2 />
-                </Link>
-                <button
-                  onClick={() => handleDelete(product.id, product.images)}
-                  className="btn-icon btn-delete"
-                  title="Delete"
-                >
-                  <FiTrash2 />
-                </button>
-              </div>
-            </div>
-          ))}
+                  </td>
+                  <td>
+                    <div className="table-actions">
+                      <button 
+                        className="action-btn-circle" 
+                        onClick={() => handleProductClick(product)}
+                        title="View Details"
+                      >
+                        <FiEye />
+                      </button>
+                      <Link 
+                        to={`/admin/products/edit/${product.id}`} 
+                        className="action-btn-circle"
+                        title="Edit"
+                      >
+                        <FiEdit2 />
+                      </Link>
+                      <button 
+                        className="action-btn-circle delete" 
+                        onClick={() => handleDelete(product.id, product.images)}
+                        title="Delete"
+                      >
+                        <FiTrash2 />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
-
-
-      {
-        selectedProduct && (
-          <div className="product-modal-overlay" onClick={() => setSelectedProduct(null)}>
-            <div className="product-modal-content" onClick={(e) => e.stopPropagation()}>
-              <div className="product-modal-header">
-                <h2>Product Details</h2>
-                <button className="product-modal-close" onClick={() => setSelectedProduct(null)}>
-                  <FiX size={24} />
-                </button>
+      {selectedProduct && (
+        <div className="product-modal-overlay" onClick={() => setSelectedProduct(null)}>
+          <div className="product-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="product-modal-header">
+              <h2>Product Details</h2>
+              <button className="product-modal-close" onClick={() => setSelectedProduct(null)}>
+                <FiX size={24} />
+              </button>
+            </div>
+            <div className="product-modal-body">
+              <div className="modal-product-image">
+                <img
+                  src={selectedProduct.images?.[0]?.url || selectedProduct.images?.[0] || 'https://via.placeholder.com/300'}
+                  alt={selectedProduct.name}
+                />
               </div>
-              <div className="product-modal-body">
-                <div className="modal-product-image">
-                  <img
-                    src={selectedProduct.images?.[0]?.url || selectedProduct.images?.[0] || 'https://via.placeholder.com/300'}
-                    alt={selectedProduct.name}
-                  />
+              <div className="modal-product-details">
+                <div className="modal-product-meta">
+                  <span className="modal-product-price">₹{selectedProduct.price}</span>
+                  <span className="modal-product-category">{selectedProduct.category}</span>
+                  <span className={`modal-product-stock ${selectedProduct.stock === 0 ? 'out-of-stock' : ''}`}>
+                    {selectedProduct.stock === 0 ? 'Out of Stock' : `Stock: ${selectedProduct.stock}`}
+                  </span>
                 </div>
-                <div className="modal-product-details">
-                  <div className="modal-product-meta">
-                    <span className="modal-product-price">₹{selectedProduct.price}</span>
-                    <span className="modal-product-category">{selectedProduct.category}</span>
-                    <span className={`modal-product-stock ${selectedProduct.stock === 0 ? 'out-of-stock' : ''}`}>
-                      {selectedProduct.stock === 0 ? 'Out of Stock' : `Stock: ${selectedProduct.stock}`}
-                    </span>
-                  </div>
 
-                  <h2>{selectedProduct.name}</h2>
+                <h2>{selectedProduct.name}</h2>
 
-                  <div className="modal-product-description">
-                    <h3>Description</h3>
-                    <p>{selectedProduct.description || "No detailed description available for this product."}</p>
-                  </div>
+                <div className="modal-product-description">
+                  <h3>Description</h3>
+                  <p>{selectedProduct.description || "No detailed description available for this product."}</p>
+                </div>
 
-                  <div className="modal-product-reviews">
-                    <h3>Customer Reviews</h3>
-                    {/* Mock reviews for now as backend integration is pending */}
-                    <div className="review-item">
-                      <div className="review-header">
-                        <span>Anjali S.</span>
-                        <div className="review-stars">
-                          <FiStar fill="#fbbf24" /><FiStar fill="#fbbf24" /><FiStar fill="#fbbf24" /><FiStar fill="#fbbf24" /><FiStar fill="#fbbf24" />
-                        </div>
+                <div className="modal-product-reviews">
+                  <h3>Customer Reviews</h3>
+                  <div className="review-item">
+                    <div className="review-header">
+                      <span>Anjali S.</span>
+                      <div className="review-stars">
+                        <FiStar fill="#fbbf24" /><FiStar fill="#fbbf24" /><FiStar fill="#fbbf24" /><FiStar fill="#fbbf24" /><FiStar fill="#fbbf24" />
                       </div>
-                      <p className="review-text">Absolutely loved the quality of this product! Will definitely order again.</p>
                     </div>
-                    <div className="review-item">
-                      <div className="review-header">
-                        <span>Rahul M.</span>
-                        <div className="review-stars">
-                          <FiStar fill="#fbbf24" /><FiStar fill="#fbbf24" /><FiStar fill="#fbbf24" /><FiStar fill="#fbbf24" stroke="none" />
-                        </div>
-                      </div>
-                      <p className="review-text">Good packaging and timely delivery. Matches the description perfectly.</p>
-                    </div>
+                    <p className="review-text">Absolutely loved the quality of this product! Will definitely order again.</p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        )
-      }
-    </div >
+        </div>
+      )}
+    </div>
   );
 };
 

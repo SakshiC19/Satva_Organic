@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useCategories } from '../../contexts/CategoryContext';
-import { FiSave, FiInfo, FiEye, FiEyeOff } from 'react-icons/fi';
-import './Admin.css';
+import { FiSave, FiInfo, FiEye, FiEyeOff, FiArrowLeft } from 'react-icons/fi';
+import './SpecialOffer.css';
 
 const SpecialOffer = () => {
   const [loading, setLoading] = useState(true);
@@ -96,8 +96,10 @@ const SpecialOffer = () => {
   return (
     <div className="admin-special-offer">
       <div className="admin-page-header">
-        <h1 className="admin-page-title">Manage Special Offer</h1>
-        <p className="admin-page-subtitle">Update the promotional banner displayed on the homepage</p>
+        <div className="header-title-section">
+          <h1 className="admin-page-title">Manage Special Offer</h1>
+          <p className="header-subtitle">Update the promotional banner displayed on the homepage</p>
+        </div>
       </div>
 
       {message.text && (

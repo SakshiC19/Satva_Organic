@@ -3,57 +3,68 @@ import { useNavigate } from 'react-router-dom';
 import { useCategories } from '../../contexts/CategoryContext';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { FiPlus, FiEdit2, FiTrash2, FiX, FiCheck, FiChevronDown, FiEye } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiX, FiCheck, FiChevronDown, FiEye, FiImage, FiRefreshCw } from 'react-icons/fi';
+import ImageUpload from '../../components/admin/ImageUpload';
+import { uploadImage } from '../../services/storageService';
 import './Categories.css';
 
 const Categories = () => {
   const navigate = useNavigate();
-  const { categories, addCategory, updateCategory, deleteCategory, fetchCategories } = useCategories();
+  const { categories, addCategory, updateCategory, deleteCategory, fetchCategories, syncProducts } = useCategories();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isResetting, setIsResetting] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [productCounts, setProductCounts] = useState({});
-  const [expandedCategories, setExpandedCategories] = useState({});
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   useEffect(() => {
     const fetchProductCounts = async () => {
       try {
         const productsSnapshot = await getDocs(collection(db, 'products'));
         const counts = {};
+        
+        // Mapping for old category names to new ones for accurate counting
+        const nameMapping = {
+          'Organic Exotic Products': 'Vegetable Basket',
+          'Organic Wood Cold Press Oils Products': 'Satva Pure Oils',
+          'Organic Powder': 'Healthy Life Powders',
+          'Organic Woodcold press Oils products': 'Satva Pure Oils',
+          'Organic Iteams': 'Organic Items'
+        };
+
         productsSnapshot.docs.forEach(doc => {
           const data = doc.data();
-          const cat = data.category;
-          if (cat) {
-            counts[cat] = (counts[cat] || 0) + 1;
+          let cat = data.category;
+          
+          if (!cat) return;
+
+          // Normalize: trim and handle mapping
+          cat = cat.trim();
+          if (nameMapping[cat]) {
+            cat = nameMapping[cat];
           }
+
+          // Count using normalized name as key
+          // We'll also store a lowercase version to match flexibly
+          const normalizedKey = cat.toLowerCase();
+          counts[normalizedKey] = (counts[normalizedKey] || 0) + 1;
         });
-        setProductCounts(counts);
+
+        // Map the counts back to the actual category names
+        const finalCounts = {};
+        categories.forEach(category => {
+          const key = category.name.trim().toLowerCase();
+          finalCounts[category.name] = counts[key] || 0;
+        });
+
+        setProductCounts(finalCounts);
       } catch (error) {
         console.error("Error fetching product counts:", error);
       }
     };
     fetchProductCounts();
   }, [categories]);
-
-  const handleResetToDefaults = async () => {
-    if (window.confirm("This will delete all current categories and restore default ones with new high-quality images. Are you sure?")) {
-      try {
-        setIsResetting(true);
-        // Delete all current categories
-        for (const cat of categories) {
-          await deleteCategory(cat.id);
-        }
-        // Re-fetch will trigger seeding in CategoryContext
-        await fetchCategories();
-        alert("Categories reset to defaults successfully!");
-      } catch (error) {
-        console.error("Error resetting categories:", error);
-        alert("Failed to reset categories");
-      } finally {
-        setIsResetting(false);
-      }
-    }
-  };
 
   const [formData, setFormData] = useState({
     name: '',
@@ -81,6 +92,8 @@ const Categories = () => {
         subcategories: []
       });
     }
+    setSelectedImage(null);
+    setUploadProgress(0);
     setIsModalOpen(true);
   };
 
@@ -88,13 +101,8 @@ const Categories = () => {
     setIsModalOpen(false);
     setEditingCategory(null);
     setNewSubcategory('');
-  };
-
-  const toggleCategory = (index) => {
-    setExpandedCategories(prev => ({
-      ...prev,
-      [index]: !prev[index]
-    }));
+    setSelectedImage(null);
+    setUploadProgress(0);
   };
 
   const handleAddSubcategory = () => {
@@ -118,31 +126,76 @@ const Categories = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("Submitting category form...");
     try {
+      setIsSyncing(true);
+      let imageUrl = formData.image;
+
+      if (selectedImage) {
+        console.log("Uploading new image...");
+        const uploadResult = await uploadImage(
+          selectedImage, 
+          'categories', 
+          (progress) => setUploadProgress(progress)
+        );
+        imageUrl = uploadResult.url;
+        console.log("Image uploaded:", imageUrl);
+      }
+
+      const categoryData = {
+        name: formData.name,
+        slug: formData.slug,
+        image: imageUrl,
+        subcategories: formData.subcategories
+      };
+
       if (editingCategory) {
-        await updateCategory(editingCategory.id, formData);
+        console.log("Updating existing category:", editingCategory.id);
+        await updateCategory(editingCategory.id, categoryData);
       } else {
-        await addCategory(formData);
+        console.log("Adding new category...");
+        await addCategory(categoryData);
       }
       handleCloseModal();
     } catch (error) {
       console.error("Error saving category:", error);
-      alert("Failed to save category");
+      alert("Failed to save category: " + error.message);
+    } finally {
+      setIsSyncing(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this category?")) {
+    console.log("Delete requested for category ID:", id);
+    if (window.confirm("Are you sure you want to delete this category? This will move its products to 'Uncategorized'.")) {
       try {
         await deleteCategory(id);
+        console.log("Delete successful");
       } catch (error) {
         console.error("Error deleting category:", error);
-        alert("Failed to delete category");
+        alert("Failed to delete category: " + error.message);
       }
     }
   };
 
-  // Auto-generate slug from name
+  const handleManualSync = async () => {
+    if (window.confirm("This will scan all products and update their category names to match the current categories. Continue?")) {
+      setIsSyncing(true);
+      try {
+        // Run sync for each category to be safe
+        for (const cat of categories) {
+          await syncProducts(cat.name, cat.name);
+        }
+        alert("Sync completed successfully!");
+      } catch (error) {
+        console.error("Manual sync failed:", error);
+        alert("Sync failed: " + error.message);
+      } finally {
+        setIsSyncing(false);
+      }
+    }
+  };
+
   const handleNameChange = (e) => {
     const name = e.target.value;
     if (!editingCategory) {
@@ -153,31 +206,22 @@ const Categories = () => {
     }
   };
 
-  const getBadgeColor = (index) => {
-    const colors = ['green', 'orange', 'brown', 'teal', 'purple', 'blue'];
-    return colors[index % colors.length];
-  };
-
   return (
     <div className="admin-categories">
       <div className="categories-header">
-        <h1>Categories</h1>
+        <div className="header-title-section">
+          <h1>Categories Management</h1>
+          <p className="header-subtitle">Manage your product categories and subcategories</p>
+        </div>
         <div className="header-actions-group">
-          <button
-            className="btn-reset"
-            onClick={handleResetToDefaults}
-            disabled={isResetting}
-          >
-            {isResetting ? 'Resetting...' : 'Reset to Defaults'}
-          </button>
           <button className="add-category-btn" onClick={() => handleOpenModal()}>
-            <FiPlus /> Add Category
+            <FiPlus /> Add New Category
           </button>
         </div>
       </div>
 
       <div className="categories-grid">
-        {categories.map((category, index) => (
+        {categories.map((category) => (
           <div key={category.id} className="category-card">
             <div className="category-image-wrapper">
               {category.image ? (
@@ -191,80 +235,48 @@ const Categories = () => {
                   }}
                 />
               ) : (
-                <div className="category-placeholder">📦</div>
+                <div className="category-placeholder">
+                  <FiImage size={48} color="#94a3b8" />
+                </div>
               )}
+              <div className="category-overlay">
+                <button
+                  className="action-btn"
+                  onClick={() => handleOpenModal(category)}
+                  title="Edit Category"
+                >
+                  <FiEdit2 size={18} />
+                </button>
+                <button
+                  className="action-btn delete"
+                  onClick={() => handleDelete(category.id)}
+                  title="Delete Category"
+                >
+                  <FiTrash2 size={18} />
+                </button>
+              </div>
             </div>
             <div className="category-content">
               <div className="category-card-header">
                 <h3 className="category-title">{category.name}</h3>
-                <div className="category-actions">
-                  <button
-                    className="action-btn"
-                    onClick={() => handleOpenModal(category)}
-                    title="Edit Category"
-                  >
-                    <FiEdit2 size={16} />
-                  </button>
-                  <button
-                    className="action-btn delete"
-                    onClick={() => handleDelete(category.id)}
-                    title="Delete Category"
-                  >
-                    <FiTrash2 size={16} />
-                  </button>
-                  <button
-                    className="action-btn view"
-                    onClick={() => navigate(`/shop?category=${category.slug}`)}
-                    title="View Products"
-                  >
-                    <FiEye size={16} />
-                  </button>
-                </div>
               </div>
 
-              {/* Category Health Stats */}
               <div className="category-stats">
-                <div className="stat-item">
-                  <span className="stat-label">Products:</span>
+                <div 
+                  className="stat-item clickable" 
+                  onClick={() => navigate(`/admin/products?category=${category.name}`)}
+                  title="View Products in this Category"
+                >
+                  <span className="stat-label">Products</span>
                   <span className="stat-value">{productCounts[category.name] || 0}</span>
                 </div>
                 <div className="stat-item">
-                  <span className="stat-label">Status:</span>
+                  <span className="stat-label">Status</span>
                   <span className={`stat-badge ${(productCounts[category.name] || 0) > 0 ? 'active' : 'inactive'}`}>
-                    {(productCounts[category.name] || 0) > 0 ? 'Active' : 'Inactive'}
+                    {(productCounts[category.name] || 0) > 0 ? 'Active' : 'In Use'}
                   </span>
                 </div>
               </div>
-
-              <div className="category-card-footer">
-                <button
-                  className="footer-badge-container green"
-                  onClick={() => toggleCategory(index)}
-                >
-                  <FiChevronDown
-                    size={14}
-                    style={{
-                      transform: expandedCategories[index] ? 'rotate(180deg)' : 'rotate(0deg)',
-                      transition: 'transform 0.3s ease'
-                    }}
-                  />
-                  <span>{category.subcategories?.length || 0} Subcategories</span>
-                </button>
-                <span className="product-count-text">
-                  {productCounts[category.name] || 0} Products
-                </span>
-              </div>
-
-              {/* Collapsible Subcategories Section */}
-              {expandedCategories[index] && (
-                <div className="subcategories-section expanded">
-                  <div className="subcategories-list">
-                    {category.subcategories?.map((sub, idx) => (
-                      <span key={idx} className="subcategory-tag">{sub}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         ))}
@@ -302,14 +314,17 @@ const Categories = () => {
                   />
                 </div>
                 <div className="form-group full-width">
-                  <label>Image URL</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={formData.image}
-                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                    placeholder="https://..."
+                  <ImageUpload
+                    onImagesSelected={(files) => setSelectedImage(files[0])}
+                    maxImages={1}
+                    existingImages={formData.image ? [{ url: formData.image }] : []}
+                    label="Category Image"
                   />
+                  {uploadProgress > 0 && uploadProgress < 100 && (
+                    <div className="upload-progress-bar">
+                      <div className="progress-fill" style={{ width: `${uploadProgress}%` }}></div>
+                    </div>
+                  )}
                 </div>
                 <div className="form-group full-width">
                   <label>Subcategories</label>
@@ -340,7 +355,9 @@ const Categories = () => {
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn-cancel" onClick={handleCloseModal}>Cancel</button>
-                <button type="submit" className="btn-save">Save Changes</button>
+                <button type="submit" className="btn-save" disabled={isSyncing}>
+                  {isSyncing ? 'Saving...' : 'Save Changes'}
+                </button>
               </div>
             </form>
           </div>

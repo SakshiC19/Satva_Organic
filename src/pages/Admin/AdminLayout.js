@@ -128,12 +128,13 @@ const AdminLayout = () => {
           <div className="topbar-actions">
             <div className="notification-wrapper" style={{ position: 'relative' }}>
               <button 
-                className="notification-btn"
+                className={`notification-btn ${notifications.length > 0 ? 'has-notifications' : ''}`}
                 onClick={() => setShowNotifications(!showNotifications)}
+                title="View Notifications"
               >
                 <FiBell />
                 {notifications.length > 0 && (
-                  <span className="notification-badge">{notifications.length}</span>
+                  <span className="notification-badge-count">{notifications.length}</span>
                 )}
               </button>
 

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, getDocs, updateDoc, doc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { FiSearch, FiSave, FiTag, FiPercent } from 'react-icons/fi';
-import '../Admin/Admin.css';
+import { FiSearch, FiSave, FiTag, FiPercent, FiArrowLeft } from 'react-icons/fi';
+import './DiscountsAndDeals.css';
 
 const DiscountsAndDeals = () => {
   const [products, setProducts] = useState([]);
@@ -61,7 +61,10 @@ const DiscountsAndDeals = () => {
   return (
     <div className="admin-page">
       <div className="admin-page-header">
-        <h1 className="admin-page-title">Discounts & Deals Management</h1>
+        <div className="header-title-section">
+          <h1 className="admin-page-title">Discounts & Deals</h1>
+          <p className="header-subtitle">Manage product discounts and promotional deals</p>
+        </div>
       </div>
 
       <div className="admin-toolbar">
