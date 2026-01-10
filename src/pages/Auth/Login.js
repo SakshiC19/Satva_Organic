@@ -13,7 +13,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, loginWithGoogle, findUserByPhone } = useAuth();
+  const { login, logout, loginWithGoogle, findUserByPhone } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
@@ -51,12 +51,32 @@ const Login = () => {
       }
 
       const userCredential = await login(loginEmail, password);
-      
-      // Update login history and details
+
+      // Check if 2FA is enabled for this user
       const userRef = doc(db, 'users', userCredential.user.uid);
+      const userDoc = await getDoc(userRef);
+      const userData = userDoc.data();
+
+      if (userData?.is2FAEnabled) {
+        // If 2FA is enabled, sign out for now and redirect to OTP
+        // We pass the credentials to OTP page to sign in again after verification
+        await logout(); 
+        navigate('/verify-otp', { 
+          state: { 
+            email: loginEmail, 
+            password: password,
+            identifier: identifier,
+            type: '2fa'
+          } 
+        });
+        return;
+      }
+
+      // If 2FA is not enabled, proceed with normal login
+      // Update login history and details
       const loginData = {
         lastLogin: new Date(),
-        lastIp: 'Local', // In a real app, you'd get this from a server
+        lastIp: 'Local',
         loginHistory: arrayUnion({
           timestamp: new Date(),
           device: navigator.userAgent,
@@ -65,10 +85,6 @@ const Login = () => {
       };
       await updateDoc(userRef, loginData);
 
-      // Check user role
-      const userDoc = await getDoc(userRef);
-      const userData = userDoc.data();
-      
       if (userData?.role === 'admin') {
         navigate('/admin/dashboard');
       } else {

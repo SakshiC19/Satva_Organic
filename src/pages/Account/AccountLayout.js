@@ -34,10 +34,15 @@ const AccountLayout = () => {
   ];
 
   const isWishlistPage = location.pathname.includes('/wishlist');
+  const pageClass = location.pathname.split('/').pop();
+
+  const isOrderDetailsPage = location.pathname.match(/\/account\/orders\/.+/);
+
+  const isOrdersPage = pageClass === 'orders';
 
   return (
-    <div className={`account-layout container ${isWishlistPage ? 'wishlist-layout' : ''}`}>
-      {!isWishlistPage && (
+    <div className={`account-layout container ${isWishlistPage || isOrderDetailsPage || isOrdersPage ? 'full-width-layout' : ''} page-${pageClass}`}>
+      {!isWishlistPage && !location.pathname.match(/\/account\/orders\/.+/) && !isOrdersPage && (
         <aside className="account-sidebar">
           <nav className="account-nav">
             {navItems.map((item) => (

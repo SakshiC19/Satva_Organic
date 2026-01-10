@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { doc, updateDoc, arrayUnion, serverTimestamp, addDoc, collection, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
+import config from '../../config';
 import { FiCheck, FiShield, FiEdit2, FiPlus, FiTruck } from 'react-icons/fi';
 import './Checkout.css';
 
@@ -277,67 +278,106 @@ const Checkout = () => {
         return;
       }
 
-      const options = {
-        key: "rzp_test_RyAk3DGa85x3tr", 
-        amount: Math.round((cartTotal || 0) * 100), // Amount in paise
-        currency: "INR",
-        name: "Satva Organics",
-        description: "Grocery Purchase",
-        image: "https://firebasestorage.googleapis.com/v0/b/satva-organic.appspot.com/o/logo.png?alt=media", // Use your logo URL if available
-        handler: async function (response) {
-          console.log('Razorpay payment response:', response);
+      // Call PHP Backend to create order
+      try {
+        // Try to use a more flexible URL or the one provided in environment
+        const backendUrl = config.API_URL;
+        
+        console.log('Initiating payment with backend:', backendUrl);
+        
+        const response = await fetch(backendUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            amount: Math.round((cartTotal || 0) * 100)
+          })
+        });
+
+        if (!response.ok) {
+          let errorMessage = 'Failed to create order on backend';
           try {
-            // In a real production app, you should verify the signature on your backend here
-            // using the payment_id, order_id, and signature.
-            
-            const orderToSave = {
-              ...orderData,
-              createdAt: serverTimestamp(),
-              paymentId: response.razorpay_payment_id,
-              paymentStatus: 'Paid',
-              razorpayOrderId: response.razorpay_order_id || '',
-              razorpaySignature: response.razorpay_signature || ''
-            };
-            
-            console.log('Attempting to save order:', orderToSave);
-            
-            const docRef = await addDoc(collection(db, 'orders'), orderToSave);
-            
-            console.log('Order saved successfully with ID:', docRef.id);
-            
-            // Clear cart after successful order
-            cartItems.forEach(item => {
-              removeFromCart(item.id, item.selectedSize);
-            });
-            
-            setShowConfirmation(true);
-            setIsProcessing(false);
-          } catch (error) {
-            console.error("Detailed error saving order (Razorpay):", error);
-            console.error("Error code:", error.code);
-            console.error("Error message:", error.message);
-            console.error("Error stack:", error.stack);
-            alert(`Payment successful but failed to place order. Error: ${error.message}. Please contact support with payment ID: ${response.razorpay_payment_id}`);
-            setIsProcessing(false);
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } catch (e) {
+            errorMessage = `Server error: ${response.status} ${response.statusText}`;
           }
-        },
-        prefill: {
-          name: address.name || currentUser?.displayName,
-          email: email,
-          contact: address.phone
-        },
-        theme: {
-          color: "#27ae60"
-        },
-        modal: {
-            ondismiss: function() {
-                setIsProcessing(false);
-            }
+          throw new Error(errorMessage);
         }
-      };
-      
-      const paymentObject = new window.Razorpay(options);
-      paymentObject.open();
+
+        const razorpayOrder = await response.json();
+        console.log('Order Created:', razorpayOrder);
+
+        const options = {
+          key: "rzp_test_RyAk3DGa85x3tr", 
+          amount: razorpayOrder.amount, // Amount from backend
+          currency: razorpayOrder.currency,
+          name: "Satva Organics",
+          description: "Grocery Purchase",
+          image: "https://firebasestorage.googleapis.com/v0/b/satva-organic.appspot.com/o/logo.png?alt=media",
+          order_id: razorpayOrder.id, // Pass the Order ID from backend
+          handler: async function (response) {
+            console.log('Razorpay payment response:', response);
+            try {
+              // In a real production app, you should verify the signature on your backend here
+              // using the payment_id, order_id, and signature.
+              
+              const orderToSave = {
+                ...orderData,
+                createdAt: serverTimestamp(),
+                paymentId: response.razorpay_payment_id,
+                paymentStatus: 'Paid',
+                razorpayOrderId: response.razorpay_order_id || '',
+                razorpaySignature: response.razorpay_signature || ''
+              };
+              
+              console.log('Attempting to save order:', orderToSave);
+              
+              const docRef = await addDoc(collection(db, 'orders'), orderToSave);
+              
+              console.log('Order saved successfully with ID:', docRef.id);
+              
+              // Clear cart after successful order
+              cartItems.forEach(item => {
+                removeFromCart(item.id, item.selectedSize);
+              });
+              
+              setShowConfirmation(true);
+              setIsProcessing(false);
+            } catch (error) {
+              console.error("Detailed error saving order (Razorpay):", error);
+              console.error("Error code:", error.code);
+              console.error("Error message:", error.message);
+              console.error("Error stack:", error.stack);
+              alert(`Payment successful but failed to place order. Error: ${error.message}. Please contact support with payment ID: ${response.razorpay_payment_id}`);
+              setIsProcessing(false);
+            }
+          },
+          prefill: {
+            name: address.name || currentUser?.displayName,
+            email: email,
+            contact: address.phone
+          },
+          theme: {
+            color: "#27ae60"
+          },
+          modal: {
+              ondismiss: function() {
+                  setIsProcessing(false);
+              }
+          }
+        };
+        
+        const paymentObject = new window.Razorpay(options);
+        paymentObject.open();
+
+      } catch (err) {
+        console.error("Error creating order:", err);
+        alert(`Failed to initiate payment. \n\nTechnical Error: ${err.message}\n\nPlease ensure your PHP backend is running at ${config.API_URL}. \n\nIf using XAMPP, make sure Apache is running and the file is in htdocs/satva-api.`);
+        setIsProcessing(false);
+        return;
+      }
       
     } else {
       // Cash on Delivery

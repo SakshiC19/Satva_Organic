@@ -8,7 +8,20 @@ import {
   FiPackage,
   FiHeart,
   FiMenu,
-  FiX
+  FiX,
+  FiHome,
+  FiPhone,
+  FiTruck,
+  FiHelpCircle,
+  FiMapPin,
+  FiInfo,
+  FiLogOut,
+  FiGrid,
+  FiChevronRight,
+  FiDroplet,
+  FiLayers,
+  FiDisc,
+  FiStar
 } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -24,6 +37,7 @@ const Header = () => {
   const [activeMenu, setActiveMenu] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState({});
+  const [productsOpen, setProductsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -66,16 +80,9 @@ const Header = () => {
     }
   }, [searchQuery, products]);
 
-  // Debug logging
-  console.log('Header - currentUser:', currentUser?.email);
-  console.log('Header - userRole:', userRole);
-  console.log('Header - isAdmin:', isAdmin);
-
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      console.log('Searching for:', searchQuery);
-      // Navigate to shop with search query
       navigate(`/shop?search=${encodeURIComponent(searchQuery)}`);
       setSearchQuery('');
     }
@@ -91,18 +98,43 @@ const Header = () => {
   };
 
   const toggleCategory = (index) => {
-    setExpandedCategories(prev => ({
-      ...prev,
-      [index]: !prev[index]
-    }));
+    setExpandedCategories(prev => {
+      const isCurrentlyOpen = prev[index];
+      return isCurrentlyOpen ? {} : { [index]: true };
+    });
   };
 
   const { categories } = useCategories();
 
   // Map dynamic categories to nav structure, ensuring unique categories by name
-  const uniqueCategories = categories.filter((cat, index, self) =>
-    index === self.findIndex((c) => c.name === cat.name)
-  );
+  const uniqueCategories = categories.filter((cat, index, self) => {
+    if (!cat || !cat.name) return false;
+    
+    const normalizedName = cat.name.trim().toLowerCase();
+    
+    // List of legacy/old category names to ALWAYS exclude
+    const legacyNamesToExclude = [
+      'organic exotic products',
+      'organic wood cold press oils products',
+      'organic woodcold press oils products',
+      'organic powder',
+      'organic iteams',
+      'organic items ', // with trailing space
+      'organic powders'
+    ];
+    
+    // Exclude if it's a legacy name
+    if (legacyNamesToExclude.includes(normalizedName)) {
+      return false;
+    }
+    
+    // Check if it's a unique name (case-insensitive)
+    const isFirstOccurrence = index === self.findIndex((c) => 
+      c && c.name && c.name.trim().toLowerCase() === normalizedName
+    );
+    
+    return isFirstOccurrence;
+  });
 
   const navItems = uniqueCategories.map(cat => ({
     name: cat.name,
@@ -114,7 +146,7 @@ const Header = () => {
     <header className="header">
       {/* Top Header (Logo, Search, Actions) */}
       <div className="header-main">
-        <div className="container header-container">
+        <div className="header-container">
           {/* Mobile Menu Button */}
           <button 
             className="mobile-menu-btn"
@@ -294,33 +326,8 @@ const Header = () => {
                 <Link to={item.path} className="category-nav-item text-only">
                   <span className="category-name">
                     {item.name}
-                    {item.subcategories && <FiChevronDown className="cat-chevron" />}
                   </span>
                 </Link>
-                {item.subcategories && (
-                  <div className="category-dropdown">
-                    {item.subcategories.map((sub, subIndex) => {
-                      // Find if there's a product with this name
-                      const matchingProduct = products.find(p => 
-                        p.name.toLowerCase() === sub.toLowerCase()
-                      );
-                      
-                      const linkTo = matchingProduct 
-                        ? `/product/${matchingProduct.id}`
-                        : `${item.path}&subcategory=${encodeURIComponent(sub)}`;
-
-                      return (
-                        <Link 
-                          key={subIndex} 
-                          to={linkTo}
-                          className="category-dropdown-item"
-                        >
-                          {sub}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
             ))}
           </div>
@@ -330,43 +337,47 @@ const Header = () => {
       <div className={`mobile-sidebar-overlay ${mobileMenuOpen ? 'open' : ''}`} onClick={() => setMobileMenuOpen(false)} />
       <div className={`mobile-sidebar ${mobileMenuOpen ? 'open' : ''}`}>
         <div className="mobile-sidebar-header">
-          <h3>Menu</h3>
+          <div className="sidebar-brand">
+            <img src={logo} alt="Satva" className="sidebar-logo" />
+            <span className="sidebar-brand-name">Satva Organics</span>
+          </div>
           <button className="close-sidebar-btn" onClick={() => setMobileMenuOpen(false)}>
             <FiX />
           </button>
         </div>
         
         <div className="mobile-sidebar-content">
-          {/* Mobile Search */}
-          <form onSubmit={handleSearch} className="mobile-search-form">
-            <div className="mobile-search-wrapper">
-              <input
-                type="text"
-                placeholder="Search products..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="mobile-search-input"
-              />
-              <button type="submit" className="mobile-search-btn">
-                <FiSearch />
-              </button>
-            </div>
-          </form>
-          
           {/* Auth Section in Sidebar */}
           <div className="mobile-auth-section">
             {currentUser ? (
               <div className="mobile-user-info">
-                <div className="user-greeting">
-                  <FiUser />
-                  <span>Hello, {currentUser.displayName ? currentUser.displayName.split(' ')[0] : 'User'}</span>
+                <div className="user-profile-summary" onClick={() => setMobileMenuOpen(false)}>
+                  <Link to="/account/profile" className="user-avatar-link">
+                    <div className="user-avatar">
+                      <FiUser />
+                    </div>
+                  </Link>
+                  <div className="user-details">
+                    <span className="user-name">Hello, {currentUser.displayName ? currentUser.displayName.split(' ')[0] : 'User'}</span>
+                    <Link to="/account/profile" className="view-profile-link">
+                      View Profile <FiChevronRight />
+                    </Link>
+                  </div>
                 </div>
                 <div className="mobile-user-links">
-                  <Link to="/account/profile" onClick={() => setMobileMenuOpen(false)}>My Profile</Link>
-                  <Link to="/account/orders" onClick={() => setMobileMenuOpen(false)}>My Orders</Link>
-                  <Link to="/account/wishlist" onClick={() => setMobileMenuOpen(false)}>My Wishlist</Link>
+                  <Link to="/account/profile" className="user-link-item" onClick={() => setMobileMenuOpen(false)}>
+                    <FiUser className="link-icon" /> My Profile
+                  </Link>
+                  <Link to="/account/orders" className="user-link-item" onClick={() => setMobileMenuOpen(false)}>
+                    <FiPackage className="link-icon" /> My Orders
+                  </Link>
+                  <Link to="/account/wishlist" className="user-link-item" onClick={() => setMobileMenuOpen(false)}>
+                    <FiHeart className="link-icon" /> My Wishlist
+                  </Link>
                   {isAdmin && (
-                    <Link to="/admin/dashboard" onClick={() => setMobileMenuOpen(false)}>Admin Dashboard</Link>
+                    <Link to="/admin/dashboard" className="user-link-item" onClick={() => setMobileMenuOpen(false)}>
+                      <FiGrid className="link-icon" /> Admin Dashboard
+                    </Link>
                   )}
                 </div>
               </div>
@@ -380,75 +391,107 @@ const Header = () => {
 
           <div className="mobile-nav-divider"></div>
 
-          {/* Home Link */}
-          <Link 
-            to="/" 
-            className="mobile-home-link"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            Home
-          </Link>
+          {/* Menu Items */}
+          <div className="mobile-menu-items">
+            <Link 
+              to="/" 
+              className="mobile-menu-item home-item"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <span className="menu-item-content">
+                <FiHome className="menu-icon" />
+                Home
+              </span>
+            </Link>
 
-          <div className="mobile-nav-divider"></div>
-
-          {/* Categories in Sidebar */}
-          <div className="mobile-categories">
-            <h4>Products</h4>
-            {navItems.map((item, index) => (
-              <div key={index} className="mobile-category-item">
-                <div className="mobile-category-header">
-                  <Link 
-                    to={item.path} 
-                    className="mobile-category-link"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    {item.name}
-                  </Link>
-                  {item.subcategories && (
-                    <button 
-                      className={`mobile-cat-toggle ${expandedCategories[index] ? 'expanded' : ''}`}
-                      onClick={() => toggleCategory(index)}
-                    >
-                      <FiChevronDown />
-                    </button>
-                  )}
+            {/* Products Dropdown */}
+            <div className="mobile-products-section">
+              <div className={`mobile-menu-item products-toggle ${productsOpen ? 'active' : ''}`}>
+                <div 
+                  className="menu-item-content"
+                  onClick={() => {
+                    navigate('/shop');
+                    setMobileMenuOpen(false);
+                  }}
+                  style={{ cursor: 'pointer', flex: 1 }}
+                >
+                  <FiLayers className="menu-icon" />
+                  Products
                 </div>
-                {item.subcategories && (
-                  <div className={`mobile-subcategories ${expandedCategories[index] ? 'open' : ''}`}>
-                    {item.subcategories.map((sub, subIndex) => {
-                      const matchingProduct = products.find(p => 
-                        p.name.toLowerCase() === sub.toLowerCase()
-                      );
-                      
-                      const linkTo = matchingProduct 
-                        ? `/product/${matchingProduct.id}`
-                        : `${item.path}&subcategory=${encodeURIComponent(sub)}`;
-
-                      return (
-                        <Link 
-                          key={subIndex}
-                          to={linkTo}
-                          className="mobile-subcategory-link"
-                          onClick={() => setMobileMenuOpen(false)}
-                        >
-                          {sub}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
+                <span 
+                  className="mobile-toggle-icon"
+                  onClick={() => setProductsOpen(!productsOpen)}
+                  style={{ cursor: 'pointer', padding: '10px' }}
+                >
+                  <FiChevronDown className={`products-chevron ${productsOpen ? 'rotate' : ''}`} />
+                </span>
               </div>
-            ))}
-          </div>
-          
-          {currentUser && (
-            <div className="mobile-sidebar-footer">
-              <button onClick={() => { handleLogout(); setMobileMenuOpen(false); }} className="mobile-logout-btn">
-                Logout
-              </button>
+
+              <div className={`mobile-products-list ${productsOpen ? 'open' : ''}`}>
+                {navItems.map((item, index) => {
+                  // Determine icon based on category name
+                  let CategoryIcon = FiPackage;
+                  const lowerName = item.name.toLowerCase();
+                  if (lowerName.includes('organic items')) CategoryIcon = FiPackage;
+                  else if (lowerName.includes('millets')) CategoryIcon = FiGrid;
+                  else if (lowerName.includes('oil')) CategoryIcon = FiDroplet;
+                  else if (lowerName.includes('vegetable') || lowerName.includes('basket')) CategoryIcon = FiStar;
+                  else if (lowerName.includes('powder')) CategoryIcon = FiLayers;
+                  else if (lowerName.includes('seeds')) CategoryIcon = FiDisc;
+
+                  return (
+                    <div key={index} className="mobile-category-item">
+                      <div className="mobile-category-header">
+                        <div 
+                          className="category-label"
+                          onClick={() => {
+                            navigate(item.path);
+                            setMobileMenuOpen(false);
+                          }}
+                          style={{ cursor: 'pointer', flex: 1 }}
+                        >
+                          <CategoryIcon className="category-icon" />
+                          <span className="category-text">{item.name}</span>
+                        </div>
+                        <FiChevronRight className="mobile-cat-arrow" />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          )}
+
+            <div className="mobile-nav-divider"></div>
+
+            {/* Utility Menu */}
+            <div className="mobile-utility-menu">
+              <Link to="/contact" className="mobile-menu-item" onClick={() => setMobileMenuOpen(false)}>
+                <span className="menu-item-content">
+                  <FiPhone className="menu-icon" /> Contact Us
+                </span>
+              </Link>
+              <Link to="/track-order" className="mobile-menu-item" onClick={() => setMobileMenuOpen(false)}>
+                <span className="menu-item-content">
+                  <FiTruck className="menu-icon" /> Track Order
+                </span>
+              </Link>
+              <Link to="/support" className="mobile-menu-item" onClick={() => setMobileMenuOpen(false)}>
+                <span className="menu-item-content">
+                  <FiHelpCircle className="menu-icon" /> Help & Support
+                </span>
+              </Link>
+
+            </div>
+          </div>
         </div>
+        
+        {currentUser && (
+          <div className="mobile-sidebar-footer">
+            <button onClick={() => { handleLogout(); setMobileMenuOpen(false); }} className="mobile-logout-btn-subtle">
+              <FiLogOut /> Logout
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );

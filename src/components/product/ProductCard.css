@@ -1,4 +1,8 @@
 /* ProductCard.css - Premium Redesign */
+.hide-buy-now .buy-now-btn {
+    display: none !important;
+}
+
 :root {
     --color-primary: #27ae60;
     --color-primary-dark: #1F2D26;
@@ -97,7 +101,7 @@
     z-index: 5;
 }
 
-/* Image Actions Overlay - FIXED */
+/* Image Actions Overlay */
 .image-actions-overlay {
     position: absolute;
     top: 16px;
@@ -165,10 +169,10 @@
 
 /* Info Section */
 .product-card-info {
-    padding: 12px 12px 8px 12px;
+    padding: 10px 12px 8px 12px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
     flex: 1;
     background: white;
 }
@@ -192,7 +196,8 @@
     line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    height: 50px;
+    min-height: 0;
+    height: auto;
 }
 
 /* Rating */
@@ -244,6 +249,13 @@
     border-radius: 10px;
     font-size: 13px;
     font-weight: 800;
+}
+
+.unit-price-row {
+    font-size: 14px;
+    color: var(--color-text-muted);
+    font-weight: 600;
+    margin-top: 4px;
 }
 
 .price-secondary-row {
@@ -400,26 +412,15 @@
         gap: 8px;
     }
 
-    .image-actions-overlay .cart-btn {
-        display: none;
+    .image-actions-overlay .cart-btn,
+    .image-actions-overlay .quick-view-btn {
+        display: none !important;
     }
 
     .action-btn {
         width: 36px;
         height: 36px;
-        font-size: 16px;
-        background-color: rgba(255, 255, 255, 0.95) !important;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-    }
-
-    .product-card-info {
-        padding: 8px 8px 6px 8px;
-        gap: 4px;
-    }
-
-    .product-name {
-        font-size: 14px;
-        height: 38px;
+        min-height: 0;
     }
 
     .current-price {
@@ -429,58 +430,60 @@
     .main-buttons {
         flex-direction: column;
         gap: 8px;
+        width: 100%;
+        height:28px;
     }
 
     .buy-now-btn {
-        display: none;
+        display: none !important;
     }
 
     .card-btn {
-        height: 36px;
-        font-size: 12px;
+        width: 100% !important;
+        height: 60px !important;
+        font-size: 15px !important;
+        border-radius: 12px !important;
+    }
+
+    .meta-info-row {
+        display: none !important;
     }
 }
 
 @media (max-width: 480px) {
     .product-card-image {
-        height: 140px;
+        height: 130px;
+    }
+
+    .product-card-info {
+        padding: 8px;
+        gap: 2px;
     }
 
     .product-name {
-        font-size: 13px;
-        height: 36px;
+        font-size: 12px;
+        height: auto;
+        min-height: 0;
     }
 
     .current-price {
-        font-size: 16px;
+        font-size: 15px;
     }
 
     .original-price {
-        font-size: 12px;
+        font-size: 11px;
     }
 
     .savings-text {
-        font-size: 10px;
+        font-size: 9px;
     }
 
     .product-rating-badge {
-        padding: 2px 6px;
-        font-size: 11px;
+        padding: 2px 4px;
+        font-size: 10px;
     }
 
     .review-count {
-        font-size: 11px;
-    }
-}
-
-/* Mobile Overrides */
-@media (max-width: 768px) {
-    .meta-info-row {
-        display: none !important;
-    }
-
-    .card-btn {
-        height: 42px !important;
-        font-size: 13px !important;
+        font-size: 10px;
     }
 }

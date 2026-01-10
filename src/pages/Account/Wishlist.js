@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FiTrash2, FiShoppingCart, FiArrowRight, FiHeart } from 'react-icons/fi';
+import { useNavigate, Link } from 'react-router-dom';
+import { FiTrash2, FiShoppingCart, FiArrowRight, FiHeart, FiHome, FiChevronRight } from 'react-icons/fi';
 import ProductCard from '../../components/product/ProductCard';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { useCart } from '../../contexts/CartContext';
@@ -92,6 +92,15 @@ const Wishlist = () => {
 
   return (
     <div className="account-section">
+      {/* Breadcrumb */}
+      <div className="breadcrumb">
+        <Link to="/" className="breadcrumb-item">
+          <FiHome /> Home
+        </Link>
+        <FiChevronRight className="breadcrumb-separator" />
+        <span className="breadcrumb-item active">My Wishlist</span>
+      </div>
+
       <div className="wishlist-header-actions">
         <div className="wishlist-info">
           <h2 className="account-title">My Wishlist ({wishlistCount})</h2>
@@ -111,7 +120,7 @@ const Wishlist = () => {
             <FiTrash2 /> Clear Wishlist
           </button>
           <button className="btn-primary" onClick={handleMoveAllToCart}>
-            <FiShoppingCart /> Move All to Cart
+            <FiShoppingCart /> Move All to Basket
           </button>
         </div>
       </div>

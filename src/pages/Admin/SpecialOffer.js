@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useCategories } from '../../contexts/CategoryContext';
-import { FiSave, FiInfo, FiEye, FiEyeOff } from 'react-icons/fi';
-import './Admin.css';
+import { FiSave, FiEye, FiEyeOff } from 'react-icons/fi';
+import ImageUpload from '../../components/admin/ImageUpload';
+import './SpecialOffer.css';
 
 const SpecialOffer = () => {
   const [loading, setLoading] = useState(true);
@@ -22,8 +23,12 @@ const SpecialOffer = () => {
     buttonLink: '/shop',
     isActive: true,
     scope: 'all', // 'all', 'category', 'product'
-    targetId: '' // ID of the selected category or product
+    targetId: '', // ID of the selected category or product
+    backgroundImage: '' // URL of the background image
   });
+
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [uploadKey, setUploadKey] = useState(0);
 
   useEffect(() => {
     fetchInitialData();
@@ -65,14 +70,48 @@ const SpecialOffer = () => {
     }));
   };
 
+  const handleImagesSelected = (files) => {
+    if (files.length > 0) {
+      setSelectedImage(files[0]);
+    } else {
+      setSelectedImage(null);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setOfferData(prev => ({ ...prev, backgroundImage: '' }));
+    setSelectedImage(null);
+    setUploadKey(prev => prev + 1);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       setSaving(true);
       setMessage({ type: '', text: '' });
 
+      setMessage({ type: '', text: '' });
+
+      let imageUrl = offerData.backgroundImage;
+
+      // Upload image if selected
+      if (selectedImage) {
+        const { uploadImage } = await import('../../services/storageService');
+        const uploadResult = await uploadImage(selectedImage, 'special-offer');
+        imageUrl = uploadResult.url;
+      }
+
+      const updatedOfferData = {
+        ...offerData,
+        backgroundImage: imageUrl
+      };
+
       const offerRef = doc(db, 'settings', 'specialOffer');
-      await setDoc(offerRef, offerData);
+      await setDoc(offerRef, updatedOfferData);
+      
+      setOfferData(updatedOfferData);
+      setSelectedImage(null);
+      setUploadKey(prev => prev + 1);
 
       setMessage({ type: 'success', text: 'Special offer updated successfully!' });
       setTimeout(() => setMessage({ type: '', text: '' }), 3000);
@@ -96,8 +135,10 @@ const SpecialOffer = () => {
   return (
     <div className="admin-special-offer">
       <div className="admin-page-header">
-        <h1 className="admin-page-title">Manage Special Offer</h1>
-        <p className="admin-page-subtitle">Update the promotional banner displayed on the homepage</p>
+        <div className="header-title-section">
+          <h1 className="admin-page-title">Manage Special Offer</h1>
+          <p className="header-subtitle">Update the promotional banner displayed on the homepage</p>
+        </div>
       </div>
 
       {message.text && (
@@ -131,6 +172,24 @@ const SpecialOffer = () => {
                   )}
                 </span>
               </div>
+            </div>
+
+            <div className="form-section-divider"></div>
+
+            <div className="form-group">
+              <label>Background Image (Optional)</label>
+              <ImageUpload 
+                key={uploadKey}
+                onImagesSelected={handleImagesSelected}
+                maxImages={1}
+                label="Select Background Image"
+                existingImages={offerData.backgroundImage ? [{ url: offerData.backgroundImage }] : []}
+                onRemoveExisting={handleRemoveImage}
+              />
+              <small className="form-help-text">
+                Recommended size: 1200x400px. If not set, default gradient will be used.
+                Clear text fields to create an image-only banner.
+              </small>
             </div>
 
             <div className="form-section-divider"></div>
@@ -199,7 +258,6 @@ const SpecialOffer = () => {
                   value={offerData.badge}
                   onChange={handleInputChange}
                   placeholder="e.g. SPECIAL OFFER"
-                  required
                 />
               </div>
 
@@ -212,7 +270,6 @@ const SpecialOffer = () => {
                   value={offerData.title}
                   onChange={handleInputChange}
                   placeholder="e.g. Get 30% Off on First Order"
-                  required
                 />
               </div>
             </div>
@@ -226,7 +283,6 @@ const SpecialOffer = () => {
                 onChange={handleInputChange}
                 placeholder="e.g. Download our app and get exclusive deals"
                 rows="3"
-                required
               ></textarea>
             </div>
 
@@ -240,7 +296,6 @@ const SpecialOffer = () => {
                   value={offerData.buttonText}
                   onChange={handleInputChange}
                   placeholder="e.g. Shop Now"
-                  required
                 />
               </div>
 
@@ -290,17 +345,41 @@ const SpecialOffer = () => {
       <div className="admin-card preview-card">
         <h3 className="section-title">Live Preview</h3>
         <div className="promo-banner-preview">
-          <div className="promo-banner-modern" style={{ opacity: offerData.isActive ? 1 : 0.5 }}>
+          <div 
+            className="promo-banner-modern" 
+            style={{ 
+              opacity: offerData.isActive ? 1 : 0.5,
+              backgroundImage: selectedImage 
+                ? `url(${URL.createObjectURL(selectedImage)})` 
+                : offerData.backgroundImage 
+                  ? `url(${offerData.backgroundImage})` 
+                  : undefined,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}
+          >
+            {(selectedImage || offerData.backgroundImage) && (
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0,0,0,0.4)',
+                zIndex: 1,
+                borderRadius: '16px'
+              }}></div>
+            )}
             {!offerData.isActive && (
               <div className="preview-overlay">
                 <span>Section Hidden</span>
               </div>
             )}
             <div className="promo-content">
-              <span className="promo-badge">{offerData.badge}</span>
-              <h3 className="promo-title">{offerData.title}</h3>
-              <p className="promo-text">{offerData.description}</p>
-              <button className="promo-btn">{offerData.buttonText}</button>
+              {offerData.badge && <span className="promo-badge">{offerData.badge}</span>}
+              {offerData.title && <h3 className="promo-title">{offerData.title}</h3>}
+              {offerData.description && <p className="promo-text">{offerData.description}</p>}
+              {offerData.buttonText && <button className="promo-btn">{offerData.buttonText}</button>}
             </div>
             <div className="promo-visual">
               <div className="promo-circle"></div>

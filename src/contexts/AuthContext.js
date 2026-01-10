@@ -129,6 +129,10 @@ export const AuthProvider = ({ children }) => {
       if (data.photoURL !== undefined && data.photoURL !== null) {
         firestoreData.photoURL = data.photoURL;
       }
+
+      if (data.is2FAEnabled !== undefined) {
+        firestoreData.is2FAEnabled = data.is2FAEnabled;
+      }
       
       await setDoc(userRef, firestoreData, { merge: true });
 

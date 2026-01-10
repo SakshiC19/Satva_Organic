@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import './ProductCard.css';
-import { FiHeart, FiShoppingCart, FiShoppingBag, FiTrash2, FiTruck, FiEye, FiMinus, FiPlus } from 'react-icons/fi';
+import { FiHeart, FiShoppingBag, FiTrash2, FiTruck } from 'react-icons/fi';
 import { useCart } from '../../contexts/CartContext';
 import { useWishlist } from '../../contexts/WishlistContext';
 import ProductSelectionModal from './ProductSelectionModal';
@@ -51,7 +51,9 @@ const ProductCard = ({
   product,
   compact = false,
   isWishlistPage = false,
-  isFlashDeal = false
+  isFlashDeal = false,
+  showCategory = true,
+  showBuyNow = true
 }) => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
@@ -71,12 +73,8 @@ const ProductCard = ({
     category,
     rating = 0,
     inStock = true,
-    stock = 50,
-    initialStock = 100,
-    weight = '500g',
+    stock = 0,
     deliveryDays = '2-3 days',
-    priceAlert = null,
-    productType,
     dealExpiry = null,
     dealStockLimit = null
   } = product;
@@ -104,9 +102,37 @@ const ProductCard = ({
     }
   }, [isFlashDeal, dealExpiry, dealStockLimit]);
 
-  const displayPrice = price;
-  const displayDiscount = discount;
-  const displaySavings = originalPrice && originalPrice > price ? originalPrice - price : 0;
+  const calculatePrice = (basePrice, size) => {
+    if (!size || !basePrice) return basePrice || 0;
+    const match = size.match(/(\d+(?:\.\d+)?)\s*([a-zA-Z]+)/);
+    if (!match) return basePrice;
+
+    const value = parseFloat(match[1]);
+    const unit = match[2].toLowerCase();
+    
+    let multiplier = 1;
+    if (unit === 'g' || unit === 'gm' || unit === 'ml') {
+      multiplier = value / 100;
+    } else if (unit === 'kg' || unit === 'l' || unit === 'liter') {
+      multiplier = (value * 1000) / 100;
+    } else if (unit === 'pc' || unit === 'pcs' || unit === 'pack') {
+      multiplier = value;
+    }
+    
+    return Math.round(basePrice * multiplier);
+  };
+
+  const defaultSize = product.packingSizes?.[0] || product.weight || '250g';
+  const displayPrice = calculatePrice(price, defaultSize);
+  const displayDiscount = typeof discount === 'object' ? discount?.value : (parseFloat(discount) || 0);
+  
+  let effectiveOriginalPrice = originalPrice;
+  if (!effectiveOriginalPrice && displayDiscount > 0) {
+    effectiveOriginalPrice = price / (1 - (displayDiscount / 100));
+  }
+
+  const displayOriginalPrice = calculatePrice(effectiveOriginalPrice, defaultSize);
+  const displaySavings = displayOriginalPrice && displayOriginalPrice > displayPrice ? displayOriginalPrice - displayPrice : 0;
 
   const productImage = images && images.length > 0
     ? (images[0].url || images[0])
@@ -130,17 +156,6 @@ const ProductCard = ({
     }
   };
 
-  const handleQuickView = (e) => {
-    e.stopPropagation();
-    setIsQuickViewOpen(true);
-  };
-
-  const handleQuantityChange = (e, delta) => {
-    e.stopPropagation();
-    const newQty = Math.max(1, Math.min(stock, quantity + delta));
-    setQuantity(newQty);
-  };
-
   const handleAddToCart = (e) => {
     e.stopPropagation();
     if (product.packingSizes && product.packingSizes.length > 0) {
@@ -151,7 +166,7 @@ const ProductCard = ({
   };
 
   return (
-    <div className={`product-card ${compact ? 'product-card-compact' : ''} ${isDealActive ? 'flash-deal-card' : ''} ${!isInStock ? 'out-of-stock-card' : ''}`} onClick={handleProductClick}>
+    <div className={`product-card ${compact ? 'product-card-compact' : ''} ${isDealActive ? 'flash-deal-card' : ''} ${!isInStock ? 'out-of-stock-card' : ''} ${!showBuyNow ? 'hide-buy-now' : ''}`} onClick={handleProductClick}>
       {/* Product Image Section */}
       <div className="product-card-image">
         {isDealActive && (
@@ -168,16 +183,6 @@ const ProductCard = ({
           >
             {isWishlistPage ? <FiTrash2 /> : <FiHeart className={isItemInWishlist ? 'filled' : ''} />}
           </button>
-          
-          {!compact && (
-            <button className="action-btn quick-view-btn" onClick={handleQuickView} title="Quick View">
-              <FiEye />
-            </button>
-          )}
-
-          <button className="action-btn cart-btn" onClick={handleAddToCart} title="Add to Cart">
-            <FiShoppingCart />
-          </button>
         </div>
 
         <img src={productImage} alt={name} loading="lazy" />
@@ -191,7 +196,7 @@ const ProductCard = ({
 
       {/* Product Info Section */}
       <div className="product-card-info">
-        <div className="category-tag">{category}</div>
+        {showCategory && <div className="category-tag">{category}</div>}
         <h3 className="product-name" title={name}>{name}</h3>
 
         <div className="rating-row">
@@ -205,28 +210,24 @@ const ProductCard = ({
 
         <div className="product-price-container">
           <div className="price-main-row">
-            <span className="current-price">₹{displayPrice}</span>
-            {originalPrice && displayDiscount > 0 && (
+            <span className="current-price">₹{price}</span>
+            {effectiveOriginalPrice > 0 && displayDiscount > 0 && (
               <div className="discount-pill">-{displayDiscount}%</div>
             )}
           </div>
           
-          {originalPrice && displaySavings > 0 && (
-            <div className="price-secondary-row">
-              <span className="original-price">₹{originalPrice}</span>
-              <span className="savings-text">You save ₹{displaySavings}</span>
+          {(product.unit === 'g' || product.unit === 'kg' || product.unit === 'ml' || product.unit === 'l') && (
+            <div className="unit-price-row">
+              (₹{price} / 100{product.unit === 'ml' || product.unit === 'l' ? 'ml' : 'g'})
             </div>
           )}
-        </div>
-
-
-
-
-        {/* Delivery & Stock */}
-        <div className="meta-info-row">
-          <div className="delivery-tag">
-            <FiTruck /> {deliveryDays}
-          </div>
+          
+          {effectiveOriginalPrice > 0 && (effectiveOriginalPrice - price) > 0 && (
+            <div className="price-secondary-row">
+              <span className="original-price">₹{Math.round(effectiveOriginalPrice)}</span>
+              <span className="savings-text">You save ₹{Math.round(effectiveOriginalPrice - price)}</span>
+            </div>
+          )}
         </div>
 
         {/* Action Area */}
@@ -237,15 +238,17 @@ const ProductCard = ({
               
               <div className="main-buttons">
                 <button className="card-btn add-cart-btn" onClick={handleAddToCart}>
-                  Add to Cart
+                  Add to Basket
                 </button>
-                <button className="card-btn buy-now-btn" onClick={(e) => {
-                  e.stopPropagation();
-                  addToCart({ ...product, quantity });
-                  navigate('/checkout');
-                }}>
-                  Buy Now
-                </button>
+                {showBuyNow && (
+                  <button className="card-btn buy-now-btn" onClick={(e) => {
+                    e.stopPropagation();
+                    addToCart({ ...product, quantity });
+                    navigate('/checkout');
+                  }}>
+                    Buy Now
+                  </button>
+                )}
               </div>
             </div>
           ) : (

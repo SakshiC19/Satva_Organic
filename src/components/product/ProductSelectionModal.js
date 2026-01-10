@@ -27,9 +27,52 @@ const ProductSelectionModal = ({ product, isOpen, onClose }) => {
     price,
     originalPrice,
     discount,
+    packingSizes,
     weightOptions = ['250g', '500g', '1kg'],
     stock = 10
   } = product;
+
+  const availableOptions = packingSizes && packingSizes.length > 0 ? packingSizes : weightOptions;
+
+  const calculateDynamicPrice = (prod, size) => {
+    if (!size || !prod) return prod?.price || 0;
+    
+    // Check for explicit price override first
+    if (prod.sizePrices && prod.sizePrices[size]) {
+      return parseFloat(prod.sizePrices[size]);
+    }
+
+    const match = size.match(/(\d+(?:\.\d+)?)\s*([a-zA-Z]+)/);
+    if (!match) return prod.price;
+
+    const value = parseFloat(match[1]);
+    const unit = match[2].toLowerCase();
+    
+    let multiplier = 1;
+    
+    if (unit === 'g' || unit === 'gm' || unit === 'ml') {
+      multiplier = value / 100;
+    } else if (unit === 'kg' || unit === 'l' || unit === 'liter') {
+      multiplier = (value * 1000) / 100;
+    } else if (unit === 'pc' || unit === 'pcs' || unit === 'pack') {
+       multiplier = value;
+    } else {
+      return prod.price;
+    }
+
+    let finalPrice = prod.price * multiplier;
+
+    if (prod.sizeDiscounts && prod.sizeDiscounts[size]) {
+      const discount = parseFloat(prod.sizeDiscounts[size]);
+      if (!isNaN(discount) && discount > 0) {
+        finalPrice = finalPrice * (1 - discount / 100);
+      }
+    }
+
+    return Math.round(finalPrice);
+  };
+
+  const currentPrice = calculateDynamicPrice(product, selectedWeight);
 
   const productImage = images && images.length > 0 
     ? (images[0].url || images[0]) 
@@ -38,11 +81,16 @@ const ProductSelectionModal = ({ product, isOpen, onClose }) => {
   const handleAddToCart = () => {
     addToCart({
       ...product,
+      price: currentPrice,
       selectedWeight,
-      quantity
+      selectedSize: selectedWeight, // Ensure compatibility
+      quantity,
+      basePrice: product.price
     });
     onClose();
-    openCart();
+    if (window.innerWidth > 768) {
+      openCart();
+    }
   };
 
   return createPortal(
@@ -58,14 +106,16 @@ const ProductSelectionModal = ({ product, isOpen, onClose }) => {
           <div className="product-details">
             <h3>{name}</h3>
             <div className="modal-price">
-              <span className="current">₹{price}</span>
-              {originalPrice && <span className="original">₹{originalPrice}</span>}
+              <span className="current">₹{currentPrice}</span>
+              <span className="unit-info" style={{fontSize: '0.8em', color: '#666', marginLeft: '8px'}}>
+                (₹{price}/100{product.unit === 'ml' || product.unit === 'l' ? 'ml' : 'g'})
+              </span>
             </div>
 
             <div className="selection-group">
               <label>Select Weight</label>
               <div className="weight-options">
-                {weightOptions.map(w => (
+                {availableOptions.map(w => (
                   <button 
                     key={w}
                     className={`weight-btn ${selectedWeight === w ? 'active' : ''}`}
@@ -87,7 +137,7 @@ const ProductSelectionModal = ({ product, isOpen, onClose }) => {
             </div>
 
             <button className="modal-add-btn" onClick={handleAddToCart}>
-              <FiShoppingCart /> Add to Cart
+              <FiShoppingCart /> Add to Basket
             </button>
           </div>
         </div>

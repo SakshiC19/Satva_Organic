@@ -9,6 +9,9 @@ import Shop from './pages/Shop/Shop';
 import Contact from './pages/Contact/Contact';
 import Login from './pages/Auth/Login';
 import Signup from './pages/Auth/Signup';
+import OTPVerification from './pages/Auth/OTPVerification';
+import ForgotPassword from './pages/Auth/ForgotPassword';
+import ResetPassword from './pages/Auth/ResetPassword';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AdminRoute from './components/auth/AdminRoute';
 import AccountLayout from './pages/Account/AccountLayout';
@@ -25,15 +28,18 @@ import EditProduct from './pages/Admin/EditProduct';
 import AdminOrders from './pages/Admin/Orders';
 import HeroBanners from './pages/Admin/HeroBanners';
 import SpecialOffer from './pages/Admin/SpecialOffer';
+import DiscountsAndDeals from './pages/Admin/DiscountsAndDeals';
 import Categories from './pages/Admin/Categories';
 import Users from './pages/Admin/Users';
 import MakeAdmin from './components/admin/MakeAdmin';
 import ProductDetail from './pages/ProductDetail/ProductDetail';
 import FlashDeals from './pages/FlashDeals/FlashDeals';
 import Checkout from './pages/Checkout/Checkout';
+import Terms from './pages/Terms/Terms';
 import CartDrawer from './components/cart/CartDrawer';
 import { CategoryProvider } from './contexts/CategoryContext';
 import { WishlistProvider } from './contexts/WishlistContext';
+import ScrollToTop from './components/common/ScrollToTop';
 import './styles/index.css';
 
 import StickyCartBar from './components/cart/StickyCartBar';
@@ -59,6 +65,7 @@ function App() {
         <WishlistProvider>
           <CartProvider>
             <Router>
+              <ScrollToTop />
             <div className="app">
               <CartDrawer />
               <Routes>
@@ -68,10 +75,14 @@ function App() {
                 <Route path="/product/:id" element={<Layout><ProductDetail /></Layout>} />
                 <Route path="/flash-deals" element={<Layout><FlashDeals /></Layout>} />
                 <Route path="/contact" element={<Layout><Contact /></Layout>} />
+                <Route path="/terms" element={<Layout><Terms /></Layout>} />
                 
                 {/* Auth Routes (Standalone) */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
+                <Route path="/verify-otp" element={<OTPVerification />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/make-admin" element={<MakeAdmin />} />
                 <Route path="/checkout" element={<Layout><Checkout /></Layout>} />
                 
@@ -105,6 +116,7 @@ function App() {
                   <Route path="orders" element={<AdminOrders />} />
                   <Route path="banners" element={<HeroBanners />} />
                   <Route path="special-offer" element={<SpecialOffer />} />
+                  <Route path="discounts" element={<DiscountsAndDeals />} />
                   <Route path="categories" element={<Categories />} />
                   <Route path="users" element={<Users />} />
                 </Route>

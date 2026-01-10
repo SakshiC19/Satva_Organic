@@ -38,33 +38,46 @@ export const CategoryProvider = ({ children }) => {
         }
       });
 
-      if (uniqueCats.length === 0) {
-        // Seed default categories to DB if empty
-        const seededCats = [];
-        for (const cat of defaultCategories) {
-          // Remove id as Firestore generates it
-          const { id, ...catData } = cat;
-          const docRef = await addDoc(collection(db, 'categories'), catData);
-          seededCats.push({ id: docRef.id, ...catData });
-        }
-        setCategories(seededCats);
-      } else {
-        setCategories(uniqueCats);
-      }
+      setCategories(uniqueCats);
     } catch (error) {
       console.error("Error fetching categories:", error);
-      // Fallback only on error, but don't seed
       setCategories([]);
     } finally {
       setLoading(false);
     }
   };
 
+  const syncProducts = async (oldName, newName, isDelete = false) => {
+    console.log(`Syncing products from "${oldName}" to "${newName || (isDelete ? 'Uncategorized' : 'N/A')}"`);
+    try {
+      const productsRef = collection(db, 'products');
+      const snapshot = await getDocs(productsRef);
+      
+      let count = 0;
+      for (const productDoc of snapshot.docs) {
+        const data = productDoc.data();
+        if (data.category === oldName) {
+          const productRef = doc(db, 'products', productDoc.id);
+          if (isDelete) {
+            await updateDoc(productRef, { category: 'Uncategorized' });
+          } else if (newName) {
+            await updateDoc(productRef, { category: newName });
+          }
+          count++;
+        }
+      }
+      console.log(`Successfully synced ${count} products.`);
+    } catch (error) {
+      console.error("Error syncing products:", error);
+    }
+  };
+
   const addCategory = async (category) => {
     try {
       const docRef = await addDoc(collection(db, 'categories'), category);
-      setCategories([...categories, { id: docRef.id, ...category }]);
-      return docRef;
+      const newCat = { id: docRef.id, ...category };
+      setCategories(prev => [...prev, newCat]);
+      return newCat;
     } catch (error) {
       console.error("Error adding category:", error);
       throw error;
@@ -72,11 +85,20 @@ export const CategoryProvider = ({ children }) => {
   };
 
   const updateCategory = async (id, updates) => {
+    console.log(`Updating category ${id}`, updates);
     try {
+      const oldCategory = categories.find(c => c.id === id);
       await updateDoc(doc(db, 'categories', id), updates);
-      setCategories(categories.map(cat =>
+      
+      // Auto-sync products if name changed
+      if (oldCategory && updates.name && oldCategory.name !== updates.name) {
+        await syncProducts(oldCategory.name, updates.name);
+      }
+
+      setCategories(prev => prev.map(cat =>
         cat.id === id ? { ...cat, ...updates } : cat
       ));
+      console.log(`Category ${id} updated successfully.`);
     } catch (error) {
       console.error("Error updating category:", error);
       throw error;
@@ -84,9 +106,22 @@ export const CategoryProvider = ({ children }) => {
   };
 
   const deleteCategory = async (id) => {
+    console.log(`Deleting category ${id}`);
     try {
+      const categoryToDelete = categories.find(c => c.id === id);
+      if (!categoryToDelete) {
+        console.warn(`Category with ID ${id} not found in local state.`);
+      }
+      
       await deleteDoc(doc(db, 'categories', id));
-      setCategories(categories.filter(cat => cat.id !== id));
+      
+      // Auto-sync products to 'Uncategorized'
+      if (categoryToDelete) {
+        await syncProducts(categoryToDelete.name, null, true);
+      }
+
+      setCategories(prev => prev.filter(cat => cat.id !== id));
+      console.log(`Category ${id} deleted successfully.`);
     } catch (error) {
       console.error("Error deleting category:", error);
       throw error;
@@ -94,7 +129,15 @@ export const CategoryProvider = ({ children }) => {
   };
 
   return (
-    <CategoryContext.Provider value={{ categories, loading, addCategory, updateCategory, deleteCategory, fetchCategories }}>
+    <CategoryContext.Provider value={{ 
+      categories, 
+      loading, 
+      addCategory, 
+      updateCategory, 
+      deleteCategory, 
+      fetchCategories,
+      syncProducts 
+    }}>
       {children}
     </CategoryContext.Provider>
   );
@@ -103,8 +146,8 @@ export const CategoryProvider = ({ children }) => {
 const defaultCategories = [
   {
     id: 1,
-    name: 'Organic Exotic Products',
-    slug: 'organic-exotic-products',
+    name: 'Vegetable Basket',
+    slug: 'vegetable-basket',
     image: exoticProductImg,
     subcategories: [
       'Broccoli',
@@ -122,8 +165,8 @@ const defaultCategories = [
   },
   {
     id: 2,
-    name: 'Organic Wood Cold Press Oils Products',
-    slug: 'organic-wood-cold-press-oils',
+    name: 'Satva Pure Oils',
+    slug: 'satva-pure-oils',
     image: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=800&q=80',
     subcategories: [
       'Coconut Oil',
@@ -170,8 +213,8 @@ const defaultCategories = [
   },
   {
     id: 6,
-    name: 'Organic Powder',
-    slug: 'organic-powder',
+    name: 'Healthy Life Powders',
+    slug: 'healthy-life-powders',
     image: 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=800&q=80',
     subcategories: [
       'Moringa Leaf Powder',

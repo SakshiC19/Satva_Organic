@@ -1,15 +1,66 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 import {
   FiGrid, FiBox, FiPackage, FiImage, FiList,
-  FiUsers, FiHome, FiLogOut, FiSearch, FiBell, FiTag
+  FiUsers, FiHome, FiLogOut, FiSearch, FiBell, FiTag, FiPercent, FiAlertCircle, FiCheckCircle
 } from 'react-icons/fi';
 import './Admin.css';
 
 const AdminLayout = () => {
   const { logout, currentUser } = useAuth();
   const navigate = useNavigate();
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  useEffect(() => {
+    // Listen for new orders (Processing) and Cancellation Requests
+    const ordersRef = collection(db, 'orders');
+    
+    // We can't do complex OR queries easily in Firestore for different fields without multiple queries
+    // So we'll fetch active orders and filter client-side or set up two listeners
+    // For simplicity, let's listen to recent orders
+    
+    const q = query(ordersRef, orderBy('createdAt', 'desc'));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const newNotifications = [];
+      
+      snapshot.docs.forEach(doc => {
+        const order = { id: doc.id, ...doc.data() };
+        
+        // Check for new orders (Pending)
+        if (order.status === 'Pending' || order.status === 'Processing') {
+          newNotifications.push({
+            id: `new-${order.id}`,
+            type: 'new_order',
+            message: `New Order #${order.id.substring(0, 8).toUpperCase()}`,
+            time: order.createdAt,
+            link: `/admin/orders/${order.id}`,
+            read: false
+          });
+        }
+        
+        // Check for cancellation requests
+        if (order.cancellationRequest && order.cancellationRequest.status === 'pending') {
+          newNotifications.push({
+            id: `cancel-${order.id}`,
+            type: 'cancellation',
+            message: `Cancellation Request: Order #${order.id.substring(0, 8).toUpperCase()}`,
+            time: order.cancellationRequest.requestedAt || order.createdAt,
+            link: `/admin/orders/${order.id}`,
+            read: false
+          });
+        }
+      });
+      
+      setNotifications(newNotifications);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -26,6 +77,7 @@ const AdminLayout = () => {
     { path: '/admin/orders', icon: <FiPackage />, label: 'Orders' },
     { path: '/admin/banners', icon: <FiImage />, label: 'Hero Banners' },
     { path: '/admin/special-offer', icon: <FiTag />, label: 'Special Offer' },
+    { path: '/admin/discounts', icon: <FiPercent />, label: 'Discounts & Deals' },
     { path: '/admin/categories', icon: <FiList />, label: 'Categories' },
     { path: '/admin/users', icon: <FiUsers />, label: 'Total Customers' },
   ];
@@ -74,10 +126,53 @@ const AdminLayout = () => {
           </div>
 
           <div className="topbar-actions">
-            <button className="notification-btn">
-              <FiBell />
-              <span className="notification-badge"></span>
-            </button>
+            <div className="notification-wrapper" style={{ position: 'relative' }}>
+              <button 
+                className={`notification-btn ${notifications.length > 0 ? 'has-notifications' : ''}`}
+                onClick={() => setShowNotifications(!showNotifications)}
+                title="View Notifications"
+              >
+                <FiBell />
+                {notifications.length > 0 && (
+                  <span className="notification-badge-count">{notifications.length}</span>
+                )}
+              </button>
+
+              {showNotifications && (
+                <div className="notifications-dropdown">
+                  <div className="notifications-header">
+                    <h3>Notifications</h3>
+                    <button onClick={() => setShowNotifications(false)}>Close</button>
+                  </div>
+                  <div className="notifications-list">
+                    {notifications.length === 0 ? (
+                      <div className="no-notifications">No new notifications</div>
+                    ) : (
+                      notifications.map(notif => (
+                        <div 
+                          key={notif.id} 
+                          className={`notification-item ${notif.type}`}
+                          onClick={() => {
+                            navigate(notif.link);
+                            setShowNotifications(false);
+                          }}
+                        >
+                          <div className="notif-icon">
+                            {notif.type === 'cancellation' ? <FiAlertCircle color="#ef4444" /> : <FiCheckCircle color="#27ae60" />}
+                          </div>
+                          <div className="notif-content">
+                            <p className="notif-message">{notif.message}</p>
+                            <span className="notif-time">
+                              {notif.time?.toDate ? notif.time.toDate().toLocaleDateString() : 'Just now'}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div className="admin-profile-pill">
               <img

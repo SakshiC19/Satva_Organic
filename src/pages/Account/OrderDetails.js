@@ -54,7 +54,14 @@ const OrderDetails = () => {
 
   const formatDate = (timestamp) => {
     if (!timestamp) return 'N/A';
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    // Handle Firestore Timestamp or standard Date object or string
+    let date;
+    try {
+      date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+      if (isNaN(date.getTime())) return 'Invalid Date';
+    } catch (e) {
+      return 'N/A';
+    }
     return date.toLocaleString('en-IN', {
       day: 'numeric',
       month: 'short',
@@ -66,8 +73,8 @@ const OrderDetails = () => {
 
   const getStatusSteps = () => {
     const steps = [
-      { label: 'Ordered', status: 'Processing', icon: <FiClock /> },
-      { label: 'Packed', status: 'Packed', icon: <FiPackage /> },
+      { label: 'Ordered', status: 'Pending', icon: <FiClock /> },
+      { label: 'Accepted', status: 'Accepted', icon: <FiCheckCircle /> },
       { label: 'Shipped', status: 'Shipped', icon: <FiTruck /> },
       { label: 'Delivered', status: 'Delivered', icon: <FiCheckCircle /> }
     ];

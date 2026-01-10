@@ -59,14 +59,24 @@ const Signup = () => {
     try {
       setError('');
       setLoading(true);
-      await signup(formData.email, formData.password, formData.displayName, formData.phoneNumber);
-      navigate('/');
+      
+      // MOCK SEND OTP
+      // In a real app, you would call an API to send OTP to email/phone
+      console.log(`Sending Signup OTP to ${formData.email} and ${formData.phoneNumber}`);
+
+      // Redirect to OTP verification with signup data
+      navigate('/verify-otp', {
+        state: {
+          email: formData.email,
+          password: formData.password,
+          displayName: formData.displayName,
+          phoneNumber: formData.phoneNumber,
+          identifier: formData.email, // Use email as primary identifier for display
+          type: 'signup'
+        }
+      });
     } catch (error) {
-      if (error.code === 'auth/email-already-in-use') {
-        setError('Email already in use');
-      } else {
-        setError('Failed to create account');
-      }
+      setError('Failed to process signup. Please try again.');
       console.error(error);
     } finally {
       setLoading(false);

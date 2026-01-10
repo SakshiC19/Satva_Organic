@@ -6,6 +6,7 @@ const ImageUpload = ({
   onImagesSelected = () => {}, 
   maxImages = 5, 
   existingImages = [],
+  onRemoveExisting,
   label = "Product Images"
 }) => {
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -181,9 +182,23 @@ const ImageUpload = ({
             {existingImages.map((image, index) => (
               <div key={`existing-${index}`} className="image-preview-item existing">
                 <img src={image.url} alt={`Existing ${index + 1}`} />
-                <div className="existing-badge">
-                  <FiImage size={12} /> Saved
-                </div>
+                {onRemoveExisting ? (
+                  <button
+                    type="button"
+                    className="remove-image-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRemoveExisting(image, index);
+                    }}
+                    title="Remove Image"
+                  >
+                    <FiX size={16} />
+                  </button>
+                ) : (
+                  <div className="existing-badge">
+                    <FiImage size={12} /> Saved
+                  </div>
+                )}
               </div>
             ))}
           </div>

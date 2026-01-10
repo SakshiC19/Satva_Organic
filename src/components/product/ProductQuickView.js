@@ -49,7 +49,9 @@ const ProductQuickView = ({ product, onClose }) => {
       selectedSize: selectedSize || (packingSizes && packingSizes.length > 0 ? packingSizes[0] : 'Standard')
     });
     onClose();
-    openCart();
+    if (window.innerWidth > 768) {
+      openCart();
+    }
   };
 
   const handleAddToWishlist = () => {
@@ -163,7 +165,7 @@ const ProductQuickView = ({ product, onClose }) => {
                 disabled={!isInStock}
               >
                 <FiShoppingCart />
-                Add to Cart
+                Add to Basket
               </button>
               <button
                 className={`btn-add-to-wishlist ${isInWishlist(product.id) ? 'active' : ''}`}

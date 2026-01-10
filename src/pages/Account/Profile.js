@@ -26,7 +26,8 @@ const Profile = () => {
     displayName: currentUser?.displayName || '',
     phoneNumber: '',
     gender: '',
-    dob: ''
+    dob: '',
+    is2FAEnabled: false
   });
 
   // Address Management States
@@ -64,7 +65,8 @@ const Profile = () => {
             ...prev,
             phoneNumber: userData.phoneNumber || '',
             gender: userData.gender || '',
-            dob: userData.dob || ''
+            dob: userData.dob || '',
+            is2FAEnabled: userData.is2FAEnabled || false
           }));
         }
       } catch (error) {
@@ -96,7 +98,8 @@ const Profile = () => {
         displayName: formData.displayName,
         phoneNumber: formData.phoneNumber,
         gender: formData.gender,
-        dob: formData.dob
+        dob: formData.dob,
+        is2FAEnabled: formData.is2FAEnabled
       });
       setMessage('Profile updated successfully');
       setTimeout(() => setMessage(''), 3000);
@@ -502,6 +505,30 @@ const Profile = () => {
         <div className="summary-card">
           <h4>Security Status</h4>
           <p style={{ color: '#27ae60' }}>Secure</p>
+        </div>
+        <div className="summary-card">
+          <h4>Two-Step Verification</h4>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+            <span style={{ fontSize: '0.85rem', color: formData.is2FAEnabled ? '#27ae60' : '#64748b', fontWeight: '600' }}>
+              {formData.is2FAEnabled ? 'ENABLED' : 'DISABLED'}
+            </span>
+            <button 
+              type="button"
+              onClick={() => setFormData(prev => ({ ...prev, is2FAEnabled: !prev.is2FAEnabled }))}
+              style={{
+                padding: '4px 12px',
+                borderRadius: '20px',
+                border: 'none',
+                background: formData.is2FAEnabled ? '#ef4444' : '#27ae60',
+                color: 'white',
+                fontSize: '0.75rem',
+                fontWeight: '700',
+                cursor: 'pointer'
+              }}
+            >
+              {formData.is2FAEnabled ? 'TURN OFF' : 'TURN ON'}
+            </button>
+          </div>
         </div>
       </div>
       <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>

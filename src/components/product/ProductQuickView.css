@@ -331,7 +331,7 @@
 .btn-add-to-cart {
     flex: 1;
     background: #27ae60;
-    /* Flipkart Orange for Add to Cart */
+    /* Flipkart Orange for Add to Basket */
     color: white;
     border: none;
     padding: 16px 24px;
@@ -461,6 +461,7 @@
     background: #c1c1c1;
     border-radius: 3px;
 }
+
 /* Mobile Quick View Optimization */
 @media (max-width: 768px) {
     .quick-view-modal {

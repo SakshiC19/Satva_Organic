@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, getDocs, doc, updateDoc, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, doc, updateDoc, where, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { 
   FiSearch, FiFilter, FiMoreVertical, FiEdit, FiTrash2, FiEye, FiDownload, 
@@ -213,6 +213,27 @@ const Orders = () => {
       paymentFilter === 'all' ||
       order.paymentMethod?.toLowerCase() === paymentFilter.toLowerCase();
     
+    const matchesDate = () => {
+      if (dateRange === 'all') return true;
+      if (!order.createdAt) return false;
+      const orderDate = order.createdAt.toDate ? order.createdAt.toDate() : new Date(order.createdAt);
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      if (dateRange === 'today') {
+        return orderDate >= today;
+      }
+      if (dateRange === 'week') {
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        return orderDate >= weekAgo;
+      }
+      if (dateRange === 'month') {
+        const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+        return orderDate >= monthAgo;
+      }
+      return true;
+    };
+
     let matchesSpecial = true;
     if (specialFilter === 'pending_payments') {
       matchesSpecial = order.paymentMethod === 'cod' && order.status?.toLowerCase() === 'delivered' && !order.paymentReceived;
@@ -220,7 +241,7 @@ const Orders = () => {
       matchesSpecial = order.status?.toLowerCase() === 'refunded' || order.refundStatus === 'requested' || order.status?.toLowerCase() === 'returned';
     }
 
-    return matchesSearch && matchesTab && matchesPayment && matchesSpecial;
+    return matchesSearch && matchesTab && matchesPayment && matchesSpecial && matchesDate();
   });
 
   const formatDate = (timestamp) => {
@@ -251,6 +272,7 @@ const Orders = () => {
   const getStatusClass = (status) => {
     switch (status?.toLowerCase()) {
       case 'pending': return 'status-pending';
+      case 'accepted': return 'status-accepted';
       case 'confirmed': return 'status-confirmed';
       case 'processing': return 'status-processing';
       case 'packed': return 'status-packed';
@@ -262,12 +284,27 @@ const Orders = () => {
     }
   };
 
-  const handleBulkAction = (action) => {
+  const handleBulkAction = async (action) => {
     if (selectedOrders.length === 0) {
       alert('Please select orders first');
       return;
     }
-    alert(`Bulk ${action} for ${selectedOrders.length} orders - Feature coming soon`);
+
+    if (action === 'delete') {
+      if (window.confirm(`Are you sure you want to delete ${selectedOrders.length} orders?`)) {
+        try {
+          const deletePromises = selectedOrders.map(id => deleteDoc(doc(db, 'orders', id)));
+          await Promise.all(deletePromises);
+          setSelectedOrders([]);
+          alert('Orders deleted successfully');
+        } catch (error) {
+          console.error("Error deleting orders:", error);
+          alert('Failed to delete some orders');
+        }
+      }
+    } else {
+      alert(`Bulk ${action} for ${selectedOrders.length} orders - Feature coming soon`);
+    }
   };
 
   const toggleOrderSelection = (orderId) => {
@@ -457,11 +494,14 @@ const Orders = () => {
             <button className={`om-tab ${activeTab === 'pending' ? 'active' : ''}`} onClick={() => setActiveTab('pending')}>
               Pending <span className="tab-count">{stats.pending}</span>
             </button>
+            <button className={`om-tab ${activeTab === 'accepted' ? 'active' : ''}`} onClick={() => setActiveTab('accepted')}>
+              Accepted <span className="tab-count">{orders.filter(o => o.status?.toLowerCase() === 'accepted').length}</span>
+            </button>
             <button className={`om-tab ${activeTab === 'processing' ? 'active' : ''}`} onClick={() => setActiveTab('processing')}>
               Processing <span className="tab-count">{stats.processing}</span>
             </button>
             <button className={`om-tab ${activeTab === 'shipped' ? 'active' : ''}`} onClick={() => setActiveTab('shipped')}>
-              Shipped <span className="tab-count">{stats.shipped || 0}</span>
+              Shipped <span className="tab-count">{orders.filter(o => o.status?.toLowerCase() === 'shipped').length}</span>
             </button>
             <button className={`om-tab ${activeTab === 'out for delivery' ? 'active' : ''}`} onClick={() => setActiveTab('out for delivery')}>
               Out for Delivery <span className="tab-count">{stats.outForDelivery || 0}</span>
@@ -571,6 +611,15 @@ const Orders = () => {
                       </td>
                       <td>
                         <div className="action-cell">
+                          {order.status?.toLowerCase() === 'pending' && (
+                            <button 
+                              className="action-icon-btn success" 
+                              onClick={() => updateOrderStatus(order.id, 'Accepted')}
+                              title="Accept Order"
+                            >
+                              <FiCheck />
+                            </button>
+                          )}
                           <button 
                             className="action-icon-btn" 
                             onClick={() => downloadInvoice(order)}
@@ -589,17 +638,27 @@ const Orders = () => {
                               <button className="dropdown-item" onClick={() => setViewingOrder(order)}>
                                 <FiEye /> View Details
                               </button>
+                              
+                              {order.status?.toLowerCase() === 'pending' && (
+                                <button className="dropdown-item success" onClick={() => updateOrderStatus(order.id, 'Accepted')}>
+                                  <FiCheck /> Accept Order
+                                </button>
+                              )}
+
+                              {(order.status?.toLowerCase() === 'accepted' || order.status?.toLowerCase() === 'processing') && (
+                                <button className="dropdown-item info" onClick={() => updateOrderStatus(order.id, 'Shipped')}>
+                                  <FiTruck /> Ship Order
+                                </button>
+                              )}
+
+                              {order.status?.toLowerCase() === 'shipped' && (
+                                <button className="dropdown-item primary" onClick={() => updateOrderStatus(order.id, 'Delivered')}>
+                                  <FiPackage /> Mark Delivered
+                                </button>
+                              )}
+
                               <button className="dropdown-item" onClick={() => updateOrderStatus(order.id, 'Processing')}>
                                 <FiEdit /> Update Status
-                              </button>
-                              <button className="dropdown-item" onClick={() => downloadInvoice(order)}>
-                                <FiDownload /> Download Invoice
-                              </button>
-                              <button className="dropdown-item" onClick={() => viewInvoice(order)}>
-                                <FiEye /> View Invoice
-                              </button>
-                              <button className="dropdown-item">
-                                <FiTruck /> Assign Delivery
                               </button>
                               
                               {order.cancellationRequest?.status === 'pending' ? (

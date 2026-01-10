@@ -10,8 +10,10 @@
 /* Container Utilities */
 .container-fluid {
     width: 100%;
+    max-width: 100%;
     margin: 0 auto;
     padding: 0 16px;
+    overflow: hidden;
 }
 
 /* ========================================
@@ -479,19 +481,6 @@
     overflow: hidden;
 }
 
-.flash-deals-slider .swiper-wrapper {
-    display: flex;
-    align-items: stretch;
-}
-
-.flash-deals-slider .swiper-slide {
-    height: auto;
-    width: auto !important;
-}
-
-/* ========================================
-   FEATURED PRODUCTS
-   ======================================== */
 .featured-products {
     padding: 24px 0;
     background: #f8f9fa;
@@ -509,7 +498,7 @@
 
 .products-grid-compact>* {
     flex: 0 0 auto;
-    width: 300px;
+    width: 280px;
 }
 
 
@@ -691,6 +680,26 @@
     line-height: 1.4;
 }
 
+/* Image Only Banner Styles */
+.promo-banner-image-only {
+    width: 100%;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.promo-banner-image-only:hover {
+    transform: translateY(-4px);
+}
+
+.promo-banner-image-only img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+}
+
 /* ========================================
    RESPONSIVE - TABLET
    ======================================== */
@@ -787,43 +796,57 @@
         font-size: 14px;
     }
 
-    .category-card-compact {
-        padding: 12px 6px;
-    }
-
-    .category-image-wrapper {
-        width: 60px;
-        height: 60px;
-    }
-
-    .section-title-small {
-        font-size: 16px;
-    }
-
     .view-all-link {
         font-size: 13px;
     }
 
     .promo-banner-modern {
-        padding: 24px 20px;
-        min-height: 160px;
+        padding: 12px 10px;
+        min-height: 100px;
+        flex-direction: column;
+        align-items: flex-start;
     }
 
     .promo-content {
-        max-width: 65%;
+        max-width: 100%;
     }
 
     .promo-title {
-        font-size: 20px;
+        font-size: 16px;
+        margin-bottom: 2px;
+        line-height: 1.2;
     }
 
     .promo-text {
-        font-size: 13px;
+        font-size: 11px;
+        margin-bottom: 8px;
+        line-height: 1.3;
     }
 
     .promo-btn {
-        padding: 10px 20px;
-        font-size: 13px;
+        padding: 6px 12px;
+        font-size: 11px;
+    }
+
+    .promo-visual {
+        display: none;
+    }
+
+    .flash-header {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 0 12px;
+    }
+
+    .flash-title-group {
+        gap: 8px;
+        flex: 1;
+    }
+
+    .flash-timer {
+        padding: 4px 10px;
+        font-size: 11px;
     }
 
     .feature-card-modern {
@@ -845,8 +868,14 @@
         font-size: 11px;
     }
 
-    .cat-nav-btn {
+    .cat-nav-btn,
+    .flash-nav-btn {
         display: none !important;
+    }
+
+    .promo-banner-image-only img {
+        max-height: 180px;
+        object-fit: cover;
     }
 }
 
@@ -891,7 +920,8 @@
         min-width: 75px;
     }
 
-    .cat-nav-btn {
+    .cat-nav-btn,
+    .flash-nav-btn {
         display: none !important;
     }
 }
@@ -903,24 +933,89 @@
         margin: 0 auto;
     }
 }
+
 /* Mobile Featured Products Optimization */
 @media (max-width: 480px) {
     .products-grid-compact .product-card {
-        width: 160px;
-        min-width: 160px;
+        width: 150px;
+        min-width: 150px;
     }
+
     .products-grid-compact .product-card-image {
         height: 140px;
     }
+
     .products-grid-compact .product-name {
         font-size: 13px;
         height: 36px;
     }
+
     .products-grid-compact .current-price {
         font-size: 16px;
     }
-    .products-grid-compact .card-btn {
-        height: 36px;
-        font-size: 12px;
+
+    .products-grid-compact .card-btn,
+    .flash-deals-slider .card-btn {
+        height: 48px !important;
+        font-size: 14px !important;
+        border-radius: 12px !important;
+    }
+}
+
+/* Mobile Vertical Spacing Optimization */
+@media (max-width: 768px) {
+    .categories-quick {
+        padding: 12px 0;
+    }
+
+    .flash-deals {
+        padding: 12px 0;
+        margin-top: 4px;
+    }
+
+    .featured-products {
+        padding: 12px 0;
+    }
+
+    .promo-banner-section {
+        padding: 8px 0;
+    }
+
+    .section-header-compact {
+        margin-bottom: 8px;
+        padding: 4px 0;
+    }
+
+    .container-fluid {
+        padding: 0 12px;
+    }
+
+    .home-page-modern {
+        padding-top: 0;
+    }
+
+    .cat-nav-btn,
+    .flash-nav-btn {
+        display: none !important;
+    }
+
+    .promo-banner-modern {
+        padding: 16px 14px;
+        min-height: 110px;
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .promo-title {
+        font-size: 18px;
+    }
+
+    .promo-visual {
+        display: none;
+    }
+
+    .promo-banner-image-only img {
+        max-height: 220px;
+        object-fit: cover;
     }
 }
