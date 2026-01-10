@@ -481,19 +481,6 @@
     overflow: hidden;
 }
 
-.flash-deals-slider .swiper-wrapper {
-    display: flex;
-    align-items: stretch;
-}
-
-.flash-deals-slider .swiper-slide {
-    height: auto;
-    width: auto !important;
-}
-
-/* ========================================
-   FEATURED PRODUCTS
-   ======================================== */
 .featured-products {
     padding: 24px 0;
     background: #f8f9fa;
@@ -693,6 +680,26 @@
     line-height: 1.4;
 }
 
+/* Image Only Banner Styles */
+.promo-banner-image-only {
+    width: 100%;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.promo-banner-image-only:hover {
+    transform: translateY(-4px);
+}
+
+.promo-banner-image-only img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+}
+
 /* ========================================
    RESPONSIVE - TABLET
    ======================================== */
@@ -794,8 +801,8 @@
     }
 
     .promo-banner-modern {
-        padding: 16px 12px;
-        min-height: 140px;
+        padding: 12px 10px;
+        min-height: 100px;
         flex-direction: column;
         align-items: flex-start;
     }
@@ -805,16 +812,24 @@
     }
 
     .promo-title {
-        font-size: 20px;
+        font-size: 16px;
+        margin-bottom: 2px;
+        line-height: 1.2;
     }
 
     .promo-text {
-        font-size: 13px;
+        font-size: 11px;
+        margin-bottom: 8px;
+        line-height: 1.3;
     }
 
     .promo-btn {
-        padding: 10px 20px;
-        font-size: 13px;
+        padding: 6px 12px;
+        font-size: 11px;
+    }
+
+    .promo-visual {
+        display: none;
     }
 
     .flash-header {
@@ -856,6 +871,11 @@
     .cat-nav-btn,
     .flash-nav-btn {
         display: none !important;
+    }
+
+    .promo-banner-image-only img {
+        max-height: 180px;
+        object-fit: cover;
     }
 }
 
@@ -977,5 +997,25 @@
     .cat-nav-btn,
     .flash-nav-btn {
         display: none !important;
+    }
+
+    .promo-banner-modern {
+        padding: 16px 14px;
+        min-height: 110px;
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .promo-title {
+        font-size: 18px;
+    }
+
+    .promo-visual {
+        display: none;
+    }
+
+    .promo-banner-image-only img {
+        max-height: 220px;
+        object-fit: cover;
     }
 }

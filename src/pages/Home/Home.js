@@ -4,7 +4,6 @@ import {
   FiTruck,
   FiShield,
   FiHeart,
-  FiSearch,
   FiTag,
   FiClock,
   FiStar,
@@ -15,7 +14,7 @@ import {
 } from 'react-icons/fi';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Autoplay, Pagination } from 'swiper/modules';
-import { collection, getDocs, limit, query, doc, getDoc, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, doc, getDoc, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import 'swiper/css';
 import 'swiper/css/navigation';
@@ -29,13 +28,39 @@ import exoticProductImg from '../../assets/productsImages/exotic_product/exotic-
 import seedsNutImg from '../../assets/productsImages/seed_nut/seedsnut.png';
 import organicItemsImg from '../../assets/productsImages/organic-items/organic-items.png';
 
+const defaultHeroSlides = [
+  {
+    id: 1,
+    image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1920&q=80',
+    title: 'Fresh & Organic',
+    subtitle: 'Premium quality products delivered to your doorstep',
+    buttonText: 'Shop Now',
+    link: '/shop'
+  },
+  {
+    id: 2,
+    image: 'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=1920&q=80',
+    title: 'Healthy Living',
+    subtitle: 'Discover our range of organic seeds and nuts',
+    buttonText: 'Explore',
+    link: '/shop?category=seeds-and-nuts'
+  },
+  {
+    id: 3,
+    image: 'https://images.unsplash.com/photo-1518843875459-f738682238a6?auto=format&fit=crop&w=1920&q=80',
+    title: 'Vegetable Basket',
+    subtitle: 'Fresh and organic exotic vegetables delivered to you',
+    buttonText: 'View Products',
+    link: '/shop?category=vegetable-basket'
+  }
+];
+
 const Home = () => {
   const navigate = useNavigate();
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [flashDeals, setFlashDeals] = useState([]);
   const [heroSlides, setHeroSlides] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
 
   const [specialOffer, setSpecialOffer] = useState(null);
 
@@ -76,45 +101,45 @@ const Home = () => {
       setLoadingProducts(false);
     });
 
+    const fetchHeroBanners = async () => {
+      try {
+        const bannersRef = collection(db, 'heroBanners');
+        const q = query(bannersRef, orderBy('createdAt', 'desc'));
+        const snapshot = await getDocs(q);
+        const bannersList = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        if (bannersList.length > 0) {
+          setHeroSlides(bannersList);
+        } else {
+          // Fallback to default slides if no dynamic slides exist
+          setHeroSlides(defaultHeroSlides);
+        }
+      } catch (error) {
+        console.error('Error fetching hero banners:', error);
+        setHeroSlides(defaultHeroSlides);
+      }
+    };
+
+    const fetchSpecialOffer = async () => {
+      try {
+        const offerRef = doc(db, 'settings', 'specialOffer');
+        const offerSnap = await getDoc(offerRef);
+        if (offerSnap.exists()) {
+          setSpecialOffer(offerSnap.data());
+        }
+      } catch (error) {
+        console.error('Error fetching special offer:', error);
+      }
+    };
+
     fetchSpecialOffer();
     fetchHeroBanners();
 
     return () => unsubscribe();
   }, []);
-
-  const fetchHeroBanners = async () => {
-    try {
-      const bannersRef = collection(db, 'heroBanners');
-      const q = query(bannersRef, orderBy('createdAt', 'desc'));
-      const snapshot = await getDocs(q);
-      const bannersList = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      
-      if (bannersList.length > 0) {
-        setHeroSlides(bannersList);
-      } else {
-        // Fallback to default slides if no dynamic slides exist
-        setHeroSlides(defaultHeroSlides);
-      }
-    } catch (error) {
-      console.error('Error fetching hero banners:', error);
-      setHeroSlides(defaultHeroSlides);
-    }
-  };
-
-  const fetchSpecialOffer = async () => {
-    try {
-      const offerRef = doc(db, 'settings', 'specialOffer');
-      const offerSnap = await getDoc(offerRef);
-      if (offerSnap.exists()) {
-        setSpecialOffer(offerSnap.data());
-      }
-    } catch (error) {
-      console.error('Error fetching special offer:', error);
-    }
-  };
 
 
 
@@ -142,12 +167,6 @@ const Home = () => {
     return null;
   };
 
-  const handlesearch = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/shop?search=${encodeURIComponent(searchQuery)}`);
-    }
-  };
 
   const uniqueCategories = (contextCategories || []).filter((cat, index, self) =>
     index === self.findIndex((c) => c.name === cat.name)
@@ -178,32 +197,6 @@ const Home = () => {
     }
   ];
 
-  const defaultHeroSlides = [
-    {
-      id: 1,
-      image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1920&q=80',
-      title: 'Fresh & Organic',
-      subtitle: 'Premium quality products delivered to your doorstep',
-      buttonText: 'Shop Now',
-      link: '/shop'
-    },
-    {
-      id: 2,
-      image: 'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=1920&q=80',
-      title: 'Healthy Living',
-      subtitle: 'Discover our range of organic seeds and nuts',
-      buttonText: 'Explore',
-      link: '/shop?category=seeds-and-nuts'
-    },
-    {
-      id: 3,
-      image: 'https://images.unsplash.com/photo-1518843875459-f738682238a6?auto=format&fit=crop&w=1920&q=80',
-      title: 'Vegetable Basket',
-      subtitle: 'Fresh and organic exotic vegetables delivered to you',
-      buttonText: 'View Products',
-      link: '/shop?category=vegetable-basket'
-    }
-  ];
 
   return (
     <div className="home-page-modern">
@@ -365,21 +358,47 @@ const Home = () => {
       {specialOffer && specialOffer.isActive && (
         <section className="promo-banner-section">
           <div className="container-fluid">
-            <div className="promo-banner-modern">
-              <div className="promo-content">
-                <span className="promo-badge">{specialOffer.badge}</span>
-                <h3 className="promo-title">{specialOffer.title}</h3>
-                <p className="promo-text">{specialOffer.description}</p>
-                <button
-                  className="promo-btn"
-                  onClick={() => navigate(specialOffer.buttonLink || '/shop')}
-                >
-                  {specialOffer.buttonText === 'Buy Now' ? 'Get Now' : specialOffer.buttonText}
-                </button>
-              </div>
-              <div className="promo-visual">
-                <div className="promo-circle"></div>
-              </div>
+            <div 
+              className={`promo-banner-modern ${!specialOffer.title ? 'image-only' : ''}`}
+              style={specialOffer.backgroundImage ? { 
+                backgroundImage: `url(${specialOffer.backgroundImage})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center'
+              } : {}}
+            >
+              {specialOffer.backgroundImage && (specialOffer.title || specialOffer.badge) && (
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: 'rgba(0,0,0,0.4)',
+                  zIndex: 1
+                }}></div>
+              )}
+              
+              {(specialOffer.badge || specialOffer.title || specialOffer.description || specialOffer.buttonText) && (
+                <div className="promo-content">
+                  {specialOffer.badge && <span className="promo-badge">{specialOffer.badge}</span>}
+                  {specialOffer.title && <h3 className="promo-title">{specialOffer.title}</h3>}
+                  {specialOffer.description && <p className="promo-text">{specialOffer.description}</p>}
+                  {specialOffer.buttonText && (
+                    <button
+                      className="promo-btn"
+                      onClick={() => navigate(specialOffer.buttonLink || '/shop')}
+                    >
+                      {specialOffer.buttonText === 'Buy Now' ? 'Get Now' : specialOffer.buttonText}
+                    </button>
+                  )}
+                </div>
+              )}
+              
+              {(specialOffer.badge || specialOffer.title) && (
+                <div className="promo-visual">
+                  <div className="promo-circle"></div>
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -415,7 +434,7 @@ const Home = () => {
               spaceBetween={16}
               slidesPerView="auto"
               autoplay={{
-                delay: 2500,
+                delay: 3000,
                 disableOnInteraction: false,
                 pauseOnMouseEnter: true
               }}
@@ -425,8 +444,8 @@ const Home = () => {
               }}
               loop={true}
               breakpoints={{
-                320: { slidesPerView: 1.5, spaceBetween: 12 },
-                480: { slidesPerView: 2.2, spaceBetween: 12 },
+                320: { slidesPerView: 2.1, spaceBetween: 12 },
+                480: { slidesPerView: 2.4, spaceBetween: 14 },
                 768: { slidesPerView: 3.2, spaceBetween: 14 },
                 1024: { slidesPerView: 4, spaceBetween: 16 },
                 1200: { slidesPerView: 5, spaceBetween: 20 },

@@ -80,16 +80,9 @@ const Header = () => {
     }
   }, [searchQuery, products]);
 
-  // Debug logging
-  console.log('Header - currentUser:', currentUser?.email);
-  console.log('Header - userRole:', userRole);
-  console.log('Header - isAdmin:', isAdmin);
-
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      console.log('Searching for:', searchQuery);
-      // Navigate to shop with search query
       navigate(`/shop?search=${encodeURIComponent(searchQuery)}`);
       setSearchQuery('');
     }
@@ -114,9 +107,34 @@ const Header = () => {
   const { categories } = useCategories();
 
   // Map dynamic categories to nav structure, ensuring unique categories by name
-  const uniqueCategories = categories.filter((cat, index, self) =>
-    index === self.findIndex((c) => c.name === cat.name)
-  );
+  const uniqueCategories = categories.filter((cat, index, self) => {
+    if (!cat || !cat.name) return false;
+    
+    const normalizedName = cat.name.trim().toLowerCase();
+    
+    // List of legacy/old category names to ALWAYS exclude
+    const legacyNamesToExclude = [
+      'organic exotic products',
+      'organic wood cold press oils products',
+      'organic woodcold press oils products',
+      'organic powder',
+      'organic iteams',
+      'organic items ', // with trailing space
+      'organic powders'
+    ];
+    
+    // Exclude if it's a legacy name
+    if (legacyNamesToExclude.includes(normalizedName)) {
+      return false;
+    }
+    
+    // Check if it's a unique name (case-insensitive)
+    const isFirstOccurrence = index === self.findIndex((c) => 
+      c && c.name && c.name.trim().toLowerCase() === normalizedName
+    );
+    
+    return isFirstOccurrence;
+  });
 
   const navItems = uniqueCategories.map(cat => ({
     name: cat.name,

@@ -35,6 +35,7 @@ import MakeAdmin from './components/admin/MakeAdmin';
 import ProductDetail from './pages/ProductDetail/ProductDetail';
 import FlashDeals from './pages/FlashDeals/FlashDeals';
 import Checkout from './pages/Checkout/Checkout';
+import Terms from './pages/Terms/Terms';
 import CartDrawer from './components/cart/CartDrawer';
 import { CategoryProvider } from './contexts/CategoryContext';
 import { WishlistProvider } from './contexts/WishlistContext';
@@ -74,6 +75,7 @@ function App() {
                 <Route path="/product/:id" element={<Layout><ProductDetail /></Layout>} />
                 <Route path="/flash-deals" element={<Layout><FlashDeals /></Layout>} />
                 <Route path="/contact" element={<Layout><Contact /></Layout>} />
+                <Route path="/terms" element={<Layout><Terms /></Layout>} />
                 
                 {/* Auth Routes (Standalone) */}
                 <Route path="/login" element={<Login />} />
