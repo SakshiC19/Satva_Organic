@@ -445,31 +445,7 @@ const EditProduct = () => {
               </select>
             </div>
 
-            <div className="form-group">
-              <label>Product Type *</label>
-              <div className="form-radio-group">
-                <label className="radio-label">
-                  <input
-                    type="radio"
-                    name="productType"
-                    value="organic"
-                    checked={formData.productType === 'organic'}
-                    onChange={handleInputChange}
-                  />
-                  <span>Organic Product</span>
-                </label>
-                <label className="radio-label">
-                  <input
-                    type="radio"
-                    name="productType"
-                    value="inorganic"
-                    checked={formData.productType === 'inorganic'}
-                    onChange={handleInputChange}
-                  />
-                  <span>Inorganic Product</span>
-                </label>
-              </div>
-            </div>
+
 
             {/* Existing Images */}
             {existingImages.length > 0 && (

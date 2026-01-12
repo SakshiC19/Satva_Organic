@@ -37,7 +37,6 @@ export const generateInvoice = (order) => {
   const textLeftX = logoBoxRightX + 2;
   
   // "Tax Invoice" - Centered in the right section
-  // Right section width = 182 - 41 = 141. Center is 55 + (141/2) = 125.5
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.text('Tax Invoice', 125.5, startY + 5, { align: 'center' });
@@ -46,30 +45,29 @@ export const generateInvoice = (order) => {
   doc.setFontSize(9);
   doc.text('Sold By:  Satva Organics', textLeftX, startY + 12);
   
-  // Address Label
-  doc.text('Billed And Ship from Addresss:', textLeftX, startY + 17);
+  // Address Label (Added space)
+  doc.text('Billed And Ship from Addresss:', textLeftX, startY + 18);
   
   // Address Value
   doc.setFont('helvetica', 'normal');
   const addressText = 'Sangli-kolhapur Byepass Road, Village - Jainapur (Jaysingpur), Kolhapur, Maharashtra - 416101';
-  // Calculate available width: Total Width (182) - Logo Box (41) - Label Offset (~50) - Margin (2)
-  const maxAddressWidth = 85; 
+  const maxAddressWidth = 130; 
   const addressLines = doc.splitTextToSize(addressText, maxAddressWidth);
-  doc.text(addressLines, textLeftX + 50, startY + 17);
+  doc.text(addressLines, textLeftX, startY + 23);
   
   // GSTIN
   doc.setFont('helvetica', 'bold');
-  doc.text('GSTIN:', textLeftX, startY + 29);
+  doc.text('GSTIN:', textLeftX, startY + 32);
   doc.setFont('helvetica', 'normal');
-  doc.text('27XXXXX1234X1ZX', textLeftX + 15, startY + 29);
+  doc.text('27XXXXX1234X1ZX', textLeftX + 15, startY + 32);
 
   // Email
   doc.setFont('helvetica', 'bold');
-  doc.text('Email us at :', textLeftX, startY + 34);
+  doc.text('Email us at :', textLeftX, startY + 37);
   doc.setFont('helvetica', 'normal');
-  doc.text('info@satvaorganics.com', textLeftX + 25, startY + 34);
+  doc.text('info@satvaorganics.com', textLeftX + 25, startY + 37);
   
-  // Invoice Number (Right aligned roughly)
+  // Invoice Number
   doc.setFont('helvetica', 'bold');
   doc.text('Invoice Number:', 140, startY + 12);
   doc.setFont('helvetica', 'normal');
@@ -132,14 +130,16 @@ export const generateInvoice = (order) => {
   doc.text('Bill To:', col2X, gridY + 8);
   doc.setFont('helvetica', 'normal');
   
-  if (order.address) {
+  const addressToUse = order.shippingAddress || order.address;
+  if (addressToUse) {
     const billAddress = [
-      order.customerName || 'Guest',
-      order.address.street,
-      `${order.address.city}, ${order.address.state}`,
-      `PIN: ${order.address.pincode}`,
-      `Phone: ${order.phone || ''}`
-    ].filter(Boolean);
+      order.customerName || addressToUse.name || 'Guest',
+      addressToUse.address || addressToUse.street,
+      addressToUse.locality || '',
+      `${addressToUse.city || ''}${addressToUse.city && addressToUse.state ? ', ' : ''}${addressToUse.state || ''}`,
+      addressToUse.pincode ? `PIN: ${addressToUse.pincode}` : '',
+      order.phone || order.phoneNumber || addressToUse.phone ? `Phone: ${order.phone || order.phoneNumber || addressToUse.phone}` : ''
+    ].filter(line => line && line.trim() !== '');
     
     billAddress.forEach((line, i) => {
       doc.text(line, col2X, gridY + 15 + (i * 5));
@@ -152,14 +152,15 @@ export const generateInvoice = (order) => {
   doc.text('Ship To:', col3X, gridY + 8);
   doc.setFont('helvetica', 'normal');
   
-  if (order.address) {
+  if (addressToUse) {
     const shipAddress = [
-      order.customerName || 'Guest',
-      order.address.street,
-      `${order.address.city}, ${order.address.state}`,
-      `PIN: ${order.address.pincode}`,
-      `Phone: ${order.phone || ''}`
-    ].filter(Boolean);
+      order.customerName || addressToUse.name || 'Guest',
+      addressToUse.address || addressToUse.street,
+      addressToUse.locality || '',
+      `${addressToUse.city || ''}${addressToUse.city && addressToUse.state ? ', ' : ''}${addressToUse.state || ''}`,
+      addressToUse.pincode ? `PIN: ${addressToUse.pincode}` : '',
+      order.phone || order.phoneNumber || addressToUse.phone ? `Phone: ${order.phone || order.phoneNumber || addressToUse.phone}` : ''
+    ].filter(line => line && line.trim() !== '');
     
     shipAddress.forEach((line, i) => {
       doc.text(line, col3X, gridY + 15 + (i * 5));
@@ -180,7 +181,6 @@ export const generateInvoice = (order) => {
   const tableY = itemsRowY + itemsRowHeight; // 103
   
   // Prepare Table Data
-  const minRows = 8;
   const items = order.items || [];
   const tableData = [];
   
@@ -204,11 +204,6 @@ export const generateInvoice = (order) => {
       `Rs. ${gross.toFixed(2)}` // Total
     ]);
   });
-  
-  // Fill remaining rows
-  for (let i = tableData.length; i < minRows; i++) {
-    tableData.push(['', '', '', '', '', '', '', '', '']);
-  }
   
   autoTable(doc, {
     startY: tableY,
@@ -266,9 +261,10 @@ export const generateInvoice = (order) => {
     doc.line(currentX, finalY, currentX, finalY + totalRowHeight);
   });
   
-  // "Total" Text
+  // "Total" Text and Amount
   doc.setFont('helvetica', 'bold');
   doc.text('Total', startX + 35 + 2, finalY + 5.5); 
+  doc.text(`Rs. ${subtotal.toFixed(2)}`, startX + fullWidth - 2, finalY + 5.5, { align: 'right' });
   
   // --- Footer Section ---
   const footerY = finalY + totalRowHeight;
@@ -281,10 +277,9 @@ export const generateInvoice = (order) => {
   const footerSplitX = 135;
   doc.line(footerSplitX, footerY, footerSplitX, footerY + footerHeight);
   
-  // Shipping Charges Box (Top of Right Footer)
+  // Shipping Charges Box
   const shippingBoxY = footerY;
   const shippingBoxHeight = 8;
-  // Draw bottom line for shipping charges (separator between shipping and grand total)
   doc.line(footerSplitX, shippingBoxY + shippingBoxHeight, startX + fullWidth, shippingBoxY + shippingBoxHeight);
   
   doc.setFontSize(10);
@@ -295,16 +290,14 @@ export const generateInvoice = (order) => {
   doc.setFont('helvetica', 'normal');
   doc.text(`Rs. ${deliveryCharge.toFixed(2)}`, startX + fullWidth - 2, shippingBoxY + 5.5, { align: 'right' });
   
-  // Grand Total Box (Below Shipping Charges)
+  // Grand Total Box
   const grandTotalBoxY = shippingBoxY + shippingBoxHeight;
   const grandTotalBoxHeight = 8;
-  // Draw bottom line for Grand Total
   doc.line(footerSplitX, grandTotalBoxY + grandTotalBoxHeight, startX + fullWidth, grandTotalBoxY + grandTotalBoxHeight);
   
   doc.setFont('helvetica', 'bold');
   doc.text('Grand Total:', footerSplitX + 2, grandTotalBoxY + 5.5);
   
-  // Calculate Grand Total Value
   const discount = order.discount || 0;
   const finalTotal = subtotal + deliveryCharge - discount;
   
@@ -336,7 +329,6 @@ export const viewInvoice = (order) => {
   window.open(pdfUrl, '_blank');
 };
 
-// Helper function to format date
 const formatDate = (timestamp) => {
   if (!timestamp) return new Date().toLocaleDateString('en-IN');
   try {

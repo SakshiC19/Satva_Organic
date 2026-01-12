@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, getDocs, doc, updateDoc, where, onSnapshot, deleteDoc } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, doc, updateDoc, where, onSnapshot, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { 
   FiSearch, FiFilter, FiMoreVertical, FiEdit, FiTrash2, FiEye, FiDownload, 
   FiPrinter, FiTruck, FiX, FiCheck, FiClock, FiPackage, FiDollarSign,
-  FiShoppingBag, FiAlertCircle, FiTrendingUp, FiCalendar, FiRefreshCw
+  FiShoppingBag, FiAlertCircle, FiTrendingUp, FiCalendar, FiRefreshCw,
+  FiCheckCircle, FiMail, FiPhone, FiMapPin, FiCreditCard
 } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import { downloadInvoice, viewInvoice } from '../../utils/invoiceGenerator';
@@ -22,6 +23,7 @@ const Orders = () => {
   const [specialFilter, setSpecialFilter] = useState(null); // 'pending_payments', 'refund_requests'
   const [showFilters, setShowFilters] = useState(false);
   const [viewingOrder, setViewingOrder] = useState(null);
+  const [viewingCancellation, setViewingCancellation] = useState(null);
   const { currentUser } = useAuth();
 
   useEffect(() => {
@@ -51,7 +53,7 @@ const Orders = () => {
         totalRevenue: 0,
         todayOrders: 0,
         pendingPayments: 0,
-        refundRequests: 0,
+        cancellationRequests: 0,
         avgOrderValue: 0,
         total: 0,
         pending: 0,
@@ -66,7 +68,7 @@ const Orders = () => {
 
     const totalRevenue = orders
       .filter(o => o.status?.toLowerCase() === 'delivered')
-      .reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+      .reduce((sum, order) => sum + (Number(order.totalAmount || order.total) || 0), 0);
 
     const todayOrders = orders.filter(o => {
       if (!o.createdAt) return false;
@@ -80,8 +82,8 @@ const Orders = () => {
       !o.paymentReceived
     ).length;
 
-    const refundRequests = orders.filter(o =>
-      o.status?.toLowerCase() === 'refunded' || o.refundStatus === 'requested'
+    const cancellationRequests = orders.filter(o =>
+      o.cancellationRequest?.status === 'pending' || o.status?.toLowerCase() === 'cancellation_requested'
     ).length;
 
     const completedOrders = orders.filter(o => o.status?.toLowerCase() === 'delivered');
@@ -93,11 +95,11 @@ const Orders = () => {
       totalRevenue,
       todayOrders,
       pendingPayments,
-      refundRequests,
+      cancellationRequests,
       avgOrderValue,
       total: orders.length,
       pending: orders.filter(o => o.status?.toLowerCase() === 'pending').length,
-      processing: orders.filter(o => o.status?.toLowerCase() === 'processing').length,
+      processing: orders.filter(o => ['accepted', 'processing', 'packed', 'shipped'].includes(o.status?.toLowerCase())).length,
       delivered: orders.filter(o => o.status?.toLowerCase() === 'delivered').length,
       cancelled: orders.filter(o => o.status?.toLowerCase() === 'cancelled').length
     };
@@ -105,160 +107,165 @@ const Orders = () => {
 
   const stats = calculateStats();
 
-  const handleApproveCancellation = async (orderId) => {
-    if (window.confirm('Approve cancellation for this order?')) {
-      try {
-        const orderRef = doc(db, 'orders', orderId);
-        await updateDoc(orderRef, {
-          status: 'Cancelled',
-          'cancellationRequest.status': 'approved',
-          'cancellationRequest.approvedAt': new Date()
-        });
-        setOrders(orders.map(o => o.id === orderId ? { 
-          ...o, 
-          status: 'Cancelled',
-          cancellationRequest: { ...o.cancellationRequest, status: 'approved' }
-        } : o));
-        setActiveDropdown(null);
-      } catch (error) {
-        console.error("Error approving cancellation:", error);
-      }
-    }
-  };
-
-  const handleRejectCancellation = async (orderId) => {
-    if (window.confirm('Reject cancellation request?')) {
-      try {
-        const orderRef = doc(db, 'orders', orderId);
-        await updateDoc(orderRef, {
-          'cancellationRequest.status': 'rejected',
-          'cancellationRequest.rejectedAt': new Date()
-        });
-        setOrders(orders.map(o => o.id === orderId ? { 
-          ...o, 
-          cancellationRequest: { ...o.cancellationRequest, status: 'rejected' }
-        } : o));
-        setActiveDropdown(null);
-      } catch (error) {
-        console.error("Error rejecting cancellation:", error);
-      }
-    }
-  };
-
   const handleStatClick = (type) => {
-    // Reset other filters
-    setSearchTerm('');
-    setDateRange('all');
-    setPaymentFilter('all');
-    setSpecialFilter(null);
-
-    switch (type) {
+    switch(type) {
       case 'revenue':
-        setActiveTab('delivered');
+        setActiveTab('completed');
+        setSpecialFilter(null);
         break;
       case 'today':
         setDateRange('today');
         setActiveTab('all');
+        setSpecialFilter(null);
         break;
       case 'pending_payments':
         setSpecialFilter('pending_payments');
         setActiveTab('all');
         break;
-      case 'refunds':
-        setSpecialFilter('refund_requests');
-        setActiveTab('all');
+      case 'cancellation_requests':
+        setActiveTab('issues');
+        setSpecialFilter('cancellation_requests');
         break;
       default:
         setActiveTab('all');
+        setSpecialFilter(null);
     }
-    
-    // Scroll to orders section
+    // Scroll to table
     document.querySelector('.om-orders-section')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleBulkStatusUpdate = async (newStatus) => {
+    if (selectedOrders.length === 0) return;
+    
+    if (!window.confirm(`Are you sure you want to update ${selectedOrders.length} orders to ${newStatus}?`)) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const promises = selectedOrders.map(orderId => 
+        updateDoc(doc(db, 'orders', orderId), {
+          status: newStatus,
+          statusUpdatedAt: serverTimestamp(),
+          statusUpdatedBy: currentUser.email
+        })
+      );
+      await Promise.all(promises);
+      setSelectedOrders([]);
+      alert(`Successfully updated ${selectedOrders.length} orders.`);
+    } catch (error) {
+      console.error('Error updating orders:', error);
+      alert('Failed to update some orders.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkExport = () => {
+    if (selectedOrders.length === 0) return;
+    
+    const selectedData = orders.filter(o => selectedOrders.includes(o.id));
+    const csvContent = [
+      ['Order ID', 'Customer', 'Email', 'Phone', 'Amount', 'Status', 'Payment', 'Date'],
+      ...selectedData.map(o => [
+        o.id,
+        o.customerName || 'Guest',
+        o.email,
+        o.phone || o.phoneNumber || (o.shippingAddress?.phone) || '',
+        o.totalAmount || o.total,
+        o.status,
+        o.paymentMethod,
+        formatDate(o.createdAt)
+      ])
+    ].map(e => e.join(",")).join("\n");
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `orders_export_${new Date().toISOString().slice(0,10)}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
       const orderRef = doc(db, 'orders', orderId);
-      await updateDoc(orderRef, { 
+      await updateDoc(orderRef, {
         status: newStatus,
-        statusUpdatedAt: new Date(),
-        statusUpdatedBy: currentUser?.email || 'admin'
+        statusUpdatedAt: serverTimestamp(),
+        statusUpdatedBy: currentUser.email
       });
-      
-      setOrders(orders.map(order => 
-        order.id === orderId ? { ...order, status: newStatus } : order
-      ));
-      
-      setActiveDropdown(null);
       alert(`Order status updated to ${newStatus}`);
     } catch (error) {
-      console.error('Error updating order status:', error);
+      console.error("Error updating order status:", error);
       alert('Failed to update order status');
     }
   };
 
-  // Filter orders
-  const filteredOrders = orders.filter(order => {
-    const matchesSearch = 
-      order.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.phone?.includes(searchTerm);
+  const handleApproveCancellation = async (orderId) => {
+    if (!window.confirm('Are you sure you want to APPROVE this cancellation?')) return;
     
-    const matchesTab = 
-      activeTab === 'all' || 
-      order.status?.toLowerCase() === activeTab.toLowerCase();
-
-    const matchesPayment =
-      paymentFilter === 'all' ||
-      order.paymentMethod?.toLowerCase() === paymentFilter.toLowerCase();
-    
-    const matchesDate = () => {
-      if (dateRange === 'all') return true;
-      if (!order.createdAt) return false;
-      const orderDate = order.createdAt.toDate ? order.createdAt.toDate() : new Date(order.createdAt);
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    try {
+      const orderRef = doc(db, 'orders', orderId);
+      const order = orders.find(o => o.id === orderId);
       
-      if (dateRange === 'today') {
-        return orderDate >= today;
-      }
-      if (dateRange === 'week') {
-        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        return orderDate >= weekAgo;
-      }
-      if (dateRange === 'month') {
-        const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-        return orderDate >= monthAgo;
-      }
-      return true;
-    };
+      const updateData = {
+        status: 'Cancelled',
+        statusUpdatedAt: serverTimestamp(),
+        statusUpdatedBy: currentUser.email,
+        'cancellationRequest.status': 'approved',
+        'cancellationRequest.approvedAt': serverTimestamp(),
+        'cancellationRequest.approvedBy': currentUser.email
+      };
 
-    let matchesSpecial = true;
-    if (specialFilter === 'pending_payments') {
-      matchesSpecial = order.paymentMethod === 'cod' && order.status?.toLowerCase() === 'delivered' && !order.paymentReceived;
-    } else if (specialFilter === 'refund_requests') {
-      matchesSpecial = order.status?.toLowerCase() === 'refunded' || order.refundStatus === 'requested' || order.status?.toLowerCase() === 'returned';
+      if (order.paymentStatus === 'Paid') {
+        updateData.refundStatus = 'Initiated';
+        updateData.paymentStatus = 'Refund Processing';
+      }
+
+      await updateDoc(orderRef, updateData);
+      setViewingCancellation(null);
+      alert('Cancellation approved successfully.');
+    } catch (error) {
+      console.error("Error approving cancellation:", error);
+      alert('Failed to approve cancellation');
     }
+  };
 
-    return matchesSearch && matchesTab && matchesPayment && matchesSpecial && matchesDate();
-  });
+  const handleRejectCancellation = async (orderId) => {
+    const reason = window.prompt('Please provide a reason for rejecting the cancellation request:');
+    if (reason === null) return;
+
+    try {
+      const orderRef = doc(db, 'orders', orderId);
+      await updateDoc(orderRef, {
+        'cancellationRequest.status': 'rejected',
+        'cancellationRequest.rejectedAt': serverTimestamp(),
+        'cancellationRequest.rejectedBy': currentUser.email,
+        'cancellationRequest.rejectionReason': reason,
+        status: 'Accepted' // Revert to accepted status
+      });
+      setViewingCancellation(null);
+      alert('Cancellation request rejected.');
+    } catch (error) {
+      console.error("Error rejecting cancellation:", error);
+      alert('Failed to reject cancellation');
+    }
+  };
 
   const formatDate = (timestamp) => {
     if (!timestamp) return 'N/A';
-    try {
-      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-      if (isNaN(date.getTime())) return 'N/A';
-      return date.toLocaleDateString('en-IN', { 
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (error) {
-      return 'Invalid Date';
-    }
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    return date.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   const formatCurrency = (amount) => {
@@ -284,44 +291,52 @@ const Orders = () => {
     }
   };
 
-  const handleBulkAction = async (action) => {
-    if (selectedOrders.length === 0) {
-      alert('Please select orders first');
-      return;
+  const filteredOrders = orders.filter(order => {
+    // Search filter
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = 
+      order.id.toLowerCase().includes(searchLower) ||
+      (order.customerName || '').toLowerCase().includes(searchLower) ||
+      (order.email || '').toLowerCase().includes(searchLower) ||
+      (order.phone || order.phoneNumber || '').includes(searchTerm);
+
+    if (!matchesSearch) return false;
+
+    // Tab filter
+    if (activeTab === 'active') {
+      if (!['pending', 'accepted', 'processing', 'packed', 'shipped'].includes(order.status?.toLowerCase())) return false;
+    } else if (activeTab === 'completed') {
+      if (order.status?.toLowerCase() !== 'delivered') return false;
+    } else if (activeTab === 'issues') {
+      if (order.status?.toLowerCase() !== 'cancelled' && order.cancellationRequest?.status !== 'pending' && order.status?.toLowerCase() !== 'cancellation_requested') return false;
     }
 
-    if (action === 'delete') {
-      if (window.confirm(`Are you sure you want to delete ${selectedOrders.length} orders?`)) {
-        try {
-          const deletePromises = selectedOrders.map(id => deleteDoc(doc(db, 'orders', id)));
-          await Promise.all(deletePromises);
-          setSelectedOrders([]);
-          alert('Orders deleted successfully');
-        } catch (error) {
-          console.error("Error deleting orders:", error);
-          alert('Failed to delete some orders');
-        }
+    // Special filters from stats
+    if (specialFilter === 'pending_payments') {
+      if (!(order.paymentMethod === 'cod' && order.status?.toLowerCase() === 'delivered' && !order.paymentReceived)) return false;
+    } else if (specialFilter === 'cancellation_requests') {
+      if (!(order.cancellationRequest?.status === 'pending' || order.status?.toLowerCase() === 'cancellation_requested')) return false;
+    }
+
+    // Date range filter
+    if (dateRange !== 'all') {
+      if (!order.createdAt) return false;
+      const orderDate = order.createdAt.toDate ? order.createdAt.toDate() : new Date(order.createdAt);
+      const now = new Date();
+      if (dateRange === 'today') {
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        if (orderDate < today) return false;
+      } else if (dateRange === 'week') {
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        if (orderDate < weekAgo) return false;
+      } else if (dateRange === 'month') {
+        const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+        if (orderDate < monthAgo) return false;
       }
-    } else {
-      alert(`Bulk ${action} for ${selectedOrders.length} orders - Feature coming soon`);
     }
-  };
 
-  const toggleOrderSelection = (orderId) => {
-    setSelectedOrders(prev =>
-      prev.includes(orderId)
-        ? prev.filter(id => id !== orderId)
-        : [...prev, orderId]
-    );
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedOrders.length === filteredOrders.length) {
-      setSelectedOrders([]);
-    } else {
-      setSelectedOrders(filteredOrders.map(o => o.id));
-    }
-  };
+    return true;
+  });
 
   if (loading) {
     return (
@@ -423,94 +438,34 @@ const Orders = () => {
           </div>
         </div>
 
-        <div className="stat-card stat-refund" onClick={() => handleStatClick('refunds')}>
+        <div className="stat-card stat-refund" onClick={() => handleStatClick('cancellation_requests')}>
           <div className="stat-icon-wrapper red">
             <FiRefreshCw />
           </div>
           <div className="stat-content">
-            <p className="stat-label">Refund Requests</p>
-            <h2 className="stat-value">{stats.refundRequests}</h2>
+            <p className="stat-label">Cancellation Requests</p>
+            <h2 className="stat-value">{stats.cancellationRequests}</h2>
             <span className="stat-change neutral">Pending Review</span>
-          </div>
-        </div>
-
-        <div className="stat-card stat-aov">
-          <div className="stat-icon-wrapper purple">
-            <FiTrendingUp />
-          </div>
-          <div className="stat-content">
-            <p className="stat-label">Avg Order Value</p>
-            <h2 className="stat-value">{formatCurrency(stats.avgOrderValue)}</h2>
-            <span className="stat-change positive">+5.3%</span>
           </div>
         </div>
       </div>
 
       {/* Orders Section */}
       <div className="om-orders-section">
-        <div className="om-section-header">
-          <h2 className="section-title">Orders List ({filteredOrders.length})</h2>
-          <div className="header-actions">
-            <button className="filter-btn" onClick={() => setShowFilters(!showFilters)}>
-              <FiFilter /> Filters
-            </button>
-            {selectedOrders.length > 0 && (
-              <div className="bulk-actions">
-                <button onClick={() => handleBulkAction('export')}>
-                  <FiDownload /> Export
-                </button>
-                <button onClick={() => handleBulkAction('print')}>
-                  <FiPrinter /> Print
-                </button>
-                <button onClick={() => handleBulkAction('cancel')} className="danger">
-                  <FiX /> Cancel
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Filters */}
-        {showFilters && (
-          <div className="advanced-filters">
-            <div className="filter-group">
-              <label>Payment Method</label>
-              <select value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)}>
-                <option value="all">All Payments</option>
-                <option value="cod">Cash on Delivery</option>
-                <option value="online">Online Payment</option>
-                <option value="upi">UPI</option>
-              </select>
-            </div>
-          </div>
-        )}
-
         {/* Tabs */}
         <div className="om-tabs-wrapper">
           <div className="om-tabs">
             <button className={`om-tab ${activeTab === 'all' ? 'active' : ''}`} onClick={() => setActiveTab('all')}>
               All Orders <span className="tab-count">{stats.total}</span>
             </button>
-            <button className={`om-tab ${activeTab === 'pending' ? 'active' : ''}`} onClick={() => setActiveTab('pending')}>
-              Pending <span className="tab-count">{stats.pending}</span>
+            <button className={`om-tab ${activeTab === 'active' ? 'active' : ''}`} onClick={() => setActiveTab('active')}>
+              Active <span className="tab-count">{stats.processing + stats.pending}</span>
             </button>
-            <button className={`om-tab ${activeTab === 'accepted' ? 'active' : ''}`} onClick={() => setActiveTab('accepted')}>
-              Accepted <span className="tab-count">{orders.filter(o => o.status?.toLowerCase() === 'accepted').length}</span>
+            <button className={`om-tab ${activeTab === 'completed' ? 'active' : ''}`} onClick={() => setActiveTab('completed')}>
+              Completed <span className="tab-count">{stats.delivered}</span>
             </button>
-            <button className={`om-tab ${activeTab === 'processing' ? 'active' : ''}`} onClick={() => setActiveTab('processing')}>
-              Processing <span className="tab-count">{stats.processing}</span>
-            </button>
-            <button className={`om-tab ${activeTab === 'shipped' ? 'active' : ''}`} onClick={() => setActiveTab('shipped')}>
-              Shipped <span className="tab-count">{orders.filter(o => o.status?.toLowerCase() === 'shipped').length}</span>
-            </button>
-            <button className={`om-tab ${activeTab === 'out for delivery' ? 'active' : ''}`} onClick={() => setActiveTab('out for delivery')}>
-              Out for Delivery <span className="tab-count">{stats.outForDelivery || 0}</span>
-            </button>
-            <button className={`om-tab ${activeTab === 'delivered' ? 'active' : ''}`} onClick={() => setActiveTab('delivered')}>
-              Delivered <span className="tab-count">{stats.delivered}</span>
-            </button>
-            <button className={`om-tab ${activeTab === 'cancelled' ? 'active' : ''}`} onClick={() => setActiveTab('cancelled')}>
-              Cancelled <span className="tab-count">{stats.cancelled}</span>
+            <button className={`om-tab ${activeTab === 'issues' ? 'active' : ''}`} onClick={() => setActiveTab('issues')}>
+              Issues <span className="tab-count">{stats.cancelled + stats.cancellationRequests}</span>
             </button>
           </div>
         </div>
@@ -518,16 +473,40 @@ const Orders = () => {
         {/* Bulk Actions Bar */}
         {selectedOrders.length > 0 && (
           <div className="bulk-actions-bar">
-            <span>{selectedOrders.length} orders selected</span>
+            <div className="bulk-info">
+              <FiCheckCircle />
+              <span>{selectedOrders.length} orders selected</span>
+            </div>
             <div className="bulk-btns">
-              <button className="bulk-btn" onClick={() => handleBulkAction('status')}>
-                Update Status
+              <select 
+                className="bulk-select" 
+                onChange={(e) => handleBulkStatusUpdate(e.target.value)}
+                defaultValue=""
+              >
+                <option value="" disabled>Update Status</option>
+                <option value="Accepted">Accept</option>
+                <option value="Processing">Process</option>
+                <option value="Shipped">Ship</option>
+                <option value="Delivered">Deliver</option>
+                <option value="Cancelled">Cancel</option>
+              </select>
+              <button className="bulk-btn" onClick={handleBulkExport}>
+                <FiDownload /> Export CSV
               </button>
-              <button className="bulk-btn" onClick={() => handleBulkAction('invoice')}>
-                Generate Invoices
+              <button className="bulk-btn danger" onClick={() => {
+                if (window.confirm(`Are you sure you want to DELETE ${selectedOrders.length} orders? This cannot be undone.`)) {
+                  // Bulk delete logic
+                  const deletePromises = selectedOrders.map(id => deleteDoc(doc(db, 'orders', id)));
+                  Promise.all(deletePromises).then(() => {
+                    setSelectedOrders([]);
+                    alert('Orders deleted successfully');
+                  });
+                }
+              }}>
+                <FiTrash2 /> Delete
               </button>
-              <button className="bulk-btn danger" onClick={() => handleBulkAction('delete')}>
-                Delete Selected
+              <button className="bulk-btn-close" onClick={() => setSelectedOrders([])}>
+                <FiX />
               </button>
             </div>
           </div>
@@ -539,17 +518,23 @@ const Orders = () => {
             <table className="om-table">
               <thead>
                 <tr>
-                  <th>
+                  <th className="checkbox-col">
                     <input
                       type="checkbox"
-                      checked={selectedOrders.length === filteredOrders.length}
-                      onChange={toggleSelectAll}
+                      checked={selectedOrders.length === filteredOrders.length && filteredOrders.length > 0}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedOrders(filteredOrders.map(o => o.id));
+                        } else {
+                          setSelectedOrders([]);
+                        }
+                      }}
                     />
                   </th>
                   <th>Order ID</th>
                   <th>Customer</th>
                   <th>Items</th>
-                  <th>Total</th>
+                  <th>Amount</th>
                   <th>Payment</th>
                   <th>Status</th>
                   <th>Date</th>
@@ -558,15 +543,22 @@ const Orders = () => {
               </thead>
               <tbody>
                 {filteredOrders.map((order) => {
-                  const firstItem = order.items && order.items.length > 0 ? order.items[0] : null;
+                  const firstItem = order.items?.[0];
+                  const isSelected = selectedOrders.includes(order.id);
                   
                   return (
-                    <tr key={order.id} className={selectedOrders.includes(order.id) ? 'selected' : ''}>
-                      <td>
+                    <tr key={order.id} className={isSelected ? 'selected' : ''}>
+                      <td className="checkbox-col">
                         <input
                           type="checkbox"
-                          checked={selectedOrders.includes(order.id)}
-                          onChange={() => toggleOrderSelection(order.id)}
+                          checked={isSelected}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedOrders([...selectedOrders, order.id]);
+                            } else {
+                              setSelectedOrders(selectedOrders.filter(id => id !== order.id));
+                            }
+                          }}
                         />
                       </td>
                       <td>
@@ -577,18 +569,39 @@ const Orders = () => {
                       <td>
                         <div className="customer-cell">
                           <span className="customer-name">{order.customerName || 'Guest'}</span>
-                          <span className="customer-contact">{order.phone || order.email}</span>
+                          <span className="customer-email">{order.email}</span>
+                          <span className="customer-phone">📞 {order.phone || order.phoneNumber || (order.shippingAddress?.phone) || 'N/A'}</span>
                         </div>
                       </td>
                       <td>
-                        <div className="items-cell clickable" onClick={() => setViewingOrder(order)}>
-                          <span className="items-count">{order.items?.length || 0} items</span>
-                          {firstItem && <span className="items-preview">{firstItem.name}</span>}
+                        <div className="items-cell-new" onClick={() => setViewingOrder(order)}>
+                          {firstItem && (
+                            <div className="first-item-row">
+                              <span className="item-name-preview">{firstItem.name}</span>
+                              {order.items?.length > 1 && (
+                                <div 
+                                  className="items-tooltip-trigger"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setViewingOrder(order);
+                                  }}
+                                  style={{ cursor: 'pointer' }}
+                                >
+                                  <span className="more-items-tag">+ {order.items.length - 1} more items</span>
+                                  <div className="items-tooltip">
+                                    {order.items.slice(1).map((item, i) => (
+                                      <div key={i} className="tooltip-item">{item.name} (x{item.quantity})</div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </td>
                       <td>
                         <div className="amount-cell">
-                          <span className="amount-value">{formatCurrency(order.total)}</span>
+                          <span className="amount-value">{formatCurrency(order.totalAmount || order.total)}</span>
                         </div>
                       </td>
                       <td>
@@ -599,79 +612,134 @@ const Orders = () => {
                         </div>
                       </td>
                       <td>
-                        <span className={`status-badge ${getStatusClass(order.status)}`}>
-                          {order.status || 'Pending'}
-                        </span>
-                        {order.cancellationRequest?.status === 'pending' && (
-                          <div className="cancellation-badge">Request Pending</div>
-                        )}
+                        <div className="status-badge-container">
+                          <span className={`status-badge ${getStatusClass(order.status)}`}>
+                            {order.status || 'Pending'}
+                          </span>
+                          {(order.cancellationRequest?.status === 'pending' || order.status?.toLowerCase() === 'cancellation_requested') && (
+                            <div 
+                              className="cancellation-badge clickable" 
+                              onClick={() => setViewingCancellation(order)}
+                              title="Click to view cancellation details"
+                            >
+                              Cancellation Requested
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td>
                         <span className="date-text">{formatDate(order.createdAt)}</span>
                       </td>
                       <td>
                         <div className="action-cell">
-                          {order.status?.toLowerCase() === 'pending' && (
+                          {/* Context-Based Actions */}
+                          {(order.cancellationRequest?.status === 'pending' || order.status?.toLowerCase() === 'cancellation_requested') ? (
+                            <>
+                              <button 
+                                className="action-icon-btn success" 
+                                onClick={() => handleApproveCancellation(order.id)}
+                                title="Approve Cancellation"
+                              >
+                                <FiCheck />
+                              </button>
+                              <button 
+                                className="action-icon-btn danger" 
+                                onClick={() => handleRejectCancellation(order.id)}
+                                title="Reject Cancellation"
+                              >
+                                <FiX />
+                              </button>
+                            </>
+                          ) : order.status?.toLowerCase() === 'pending' ? (
+                            <>
+                              <button 
+                                className="action-icon-btn success" 
+                                onClick={() => updateOrderStatus(order.id, 'Accepted')}
+                                title="Accept Order"
+                              >
+                                <FiCheck />
+                              </button>
+                              <button 
+                                className="action-icon-btn danger" 
+                                onClick={() => {
+                                  if (window.confirm('Are you sure you want to CANCEL this order?')) {
+                                    updateOrderStatus(order.id, 'Cancelled');
+                                  }
+                                }}
+                                title="Cancel Order"
+                              >
+                                <FiTrash2 />
+                              </button>
+                            </>
+                          ) : (
                             <button 
-                              className="action-icon-btn success" 
-                              onClick={() => updateOrderStatus(order.id, 'Accepted')}
-                              title="Accept Order"
+                              className="action-icon-btn" 
+                              onClick={() => downloadInvoice(order)}
+                              title="Download Invoice"
                             >
-                              <FiCheck />
+                              <FiDownload />
                             </button>
                           )}
+                          
                           <button 
-                            className="action-icon-btn" 
-                            onClick={() => downloadInvoice(order)}
-                            title="Download Invoice"
+                            className="action-icon-btn info" 
+                            onClick={() => setViewingOrder(order)}
+                            title="View Details"
                           >
-                            <FiDownload />
+                            <FiEye />
                           </button>
+
                           <button
                             className="action-menu-btn"
                             onClick={() => setActiveDropdown(activeDropdown === order.id ? null : order.id)}
                           >
                             <FiMoreVertical />
                           </button>
+                          
                           {activeDropdown === order.id && (
                             <div className="action-dropdown">
-                              <button className="dropdown-item" onClick={() => setViewingOrder(order)}>
+                              <button className="dropdown-item" onClick={() => { setViewingOrder(order); setActiveDropdown(null); }}>
                                 <FiEye /> View Details
                               </button>
                               
                               {order.status?.toLowerCase() === 'pending' && (
-                                <button className="dropdown-item success" onClick={() => updateOrderStatus(order.id, 'Accepted')}>
+                                <button className="dropdown-item success" onClick={() => { updateOrderStatus(order.id, 'Accepted'); setActiveDropdown(null); }}>
                                   <FiCheck /> Accept Order
                                 </button>
                               )}
 
                               {(order.status?.toLowerCase() === 'accepted' || order.status?.toLowerCase() === 'processing') && (
-                                <button className="dropdown-item info" onClick={() => updateOrderStatus(order.id, 'Shipped')}>
+                                <button className="dropdown-item info" onClick={() => { updateOrderStatus(order.id, 'Shipped'); setActiveDropdown(null); }}>
                                   <FiTruck /> Ship Order
                                 </button>
                               )}
 
                               {order.status?.toLowerCase() === 'shipped' && (
-                                <button className="dropdown-item primary" onClick={() => updateOrderStatus(order.id, 'Delivered')}>
+                                <button className="dropdown-item primary" onClick={() => { updateOrderStatus(order.id, 'Delivered'); setActiveDropdown(null); }}>
                                   <FiPackage /> Mark Delivered
                                 </button>
                               )}
 
-                              <button className="dropdown-item" onClick={() => updateOrderStatus(order.id, 'Processing')}>
+                              <button className="dropdown-item" onClick={() => { updateOrderStatus(order.id, 'Processing'); setActiveDropdown(null); }}>
                                 <FiEdit /> Update Status
                               </button>
                               
-                              {order.cancellationRequest?.status === 'pending' ? (
+                              {(order.cancellationRequest?.status === 'pending' || order.status?.toLowerCase() === 'cancellation_requested') ? (
                                 <>
-                                  <button className="dropdown-item danger" onClick={() => handleApproveCancellation(order.id)}>
+                                  <button className="dropdown-item success" onClick={() => { handleApproveCancellation(order.id); setActiveDropdown(null); }}>
                                     <FiCheck /> Approve Cancel
                                   </button>
-                                  <button className="dropdown-item" onClick={() => handleRejectCancellation(order.id)}>
+                                  <button className="dropdown-item danger" onClick={() => { handleRejectCancellation(order.id); setActiveDropdown(null); }}>
                                     <FiX /> Reject Cancel
                                   </button>
                                 </>
                               ) : (
-                                <button className="dropdown-item danger" onClick={() => updateOrderStatus(order.id, 'Cancelled')}>
+                                <button className="dropdown-item danger" onClick={() => {
+                                  if (window.confirm('Are you sure you want to CANCEL this order?')) {
+                                    updateOrderStatus(order.id, 'Cancelled');
+                                  }
+                                  setActiveDropdown(null);
+                                }}>
                                   <FiTrash2 /> Cancel Order
                                 </button>
                               )}
@@ -701,86 +769,211 @@ const Orders = () => {
       {/* Order Details Modal */}
       {viewingOrder && (
         <div className="modal-overlay" onClick={() => setViewingOrder(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content-large" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Order Details - #{viewingOrder.id.substring(0, 10)}</h2>
-              <button className="close-btn" onClick={() => setViewingOrder(null)}>
-                <FiX />
-              </button>
+              <div className="header-title-group">
+                <h2>Order Details</h2>
+                <span className="order-id-badge">#{viewingOrder.id.toUpperCase()}</span>
+              </div>
+              <button className="close-btn" onClick={() => setViewingOrder(null)}><FiX /></button>
             </div>
             <div className="modal-body">
-              <div className="order-details-grid">
-                <div className="detail-section">
-                  <h3>Customer Information</h3>
-                  <div className="detail-row">
-                    <span>Name:</span>
-                    <strong>{viewingOrder.customerName}</strong>
+              <div className="order-details-grid-new">
+                <div className="details-main">
+                  {/* Customer Info */}
+                  <div className="detail-card">
+                    <h3><FiShoppingBag /> Customer Information</h3>
+                    <div className="info-grid">
+                      <div className="info-item">
+                        <label>Name</label>
+                        <span>{viewingOrder.customerName || 'Guest'}</span>
+                      </div>
+                      <div className="info-item">
+                        <label>Email</label>
+                        <span>{viewingOrder.email}</span>
+                      </div>
+                      <div className="info-item">
+                        <label>Phone</label>
+                        <span>{viewingOrder.phone || viewingOrder.phoneNumber || (viewingOrder.shippingAddress?.phone) || 'N/A'}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="detail-row">
-                    <span>Email:</span>
-                    <strong>{viewingOrder.email}</strong>
-                  </div>
-                  <div className="detail-row">
-                    <span>Phone:</span>
-                    <strong>{viewingOrder.phone}</strong>
-                  </div>
-                </div>
 
-                <div className="detail-section">
-                  <h3>Order Information</h3>
-                  <div className="detail-row">
-                    <span>Order ID:</span>
-                    <strong>#{viewingOrder.id}</strong>
+                  {/* Address */}
+                  <div className="detail-card">
+                    <h3><FiTruck /> Delivery Address</h3>
+                    <div className="address-box">
+                      {viewingOrder.shippingAddress ? (
+                        <>
+                          <p className="address-street">{viewingOrder.shippingAddress.address}</p>
+                          <p className="address-city">{viewingOrder.shippingAddress.city}, {viewingOrder.shippingAddress.state}</p>
+                          <p className="address-pincode">PIN: {viewingOrder.shippingAddress.pincode}</p>
+                        </>
+                      ) : viewingOrder.address ? (
+                        <>
+                          <p className="address-street">{viewingOrder.address.street || viewingOrder.address.address}</p>
+                          <p className="address-city">{viewingOrder.address.city}, {viewingOrder.address.state}</p>
+                          <p className="address-pincode">PIN: {viewingOrder.address.pincode}</p>
+                        </>
+                      ) : (
+                        <p className="no-address">No address provided</p>
+                      )}
+                    </div>
                   </div>
-                  <div className="detail-row">
-                    <span>Status:</span>
-                    <strong>{viewingOrder.status}</strong>
-                  </div>
-                  <div className="detail-row">
-                    <span>Payment:</span>
-                    <strong>{viewingOrder.paymentMethod}</strong>
-                  </div>
-                </div>
 
-                <div className="detail-section full-width">
-                  <h3>Delivery Address</h3>
-                  <p>{viewingOrder.address?.street}, {viewingOrder.address?.city}, {viewingOrder.address?.state} - {viewingOrder.address?.pincode}</p>
-                </div>
-
-                <div className="detail-section full-width">
-                  <h3>Order Items</h3>
-                  <table className="items-table">
-                    <thead>
-                      <tr>
-                        <th>Product</th>
-                        <th>Quantity</th>
-                        <th>Price</th>
-                        <th>Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {viewingOrder.items?.map((item, index) => (
-                        <tr key={index}>
-                          <td>{item.name}</td>
-                          <td>{item.quantity}</td>
-                          <td>{formatCurrency(item.price)}</td>
-                          <td>{formatCurrency(item.price * item.quantity)}</td>
+                  {/* Items */}
+                  <div className="detail-card">
+                    <h3><FiPackage /> Order Items</h3>
+                    <table className="items-table-new">
+                      <thead>
+                        <tr>
+                          <th>Product</th>
+                          <th>Quantity</th>
+                          <th>Price</th>
+                          <th>Total</th>
                         </tr>
-                      ))}
-                      <tr>
-                        <td colSpan="3" style={{ textAlign: 'right', fontWeight: 'bold' }}>Total:</td>
-                        <td className="total-amount">{formatCurrency(viewingOrder.total)}</td>
-                      </tr>
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {viewingOrder.items?.map((item, idx) => (
+                          <tr key={idx}>
+                            <td>{item.name}</td>
+                            <td>{item.quantity}</td>
+                            <td>{formatCurrency(item.price)}</td>
+                            <td>{formatCurrency(item.price * item.quantity)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr>
+                          <td colSpan="3">Subtotal</td>
+                          <td>{formatCurrency(viewingOrder.totalAmount || viewingOrder.total)}</td>
+                        </tr>
+                        <tr>
+                          <td colSpan="3">Delivery Charge</td>
+                          <td>{formatCurrency(0)}</td>
+                        </tr>
+                        <tr className="grand-total-row">
+                          <td colSpan="3">Grand Total</td>
+                          <td>{formatCurrency(viewingOrder.totalAmount || viewingOrder.total)}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="details-sidebar">
+                  <div className={`status-badge-large ${getStatusClass(viewingOrder.status)}`}>
+                    {viewingOrder.status?.toUpperCase()}
+                  </div>
+
+                  <div className="detail-card">
+                    <h3><FiClock /> Timeline</h3>
+                    <div className="status-timeline">
+                      <div className="timeline-item-new">
+                        <div className="timeline-dot active"></div>
+                        <div className="timeline-content-new">
+                          <p className="timeline-label">Ordered On</p>
+                          <p className="timeline-time">{formatDate(viewingOrder.createdAt)}</p>
+                        </div>
+                      </div>
+                      {viewingOrder.statusUpdatedAt && (
+                        <div className="timeline-item-new">
+                          <div className="timeline-dot active"></div>
+                          <div className="timeline-content-new">
+                            <p className="timeline-label">Last Updated</p>
+                            <p className="timeline-time">{formatDate(viewingOrder.statusUpdatedAt)}</p>
+                            {viewingOrder.statusUpdatedBy && (
+                              <p className="timeline-by">by {viewingOrder.statusUpdatedBy}</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="detail-card">
+                    <h3><FiCreditCard /> Payment Info</h3>
+                    <div className="payment-info-box">
+                      <div className="info-row">
+                        <label>Method</label>
+                        <span className="method-tag">{viewingOrder.paymentMethod?.toUpperCase()}</span>
+                      </div>
+                      <div className="info-row">
+                        <label>Status</label>
+                        <span className={`payment-status ${viewingOrder.paymentStatus?.toLowerCase()}`}>
+                          {viewingOrder.paymentStatus || 'Pending'}
+                        </span>
+                      </div>
+                      {viewingOrder.paymentId && (
+                        <div className="info-row">
+                          <label>ID</label>
+                          <span className="payment-id-text">{viewingOrder.paymentId}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
             <div className="modal-footer">
-              <button className="btn-secondary" onClick={() => setViewingOrder(null)}>Close</button>
+              <button className="btn-secondary" onClick={() => viewInvoice(viewingOrder)}>
+                <FiEye /> Preview Invoice
+              </button>
               <button className="btn-primary" onClick={() => downloadInvoice(viewingOrder)}>
                 <FiDownload /> Download Invoice
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancellation Details Modal */}
+      {viewingCancellation && (
+        <div className="modal-overlay" onClick={() => setViewingCancellation(null)}>
+          <div className="modal-content-small" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Cancellation Request</h3>
+              <button className="close-btn" onClick={() => setViewingCancellation(null)}><FiX /></button>
+            </div>
+            <div className="modal-body">
+              <div className="cancel-info-box">
+                <div className="detail-row">
+                  <span>Order ID:</span>
+                  <strong>#{viewingCancellation.id.substring(0, 10).toUpperCase()}</strong>
+                </div>
+                <div className="detail-row">
+                  <span>Requested By:</span>
+                  <strong>{viewingCancellation.customerName || 'Customer'}</strong>
+                </div>
+                <div className="detail-row">
+                  <span>Requested On:</span>
+                  <strong>{formatDate(viewingCancellation.cancellationRequest?.requestedAt)}</strong>
+                </div>
+                <div className="reason-row">
+                  <span>Reason for Cancellation:</span>
+                  <div className="reason-text">
+                    "{viewingCancellation.cancellationRequest?.reason || 'No reason provided'}"
+                  </div>
+                </div>
+              </div>
+
+              <div className="cancellation-actions-large">
+                <p className="action-hint">Approving will cancel the order and initiate refund if paid.</p>
+                <div className="action-buttons-group">
+                  <button 
+                    className="btn-approve-large"
+                    onClick={() => handleApproveCancellation(viewingCancellation.id)}
+                  >
+                    <FiCheck /> Approve Cancellation
+                  </button>
+                  <button 
+                    className="btn-reject-large"
+                    onClick={() => handleRejectCancellation(viewingCancellation.id)}
+                  >
+                    <FiX /> Reject Request
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

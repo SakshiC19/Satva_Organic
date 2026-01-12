@@ -7,6 +7,7 @@ import { FiPlus, FiEdit2, FiTrash2, FiX, FiCheck, FiChevronDown, FiEye, FiImage,
 import ImageUpload from '../../components/admin/ImageUpload';
 import { uploadImage } from '../../services/storageService';
 import './Categories.css';
+import './CategoriesModalFix.css';
 
 const Categories = () => {
   const navigate = useNavigate();
@@ -95,6 +96,7 @@ const Categories = () => {
     setSelectedImage(null);
     setUploadProgress(0);
     setIsModalOpen(true);
+    document.body.classList.add('modal-open');
   };
 
   const handleCloseModal = () => {
@@ -103,6 +105,7 @@ const Categories = () => {
     setNewSubcategory('');
     setSelectedImage(null);
     setUploadProgress(0);
+    document.body.classList.remove('modal-open');
   };
 
   const handleAddSubcategory = () => {
@@ -318,6 +321,7 @@ const Categories = () => {
                     onImagesSelected={(files) => setSelectedImage(files[0])}
                     maxImages={1}
                     existingImages={formData.image ? [{ url: formData.image }] : []}
+                    onRemoveExisting={() => setFormData({ ...formData, image: '' })}
                     label="Category Image"
                   />
                   {uploadProgress > 0 && uploadProgress < 100 && (

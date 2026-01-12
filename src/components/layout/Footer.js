@@ -7,7 +7,7 @@ import {
   FiSend
 } from 'react-icons/fi';
 import { 
-  FaFacebookF, 
+  FaLinkedinIn, 
   FaInstagram, 
   FaCcPaypal,
   FaCcVisa,
@@ -43,7 +43,7 @@ const Footer = () => {
                 <span className="logo-text">Satva Organics</span>
               </Link>
               <p className="footer-description">
-                Lorem Ipsum is simply dummy text of the and typesetting industry. Lorem Ipsum is dummy text of the printing.
+                Satva Organics is dedicated to bringing you the finest organic products, sourced directly from nature to promote a healthier and more sustainable lifestyle.
               </p>
               
               <div className="footer-contact">
@@ -62,8 +62,8 @@ const Footer = () => {
               </div>
 
               <div className="footer-social">
-                <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
-                  <FaFacebookF />
+                <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+                  <FaLinkedinIn />
                 </a>
                 <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
                   <FaInstagram />
@@ -79,6 +79,7 @@ const Footer = () => {
                 <li><Link to="/shop">All products</Link></li>
                 <li><Link to="/contact">Contact</Link></li>
                 <li><Link to="/terms">Terms and Conditions</Link></li>
+                <li><Link to="/privacy">Privacy and Policy</Link></li>
               </ul>
             </div>
 

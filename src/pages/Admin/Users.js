@@ -5,7 +5,7 @@ import { db, auth } from '../../config/firebase';
 import { 
   FiSearch, FiUser, FiMail, FiCalendar, FiShield, FiPhone, 
   FiMoreVertical, FiTrash2, FiLock, FiUnlock, FiEye, 
-  FiDownload, FiFilter, FiCheckCircle, FiXCircle, FiAlertCircle, FiClock, FiX, FiMapPin
+  FiDownload, FiFilter, FiCheckCircle, FiXCircle, FiAlertCircle, FiClock, FiX, FiMapPin, FiPackage
 } from 'react-icons/fi';
 import './Users.css';
 
@@ -13,11 +13,12 @@ const Users = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedUsers, setSelectedUsers] = useState([]);
   const [viewingUser, setViewingUser] = useState(null);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [userOrders, setUserOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const [viewingReviews, setViewingReviews] = useState(null);
+  const [reviewCounts, setReviewCounts] = useState({});
   
   const [filters, setFilters] = useState({
     role: 'all',
@@ -124,20 +125,6 @@ const Users = () => {
     setActiveDropdown(null);
   };
 
-  const toggleUserSelection = (userId) => {
-    setSelectedUsers(prev => 
-      prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
-    );
-  };
-
-  const toggleAllSelection = () => {
-    if (selectedUsers.length === paginatedUsers.length) {
-      setSelectedUsers([]);
-    } else {
-      setSelectedUsers(paginatedUsers.map(u => u.id));
-    }
-  };
-
   const handleSort = (key) => {
     setSortConfig(prev => ({
       key,
@@ -209,6 +196,36 @@ const Users = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, filters]);
+
+  useEffect(() => {
+    const fetchReviewCounts = async () => {
+      if (paginatedUsers.length === 0) return;
+      
+      const counts = {};
+      try {
+        const userIds = paginatedUsers.map(u => u.id);
+        if (userIds.length > 0) {
+            const reviewsRef = collection(db, 'reviews');
+            const q = query(reviewsRef, where('userId', 'in', userIds));
+            const snapshot = await getDocs(q);
+            
+            userIds.forEach(id => counts[id] = 0);
+            
+            snapshot.docs.forEach(doc => {
+                const data = doc.data();
+                if (data.userId) {
+                    counts[data.userId] = (counts[data.userId] || 0) + 1;
+                }
+            });
+            setReviewCounts(prev => ({ ...prev, ...counts }));
+        }
+      } catch (error) {
+        console.error("Error fetching review counts:", error);
+      }
+    };
+
+    fetchReviewCounts();
+  }, [paginatedUsers]);
 
   const exportToCSV = () => {
     const headers = ['User ID', 'Name', 'Email', 'Phone', 'Role', 'Status', 'Joined Date'];
@@ -409,6 +426,154 @@ const Users = () => {
     );
   };
 
+  const UserReviewsModal = ({ user, onClose }) => {
+    const [reviews, setReviews] = useState([]);
+    const [loadingReviews, setLoadingReviews] = useState(true);
+    const [filterProduct, setFilterProduct] = useState('');
+    const [sortOption, setSortOption] = useState('date-desc');
+
+    useEffect(() => {
+      const fetchReviews = async () => {
+        try {
+          const q = query(collection(db, 'reviews'), where('userId', '==', user.id));
+          const snapshot = await getDocs(q);
+          
+          const reviewsData = await Promise.all(snapshot.docs.map(async (docSnap) => {
+            const data = docSnap.data();
+            let productName = data.productName || 'Unknown Product';
+            
+            if (!data.productName && data.orderId) {
+                try {
+                    const orderDoc = await getDoc(doc(db, 'orders', data.orderId));
+                    if (orderDoc.exists()) {
+                        const orderData = orderDoc.data();
+                        if (orderData.items && orderData.items.length > 0) {
+                            productName = orderData.items.map(i => i.name).join(', ');
+                        } else {
+                            productName = `Order #${data.orderId.substring(0,6)}`;
+                        }
+                    }
+                } catch (e) {
+                    console.error("Error fetching order for review:", e);
+                }
+            }
+            
+            return {
+              id: docSnap.id,
+              ...data,
+              productName
+            };
+          }));
+          
+          setReviews(reviewsData);
+        } catch (error) {
+          console.error("Error fetching reviews:", error);
+        } finally {
+          setLoadingReviews(false);
+        }
+      };
+      
+      fetchReviews();
+    }, [user.id]);
+
+    const filteredReviews = reviews
+      .filter(r => r.productName.toLowerCase().includes(filterProduct.toLowerCase()))
+      .sort((a, b) => {
+        const dateA = a.createdAt?.seconds || 0;
+        const dateB = b.createdAt?.seconds || 0;
+        const ratingA = a.rating || 0;
+        const ratingB = b.rating || 0;
+        
+        switch(sortOption) {
+            case 'date-desc': return dateB - dateA;
+            case 'date-asc': return dateA - dateB;
+            case 'rating-desc': return ratingB - ratingA;
+            case 'rating-asc': return ratingA - ratingB;
+            default: return 0;
+        }
+      });
+
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-content reviews-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '800px' }}>
+          <div className="modal-header">
+            <div className="modal-title-group">
+                <div>
+                    <h2>Reviews by {user.displayName}</h2>
+                    <span className="user-id">Total Reviews: {reviews.length}</span>
+                </div>
+            </div>
+            <button className="close-btn" onClick={onClose}><FiX /></button>
+          </div>
+          
+          <div className="modal-body">
+            <div className="reviews-controls" style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+                <div className="search-box" style={{ flex: 1 }}>
+                    <FiSearch className="search-icon" />
+                    <input 
+                        type="text" 
+                        placeholder="Filter by product..." 
+                        value={filterProduct}
+                        onChange={(e) => setFilterProduct(e.target.value)}
+                    />
+                </div>
+                <select 
+                    className="filter-select" 
+                    value={sortOption} 
+                    onChange={(e) => setSortOption(e.target.value)}
+                >
+                    <option value="date-desc">Newest First</option>
+                    <option value="date-asc">Oldest First</option>
+                    <option value="rating-desc">Highest Rating</option>
+                    <option value="rating-asc">Lowest Rating</option>
+                </select>
+            </div>
+
+            {loadingReviews ? (
+                <div className="loading-small">Loading reviews...</div>
+            ) : filteredReviews.length > 0 ? (
+                <div className="mini-table-container">
+                    <table className="mini-table">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Order ID</th>
+                                <th>Rating</th>
+                                <th>Review</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredReviews.map(review => (
+                                <tr key={review.id}>
+                                    <td style={{ fontWeight: 500 }}>{review.productName}</td>
+                                    <td>#{review.orderId?.substring(0, 8)}</td>
+                                    <td>
+                                        <span style={{ color: '#f59e0b' }}>
+                                            {'★'.repeat(review.rating || 0)}
+                                            <span style={{ color: '#e5e7eb' }}>{'★'.repeat(5 - (review.rating || 0))}</span>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div style={{ maxWidth: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={review.comment}>
+                                            {review.comment || 'No comment'}
+                                        </div>
+                                    </td>
+                                    <td>{formatDate(review.createdAt)}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            ) : (
+                <p className="no-data">No reviews found.</p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="admin-users-page">
       <div className="users-header">
@@ -457,40 +622,9 @@ const Users = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="filter-group">
-          <select 
-            value={filters.role} 
-            onChange={(e) => setFilters({...filters, role: e.target.value})}
-            className="filter-select"
-          >
-            <option value="all">All Roles</option>
-            <option value="user">Users</option>
-            <option value="admin">Admins</option>
-          </select>
-          <select 
-            value={filters.status} 
-            onChange={(e) => setFilters({...filters, status: e.target.value})}
-            className="filter-select"
-          >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-            <option value="blocked">Blocked</option>
-            <option value="pending">Pending</option>
-          </select>
-        </div>
       </div>
 
-      {selectedUsers.length > 0 && (
-        <div className="bulk-actions-bar">
-          <span className="selected-count">{selectedUsers.length} users selected</span>
-          <div className="bulk-btns">
-            <button className="bulk-btn" onClick={() => alert('Bulk activation coming soon')}>Activate</button>
-            <button className="bulk-btn" onClick={() => alert('Bulk deactivation coming soon')}>Deactivate</button>
-            <button className="bulk-btn delete" onClick={() => alert('Bulk delete restricted')}>Delete</button>
-          </div>
-        </div>
-      )}
+
 
       {loading ? (
         <div className="loading-state">
@@ -502,13 +636,6 @@ const Users = () => {
           <table className="users-table">
             <thead>
               <tr>
-                <th className="checkbox-col">
-                  <input 
-                    type="checkbox" 
-                    checked={selectedUsers.length === paginatedUsers.length && paginatedUsers.length > 0}
-                    onChange={toggleAllSelection}
-                  />
-                </th>
                 <th onClick={() => handleSort('displayName')} className="sortable">
                   User {sortConfig.key === 'displayName' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                 </th>
@@ -521,20 +648,14 @@ const Users = () => {
                   Joined {sortConfig.key === 'createdAt' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                 </th>
                 <th>Status</th>
+                <th>Reviews</th>
                 <th className="actions-col">Actions</th>
               </tr>
             </thead>
             <tbody>
               {paginatedUsers.length > 0 ? (
                 paginatedUsers.map(user => (
-                  <tr key={user.id} className={selectedUsers.includes(user.id) ? 'selected' : ''}>
-                    <td className="checkbox-col">
-                      <input 
-                        type="checkbox" 
-                        checked={selectedUsers.includes(user.id)}
-                        onChange={() => toggleUserSelection(user.id)}
-                      />
-                    </td>
+                  <tr key={user.id}>
                     <td>
                       <div className="user-cell" onClick={() => fetchUserDetails(user)}>
                         <div className="user-avatar">
@@ -565,11 +686,20 @@ const Users = () => {
                         <span>{user.status || 'active'}</span>
                       </div>
                     </td>
+                    <td>
+                        <div className="reviews-cell" style={{ display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 500 }}>
+                            <span style={{ color: '#f59e0b' }}>⭐</span>
+                            <span>{reviewCounts[user.id] || 0} Reviews</span>
+                        </div>
+                    </td>
                     <td className="actions-col">
                       <div className="action-dropdown-container">
                         <button 
                           className="action-btn"
-                          onClick={() => setActiveDropdown(activeDropdown === user.id ? null : user.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveDropdown(activeDropdown === user.id ? null : user.id);
+                          }}
                         >
                           <FiMoreVertical />
                         </button>
@@ -579,14 +709,26 @@ const Users = () => {
                               fetchUserDetails(user);
                               setActiveDropdown(null);
                             }}>
-                              <FiEye /> View Details
+                              <FiEye /> View Profile
+                            </button>
+                            <button onClick={() => {
+                                fetchUserDetails(user);
+                                setActiveDropdown(null);
+                            }}>
+                                <FiPackage /> View Orders
+                            </button>
+                            <button onClick={() => {
+                                setViewingReviews(user);
+                                setActiveDropdown(null);
+                            }}>
+                                <span style={{ color: '#f59e0b' }}>⭐</span> View Reviews
                             </button>
                             <button onClick={() => handleAction('changeRole', user)}>
                               <FiShield /> Change Role
                             </button>
                             <button onClick={() => handleAction('toggleStatus', user)}>
                               {user.status === 'active' ? <FiLock /> : <FiUnlock />}
-                              {user.status === 'active' ? 'Deactivate' : 'Activate'}
+                              {user.status === 'active' ? 'Block User' : 'Unblock User'}
                             </button>
                             <button onClick={() => handleAction('resetPassword', user)}>
                               <FiMail /> Reset Password
@@ -602,7 +744,7 @@ const Users = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="8" className="no-results">
+                  <td colSpan="9" className="no-results">
                     <div className="no-results-content">
                       <FiSearch />
                       <p>No users found matching your criteria</p>
@@ -637,7 +779,7 @@ const Users = () => {
           </div>
           <button 
             disabled={currentPage === totalPages} 
-            onClick={() => setCurrentPage(prev => prev + 1)}
+            onClick={() => setCurrentPage(prev => prev - 1)}
             className="pagination-btn"
           >
             Next
@@ -649,6 +791,13 @@ const Users = () => {
         <UserDetailsModal 
           user={viewingUser} 
           onClose={() => setViewingUser(null)} 
+        />
+      )}
+      
+      {viewingReviews && (
+        <UserReviewsModal 
+            user={viewingReviews}
+            onClose={() => setViewingReviews(null)}
         />
       )}
     </div>

@@ -216,17 +216,10 @@
     border-color: #ef4444;
 }
 
-/* Table Enhancements */
 .users-table-container {
     background: #fff;
     border-radius: 16px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    overflow: hidden;
-}
-
-.users-table {
-    width: 100%;
-    border-collapse: collapse;
 }
 
 .users-table th {
@@ -760,6 +753,45 @@
     .users-table td:nth-child(3),
     .users-table th:nth-child(4),
     .users-table td:nth-child(4) {
+        display: none;
+    }
+}
+
+/* Reviews Feature Styles */
+.reviews-cell {
+    white-space: nowrap;
+    color: #475569;
+}
+
+.reviews-modal .modal-body {
+    padding-top: 20px;
+}
+
+.reviews-controls {
+    background: #f8fafc;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid #f1f5f9;
+}
+
+.loading-small {
+    padding: 20px;
+    text-align: center;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.no-data {
+    padding: 20px;
+    text-align: center;
+    color: #94a3b8;
+    font-style: italic;
+}
+
+@media (max-width: 768px) {
+
+    .users-table th:nth-child(8),
+    .users-table td:nth-child(8) {
         display: none;
     }
 }
