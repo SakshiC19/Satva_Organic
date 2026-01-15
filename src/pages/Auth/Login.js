@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { FiEye, FiEyeOff, FiUser, FiLock } from 'react-icons/fi';
+import { FiEye, FiEyeOff, FiUser, FiLock, FiPhone } from 'react-icons/fi';
 import { FaGoogle } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 import './Auth.css';
@@ -184,6 +184,11 @@ const Login = () => {
           <div className="auth-divider">
             <span>OR</span>
           </div>
+
+          <button onClick={() => navigate('/login-otp')} className="google-button" style={{ marginBottom: '12px' }}>
+            <FiPhone style={{ marginRight: '10px' }} />
+            <span>Login with OTP</span>
+          </button>
 
           <button onClick={handleGoogleLogin} className="google-button" disabled={loading}>
             <FaGoogle />

@@ -7,6 +7,7 @@ import './CartDrawer.css';
 
 const CartDrawer = () => {
   const { isCartOpen, closeCart, cartItems, updateQuantity, removeFromCart } = useCart();
+  const [showNotice, setShowNotice] = React.useState(true);
   const { currentUser } = useAuth();
   const navigate = useNavigate();
 
@@ -46,21 +47,26 @@ const CartDrawer = () => {
           <div className="empty-cart">
             <FiShoppingBag className="empty-cart-icon" />
             <p>Your basket is empty</p>
-            <button className="btn-start-shopping" onClick={closeCart}>
+            <button className="btn-start-shopping" onClick={() => {
+              closeCart();
+              navigate('/shop');
+            }}>
               Start Shopping
             </button>
           </div>
         ) : (
           <>
             <div className="cart-content">
-              {/* Notice Section - Optional/Placeholder */}
-              <div className="cart-notice">
-                <div className="notice-text">
-                  <h4>1 out of stock item removed</h4>
-                  <p>you can continue to checkout</p>
+              {/* Notice Section */}
+              {showNotice && (
+                <div className="cart-notice">
+                  <div className="notice-text">
+                    <h4>1 out of stock item removed</h4>
+                    <p>you can continue to checkout</p>
+                  </div>
+                  <button className="btn-review" onClick={() => setShowNotice(false)}>Review</button>
                 </div>
-                <button className="btn-review">Review</button>
-              </div>
+              )}
 
               {/* Delivery Info */}
               <div className="delivery-info-card">
@@ -86,6 +92,7 @@ const CartDrawer = () => {
                           <img src={itemImage} alt={item.name} />
                         </div>
                         <div className="item-details">
+                          <span className="item-category">{item.category}</span>
                           <h4>{item.name}</h4>
                           <p className="item-unit">{item.selectedSize || item.weight || item.unit || 'Standard'}</p>
                           <div className="item-price-row">
@@ -105,38 +112,18 @@ const CartDrawer = () => {
                                 <FiPlus />
                               </button>
                             </div>
+                            <button 
+                              className="remove-item-icon-btn" 
+                              onClick={() => removeFromCart(item.id, item.selectedSize)}
+                              title="Remove item"
+                            >
+                              <FiX />
+                            </button>
                           </div>
                         </div>
                       </div>
                     );
                 })}
-              </div>
-
-              {/* Bill Details */}
-              <div className="bill-details-card">
-                <h3>Bill details</h3>
-                <div className="bill-row">
-                  <span><FiShoppingBag style={{marginRight: '8px'}} /> Items total</span>
-                  <span>₹{itemTotal}</span>
-                </div>
-                <div className="bill-row">
-                  <span>🚴 Delivery charge <span className="info-icon">i</span></span>
-                  <span>₹{deliveryCharge}</span>
-                </div>
-                <div className="bill-row">
-                  <span>👜 Handling charge <span className="info-icon">i</span></span>
-                  <span>₹{handlingCharge}</span>
-                </div>
-                {smallCartCharge > 0 && (
-                  <div className="bill-row">
-                    <span>🛒 Small basket charge <span className="info-icon">i</span></span>
-                    <span>₹{smallCartCharge}</span>
-                  </div>
-                )}
-                <div className="bill-row grand-total">
-                  <span>Grand total</span>
-                  <span>₹{grandTotal}</span>
-                </div>
               </div>
 
               {/* Cancellation Policy */}

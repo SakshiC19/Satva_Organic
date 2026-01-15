@@ -179,6 +179,16 @@
     flex: 1;
 }
 
+.item-category {
+    font-size: 10px;
+    color: #888;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 2px;
+}
+
 .item-details h4 {
     margin: 0;
     font-size: 14px;
@@ -233,49 +243,23 @@
     text-align: center;
 }
 
-/* Bill Details */
-.bill-details-card {
-    background: white;
-    padding: 15px;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.bill-details-card h3 {
-    margin: 0 0 12px 0;
-    font-size: 15px;
-    font-weight: 700;
-    color: #1f2d26;
-}
-
-.bill-row {
+.remove-item-icon-btn {
+    background: none;
+    border: none;
+    color: #ff4d4f;
+    cursor: pointer;
+    padding: 5px;
     display: flex;
-    justify-content: space-between;
-    margin-bottom: 8px;
-    font-size: 13px;
-    color: #555;
-}
-
-.info-icon {
-    display: inline-flex;
-    width: 14px;
-    height: 14px;
-    border: 1px solid #ccc;
-    border-radius: 50%;
-    font-size: 10px;
     align-items: center;
     justify-content: center;
-    margin-left: 4px;
-    color: #999;
+    font-size: 16px;
+    transition: all 0.2s;
+    margin-left: 10px;
 }
 
-.bill-row.grand-total {
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px dashed #eee;
-    font-weight: 800;
-    color: #1f2d26;
-    font-size: 15px;
+.remove-item-icon-btn:hover {
+    color: #cf1322;
+    transform: scale(1.1);
 }
 
 /* Cancellation Policy */

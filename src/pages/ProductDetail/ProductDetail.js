@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, addDoc, collection, serverTimestamp, updateDoc, increment, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { FiHeart, FiMinus, FiPlus, FiCheck } from 'react-icons/fi';
+import { FiHeart, FiMinus, FiPlus, FiCheck, FiStar, FiChevronLeft } from 'react-icons/fi';
 import { useCart } from '../../contexts/CartContext';
+import { useAuth } from '../../contexts/AuthContext';
 import Recommendations from '../../components/product/Recommendations';
 import './ProductDetail.css';
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -17,34 +19,76 @@ const ProductDetail = () => {
   const [selectedSize, setSelectedSize] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
+  
+  // Review state
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [fetchingReviews, setFetchingReviews] = useState(false);
+
+  const fetchProduct = async () => {
+    try {
+      const docRef = doc(db, 'products', id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const productData = { id: docSnap.id, ...data };
+        setProduct(productData);
+        
+        // Track recently viewed
+        const recentlyViewed = JSON.parse(localStorage.getItem('recentlyViewed') || '[]');
+        const updatedRecentlyViewed = [id, ...recentlyViewed.filter(itemId => itemId !== id)].slice(0, 10);
+        localStorage.setItem('recentlyViewed', JSON.stringify(updatedRecentlyViewed));
+        
+        // Track last visited category
+        if (productData.category) {
+          localStorage.setItem('lastVisitedCategory', productData.category);
+        }
+
+        if (productData.brands && productData.brands.length > 0) {
+          setSelectedBrand(productData.brands[0]);
+        }
+        if (productData.packingSizes && productData.packingSizes.length > 0) {
+          setSelectedSize(productData.packingSizes[0]);
+        } else if (productData.weight) {
+          setSelectedSize(productData.weight);
+        }
+      } else {
+        navigate('/shop');
+      }
+    } catch (error) {
+      console.error("Error fetching product:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchReviews = async () => {
+    setFetchingReviews(true);
+    try {
+      const q = query(
+        collection(db, 'reviews'),
+        where('productId', '==', id),
+        orderBy('createdAt', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      const reviewsData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setReviews(reviewsData);
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+    } finally {
+      setFetchingReviews(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        const productDoc = await getDoc(doc(db, 'products', id));
-        if (productDoc.exists()) {
-          const productData = { id: productDoc.id, ...productDoc.data() };
-          setProduct(productData);
-          
-          if (productData.brands && productData.brands.length > 0) {
-            setSelectedBrand(productData.brands[0]);
-          }
-          if (productData.packingSizes && productData.packingSizes.length > 0) {
-            setSelectedSize(productData.packingSizes[0]);
-          }
-        } else {
-          console.error('Product not found');
-          navigate('/shop');
-        }
-      } catch (error) {
-        console.error('Error fetching product:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchProduct();
-  }, [id, navigate]);
+    fetchReviews();
+  }, [id]);
 
   const handleQuantityChange = (delta) => {
     const newQuantity = quantity + delta;
@@ -76,9 +120,6 @@ const ProductDetail = () => {
     } else if (unit === 'kg' || unit === 'l' || unit === 'liter') {
       multiplier = (value * 1000) / 100;
     } else if (unit === 'pc' || unit === 'pcs' || unit === 'pack') {
-       // For packs, if no override, maybe just base price? 
-       // Or if base price is "per piece", then multiplier is value?
-       // Let's assume base price is per 1 unit if it's a pack type
        multiplier = value; 
     } else {
       return prod.price;
@@ -86,7 +127,6 @@ const ProductDetail = () => {
 
     let finalPrice = prod.price * multiplier;
 
-    // Legacy support for sizeDiscounts (percentage)
     if (prod.sizeDiscounts && prod.sizeDiscounts[size]) {
       const discount = parseFloat(prod.sizeDiscounts[size]);
       if (!isNaN(discount) && discount > 0) {
@@ -106,11 +146,11 @@ const ProductDetail = () => {
     
     addToCart({
       ...product,
-      price: currentPrice, // Use calculated price
+      price: currentPrice,
       selectedBrand,
       selectedSize,
       quantity,
-      basePrice: product.price // Store base price reference
+      basePrice: product.price
     });
     if (window.innerWidth > 768) {
       openCart();
@@ -120,6 +160,49 @@ const ProductDetail = () => {
   const handleBuyNow = () => {
     handleAddToCart();
     navigate('/checkout');
+  };
+
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    if (!currentUser) {
+      alert("Please login to submit a review");
+      navigate('/login');
+      return;
+    }
+
+    if (!reviewComment.trim()) {
+      alert("Please enter a comment");
+      return;
+    }
+
+    setIsSubmittingReview(true);
+    try {
+      const reviewData = {
+        productId: id,
+        userId: currentUser.uid,
+        userName: currentUser.displayName || 'Anonymous',
+        rating: reviewRating,
+        comment: reviewComment,
+        createdAt: serverTimestamp()
+      };
+
+      await addDoc(collection(db, 'reviews'), reviewData);
+      
+      const productRef = doc(db, 'products', id);
+      await updateDoc(productRef, {
+        reviewCount: increment(1)
+      });
+
+      setReviewComment('');
+      setReviewRating(5);
+      fetchReviews();
+      alert("Review submitted successfully!");
+    } catch (error) {
+      console.error("Error submitting review:", error);
+      alert("Failed to submit review. Please try again.");
+    } finally {
+      setIsSubmittingReview(false);
+    }
   };
 
   if (loading) {
@@ -156,12 +239,6 @@ const ProductDetail = () => {
 
         <div className="product-detail-main">
           <div className="product-images">
-            <div className="main-image">
-              <img src={currentImage} alt={product.name} />
-              <button className="mobile-wishlist-btn" title="Add to Wishlist">
-                <FiHeart />
-              </button>
-            </div>
             {productImages.length > 1 && (
               <div className="image-thumbnails">
                 {productImages.map((img, index) => (
@@ -175,6 +252,12 @@ const ProductDetail = () => {
                 ))}
               </div>
             )}
+            <div className="main-image">
+              <img src={currentImage} alt={product.name} />
+              <button className="mobile-wishlist-btn" title="Add to Wishlist">
+                <FiHeart />
+              </button>
+            </div>
           </div>
 
           <div className="product-info">
@@ -189,7 +272,6 @@ const ProductDetail = () => {
                 </div>
               )}
 
-              {/* SKU Removed */}
               <div className="meta-item">
                 <span className="rating-stars">
                   {[...Array(5)].map((_, i) => (
@@ -205,7 +287,6 @@ const ProductDetail = () => {
             <div className="product-price-group">
               <div className="product-price">
                 <span className="current-price">₹{currentPrice}</span>
-                {/* Show base price info */}
                 <span className="unit-price-label" style={{ fontSize: '14px', color: '#6b7280', marginLeft: '8px', fontWeight: 'normal' }}>
                    (₹{product.price} / 100{product.unit === 'ml' || product.unit === 'l' ? 'ml' : 'g'})
                 </span>
@@ -216,7 +297,6 @@ const ProductDetail = () => {
                    </span>
                 )}
                 
-                {/* General Discount - Handle both number and object formats */}
                 {(() => {
                   const discVal = typeof product.discount === 'object' ? product.discount?.value : product.discount;
                   if (discVal > 0 && !product.sizeDiscounts?.[selectedSize]) {
@@ -327,7 +407,6 @@ const ProductDetail = () => {
                 </div>
               </div>
             ) : (
-              /* Fallback if no packing sizes, still show quantity */
               <div className="product-option amount-option-container">
                  <div className="amount-selection">
                     <label className="option-label">Quantity</label>
@@ -456,25 +535,68 @@ const ProductDetail = () => {
                 <h3>Customer Reviews</h3>
                 <div className="review-form-container">
                   <h4>Write a Review</h4>
-                  <form className="review-form" onSubmit={(e) => e.preventDefault()}>
+                  <form className="review-form" onSubmit={handleSubmitReview}>
                     <div className="form-group">
                       <label>Your Rating</label>
                       <div className="rating-input">
                         {[1, 2, 3, 4, 5].map((star) => (
-                          <span key={star} className="star-input">★</span>
+                          <span 
+                            key={star} 
+                            className={`star-input ${reviewRating >= star ? 'active' : ''}`}
+                            onClick={() => setReviewRating(star)}
+                          >
+                            <FiStar fill={reviewRating >= star ? "currentColor" : "none"} />
+                          </span>
                         ))}
                       </div>
                     </div>
                     <div className="form-group">
                       <label>Your Review</label>
-                      <textarea placeholder="Write your review here..." rows="4"></textarea>
+                      <textarea 
+                        placeholder="Write your review here..." 
+                        rows="4"
+                        value={reviewComment}
+                        onChange={(e) => setReviewComment(e.target.value)}
+                        required
+                      ></textarea>
                     </div>
-                    <button type="submit" className="btn-submit-review">Submit Review</button>
+                    <button 
+                      type="submit" 
+                      className="btn-submit-review"
+                      disabled={isSubmittingReview}
+                    >
+                      {isSubmittingReview ? 'Submitting...' : 'Submit Review'}
+                    </button>
                   </form>
                 </div>
                 
                 <div className="reviews-list">
-                  <p>No reviews yet. Be the first to review this product!</p>
+                  {fetchingReviews ? (
+                    <p>Loading reviews...</p>
+                  ) : reviews.length > 0 ? (
+                    reviews.map((review) => (
+                      <div key={review.id} className="review-card">
+                        <div className="review-header">
+                          <span className="review-user">{review.userName}</span>
+                          <div className="review-rating">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <FiStar 
+                                key={star} 
+                                fill={review.rating >= star ? "#f59e0b" : "none"} 
+                                color={review.rating >= star ? "#f59e0b" : "#ccc"}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <p className="review-comment">{review.comment}</p>
+                        <span className="review-date">
+                          {review.createdAt?.toDate ? review.createdAt.toDate().toLocaleDateString() : 'Just now'}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <p>No reviews yet. Be the first to review this product!</p>
+                  )}
                 </div>
               </div>
             )}

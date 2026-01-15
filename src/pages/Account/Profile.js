@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
-  FiCamera, 
+
   FiLock, 
   FiMapPin, 
   FiShield,
@@ -227,25 +227,7 @@ const Profile = () => {
       {error && <div className="alert alert-error">{error}</div>}
 
       {/* Profile Picture Section */}
-      <div className="profile-pic-section">
-        <div className="profile-avatar-wrapper">
-          {currentUser?.photoURL ? (
-            <img src={currentUser.photoURL} alt="Profile" className="profile-avatar" />
-          ) : (
-            <div className="avatar-placeholder">
-              {formData.displayName?.charAt(0) || currentUser?.email?.charAt(0)}
-            </div>
-          )}
-          <button className="change-photo-btn" title="Change Photo">
-            <FiCamera />
-          </button>
-        </div>
-        <div className="profile-pic-info">
-          <h3>Profile Picture</h3>
-          <p>PNG, JPG or GIF. Max 2MB.</p>
-          <button className="change-photo-btn">Change Photo</button>
-        </div>
-      </div>
+
 
       <form onSubmit={handleSubmit} className="account-form">
         {/* Personal Information */}

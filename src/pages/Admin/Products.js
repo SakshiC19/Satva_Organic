@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { deleteMultipleImages, getPathFromURL } from '../../services/storageService';
@@ -8,6 +8,7 @@ import { useCategories } from '../../contexts/CategoryContext';
 import './Products.css';
 
 const Products = () => {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialCategory = searchParams.get('category') || 'all';
 
@@ -149,7 +150,11 @@ const Products = () => {
             </thead>
             <tbody>
               {filteredProducts.map(product => (
-                <tr key={product.id}>
+                <tr 
+                  key={product.id} 
+                  onClick={() => navigate(`/admin/products/edit/${product.id}`)}
+                  className="product-row-clickable"
+                >
                   <td>
                     <div className="product-cell">
                       <img 
@@ -188,7 +193,10 @@ const Products = () => {
                     <div className="table-actions">
                       <button 
                         className="action-btn-circle" 
-                        onClick={() => handleProductClick(product)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleProductClick(product);
+                        }}
                         title="View Details"
                       >
                         <FiEye />
@@ -197,12 +205,16 @@ const Products = () => {
                         to={`/admin/products/edit/${product.id}`} 
                         className="action-btn-circle"
                         title="Edit"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <FiEdit2 />
                       </Link>
                       <button 
                         className="action-btn-circle delete" 
-                        onClick={() => handleDelete(product.id, product.images)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(product.id, product.images);
+                        }}
                         title="Delete"
                       >
                         <FiTrash2 />

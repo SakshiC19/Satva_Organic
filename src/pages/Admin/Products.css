@@ -125,6 +125,19 @@
     border-bottom: 1px solid #f1f5f9;
 }
 
+.product-row-clickable {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.product-row-clickable:hover {
+    background-color: #f8fafc;
+}
+
+.product-row-clickable:hover .product-name-text {
+    color: #059669;
+}
+
 .product-cell {
     display: flex;
     align-items: center;
@@ -148,6 +161,7 @@
     font-weight: 600;
     color: #1e293b;
     font-size: 0.95rem;
+    transition: color 0.2s ease;
 }
 
 .product-id-text {

@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { FiTrash2, FiShoppingCart, FiArrowRight, FiHeart, FiHome, FiChevronRight } from 'react-icons/fi';
+import { FiTrash2, FiShoppingCart, FiArrowRight, FiHeart, FiHome, FiChevronRight, FiStar, FiPercent } from 'react-icons/fi';
 import ProductCard from '../../components/product/ProductCard';
+import Recommendations from '../../components/product/Recommendations';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { useCart } from '../../contexts/CartContext';
 import './Account.css';
@@ -11,34 +12,6 @@ const Wishlist = () => {
   const { wishlistItems, clearWishlist, wishlistCount } = useWishlist();
   const { addToCart } = useCart();
   const [sortBy, setSortBy] = useState('newest');
-
-  // Mock recommendations
-  const recommendations = [
-    {
-      id: 'rec1',
-      name: 'Organic Honey',
-      category: 'Organic Items',
-      image: 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400',
-      price: 250,
-      originalPrice: 300,
-      discount: 16,
-      rating: 4.8,
-      inStock: true,
-      stock: 15
-    },
-    {
-      id: 'rec2',
-      name: 'Cold Pressed Coconut Oil',
-      category: 'Oils',
-      image: 'https://images.unsplash.com/photo-1590733455785-f18519f59f4f?w=400',
-      price: 450,
-      originalPrice: 500,
-      discount: 10,
-      rating: 4.9,
-      inStock: true,
-      stock: 8
-    }
-  ];
 
   const sortedItems = useMemo(() => {
     const items = [...wishlistItems];
@@ -60,31 +33,66 @@ const Wishlist = () => {
         addToCart(item);
       }
     });
-    // Optional: clearWishlist();
   };
 
   if (wishlistCount === 0) {
     return (
-      <div className="account-section">
-        <div className="empty-wishlist">
-          <div className="empty-wishlist-icon">
-            <FiHeart />
+      <div className="account-section full-width-layout">
+        <div className="breadcrumb">
+          <Link to="/" className="breadcrumb-item">
+            <FiHome /> Home
+          </Link>
+          <FiChevronRight className="breadcrumb-separator" />
+          <span className="breadcrumb-item active">My Wishlist</span>
+        </div>
+        <div className="empty-wishlist-container">
+          <div className="empty-wishlist-illustration">
+            <div className="illustration-wrapper">
+              <div className="heart-icon-bg">
+                <FiHeart className="main-heart" />
+                <div className="leaf leaf-1">🍃</div>
+                <div className="leaf leaf-2">🌿</div>
+              </div>
+            </div>
           </div>
-          <h2>Your wishlist is empty</h2>
-          <p>Explore our products and add your favorites to your wishlist!</p>
-          <button className="btn-primary" onClick={() => navigate('/shop')}>
-            Continue Shopping <FiArrowRight />
-          </button>
+          
+          <div className="empty-wishlist-content">
+            <h2>💚 Your wishlist is waiting!</h2>
+            <p>Save organic products you love and buy them anytime.</p>
+            
+            <div className="empty-wishlist-actions">
+              <button className="btn-primary main-cta" onClick={() => navigate('/shop')}>
+                Explore Organic Products <FiArrowRight />
+              </button>
+              
+              <div className="secondary-actions">
+                <button className="btn-outline-secondary" onClick={() => navigate('/flash-deals')}>
+                  <FiPercent /> View Today's Deals
+                </button>
+                <button className="btn-outline-secondary" onClick={() => navigate('/shop?sort=popular')}>
+                  <FiStar /> Browse Best Sellers
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Recommendations even when empty */}
-        <div className="wishlist-recommendations">
-          <h3 className="section-title">You may also like</h3>
-          <div className="wishlist-grid">
-            {recommendations.map(item => (
-              <ProductCard key={item.id} product={item} compact />
-            ))}
-          </div>
+        <div className="wishlist-recommendations-smart">
+          <Recommendations 
+            title="Recently Viewed" 
+            type="recentlyViewed" 
+            limit={4} 
+          />
+          <Recommendations 
+            title="Popular Organic Products" 
+            type="popular" 
+            limit={4} 
+          />
+          <Recommendations 
+            title="Today's Best Deals" 
+            type="discounted" 
+            limit={4} 
+          />
         </div>
       </div>
     );
@@ -135,13 +143,18 @@ const Wishlist = () => {
         ))}
       </div>
 
-      <div className="wishlist-recommendations">
-        <h3 className="section-title">Recommended for You</h3>
-        <div className="wishlist-grid">
-          {recommendations.map(item => (
-            <ProductCard key={item.id} product={item} compact />
-          ))}
-        </div>
+      <div className="wishlist-recommendations-smart" style={{ marginTop: '60px' }}>
+        <Recommendations 
+          title="You May Also Like" 
+          type="category" 
+          category={localStorage.getItem('lastVisitedCategory')}
+          limit={4} 
+        />
+        <Recommendations 
+          title="Trending Now" 
+          type="popular" 
+          limit={4} 
+        />
       </div>
     </div>
   );

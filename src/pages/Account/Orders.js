@@ -80,11 +80,13 @@ const Orders = () => {
 
   const cancellationReasons = [
     "Changed my mind",
-    "Found a better price",
     "Ordered by mistake",
-    "Shipping time is too long",
+    "Found a better price",
+    "Item not needed anymore",
+    "Expected delivery date changed",
     "Other"
   ];
+
 
   const handleCancelClick = (orderId) => {
     setCancelModal({ isOpen: true, orderId });
@@ -209,49 +211,7 @@ const Orders = () => {
         <h2 className="account-title">My Orders ({filteredOrders.length})</h2>
       </div>
 
-      {/* Filters & Search */}
-      <div className="orders-controls">
-        <div className="search-bar">
-          <FiSearch className="search-icon" />
-          <input 
-            type="text" 
-            placeholder="Search by Order ID or Product Name" 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <button className="filter-toggle-btn" onClick={() => setShowFilters(!showFilters)}>
-          <FiFilter /> {showFilters ? 'Hide Filters' : 'Show Filters'}
-        </button>
-        <div className={`filters-group ${showFilters ? 'show' : ''}`}>
-          <div className="filter-item">
-            <FiFilter className="filter-icon" />
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              <option value="All">All Status</option>
-              <option value="Processing">Processing</option>
-              <option value="Accepted">Accepted</option>
-              <option value="Packed">Packed</option>
-              <option value="Shipped">Shipped</option>
-              <option value="Out for Delivery">Out for Delivery</option>
-              <option value="Delivered">Delivered</option>
-              <option value="Cancelled">Cancelled</option>
-              <option value="Returned">Returned</option>
-            </select>
-          </div>
-          <div className="filter-item">
-            <FiCalendar className="filter-icon" />
-            <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value)}>
-              <option value="All">All Time</option>
-              <option value="Today">Today</option>
-              <option value="This Week">This Week</option>
-              <option value="This Month">This Month</option>
-              <option value="Last 30 Days">Last 30 Days</option>
-              <option value="Last 6 Months">Last 6 Months</option>
-              <option value="2025">2025</option>
-            </select>
-          </div>
-        </div>
-      </div>
+
 
       <div className="orders-list">
         {filteredOrders.length > 0 ? (
@@ -266,23 +226,6 @@ const Orders = () => {
                 <div className="header-right">
                   <Badge variant={getStatusColor(order.status)}>{order.status || 'Processing'}</Badge>
                 </div>
-              </div>
-
-              {/* Mini Timeline */}
-              <div className="order-mini-timeline">
-                {['Ordered', 'Accepted', 'Shipped', 'Delivered'].map((step, index) => {
-                  const status = order.status || 'Pending';
-                  const steps = ['Pending', 'Accepted', 'Shipped', 'Delivered'];
-                  const currentStepIndex = steps.indexOf(status) === -1 ? 0 : steps.indexOf(status);
-                  const isCompleted = index <= currentStepIndex;
-                  
-                  return (
-                    <div key={step} className={`timeline-step ${isCompleted ? 'completed' : ''}`}>
-                      <div className="step-dot"></div>
-                      <span className="step-label">{step}</span>
-                    </div>
-                  );
-                })}
               </div>
 
               {/* Body: Items, Payment, Address */}
@@ -324,22 +267,21 @@ const Orders = () => {
                   <button className="btn-track" onClick={() => navigate(`/account/orders/${order.id}`)}>
                     Track Order
                   </button>
-                  <button className="btn-reorder" onClick={() => handleReorder(order)}>
-                    Reorder
-                  </button>
+                  {['Pending', 'Accepted', 'Processing', 'Packed'].includes(order.status) && (
+                    order.cancellationRequest?.status === 'pending' ? (
+                      <button className="btn-cancel disabled" disabled>
+                        Cancellation Requested
+                      </button>
+                    ) : (
+                      <button className="btn-cancel" onClick={() => handleCancelClick(order.id)}>
+                        Cancel Order
+                      </button>
+                    )
+                  )}
                   {['confirmed', 'processing', 'packed', 'shipped', 'out for delivery', 'delivered'].includes(order.status?.toLowerCase()) && (
                     <button className="btn-text" onClick={() => downloadInvoice(order)}>
                       <FiDownload /> Invoice
                     </button>
-                  )}
-                  {order.status === 'Processing' && (
-                    order.cancellationRequest?.status === 'pending' ? (
-                      <span className="status-text warning">Cancellation Requested</span>
-                    ) : (
-                      <button className="btn-text danger" onClick={() => handleCancelClick(order.id)}>
-                        Cancel Order
-                      </button>
-                    )
                   )}
                 </div>
                 <Link to={`/account/orders/${order.id}`} className="view-full-details">

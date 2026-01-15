@@ -21,6 +21,7 @@ const Orders = () => {
   const [dateRange, setDateRange] = useState('all');
   const [paymentFilter, setPaymentFilter] = useState('all');
   const [specialFilter, setSpecialFilter] = useState(null); // 'pending_payments', 'refund_requests'
+  const [statusFilter, setStatusFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
   const [viewingOrder, setViewingOrder] = useState(null);
   const [viewingCancellation, setViewingCancellation] = useState(null);
@@ -132,6 +133,15 @@ const Orders = () => {
     }
     // Scroll to table
     document.querySelector('.om-orders-section')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setPaymentFilter('all');
+    setDateRange('all');
+    setSpecialFilter(null);
+    setActiveTab('all');
   };
 
   const handleBulkStatusUpdate = async (newStatus) => {
@@ -335,7 +345,24 @@ const Orders = () => {
       }
     }
 
+    // Status Filter
+    if (statusFilter !== 'all') {
+      if (order.status?.toLowerCase() !== statusFilter.toLowerCase()) return false;
+    }
+
+    // Payment Filter
+    if (paymentFilter !== 'all') {
+      if (paymentFilter === 'cod' && order.paymentMethod !== 'cod') return false;
+      if (paymentFilter === 'online' && order.paymentMethod === 'cod') return false;
+      if (paymentFilter === 'paid' && order.paymentStatus !== 'Paid') return false;
+      if (paymentFilter === 'pending' && order.paymentStatus === 'Paid') return false;
+    }
+
     return true;
+  }).sort((a, b) => {
+    const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+    const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+    return dateB - dateA;
   });
 
   if (loading) {
@@ -365,6 +392,13 @@ const Orders = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          <button 
+            className={`om-filter-toggle ${showFilters ? 'active' : ''}`}
+            onClick={() => setShowFilters(!showFilters)}
+            title="Toggle Filters"
+          >
+            <FiFilter />
+          </button>
           <div className="om-admin-profile">
             <div className="admin-avatar">
               {currentUser?.photoURL ? (
@@ -380,6 +414,47 @@ const Orders = () => {
           </div>
         </div>
       </div>
+
+      {/* Filter Panel */}
+      {showFilters && (
+        <div className="om-filter-panel">
+          <div className="filter-group">
+            <label>Order Status</label>
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+              <option value="all">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="accepted">Accepted</option>
+              <option value="processing">Processing</option>
+              <option value="shipped">Shipped</option>
+              <option value="delivered">Delivered</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <label>Payment Method</label>
+            <select value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)}>
+              <option value="all">All Methods</option>
+              <option value="cod">Cash on Delivery</option>
+              <option value="online">Online Payment</option>
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <label>Date Range</label>
+            <select value={dateRange} onChange={(e) => setDateRange(e.target.value)}>
+              <option value="all">All Time</option>
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+            </select>
+          </div>
+
+          <button className="clear-filters-btn" onClick={clearFilters}>
+            <FiX /> Clear Filters
+          </button>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="om-stats-header">
@@ -778,6 +853,23 @@ const Orders = () => {
               <button className="close-btn" onClick={() => setViewingOrder(null)}><FiX /></button>
             </div>
             <div className="modal-body">
+              {(viewingOrder.cancellationRequest?.status === 'pending' || viewingOrder.status?.toLowerCase() === 'cancellation_requested') && (
+                <div className="cancellation-alert-box">
+                  <div className="alert-content">
+                    <h4><FiAlertCircle /> Cancellation Requested</h4>
+                    <p><strong>Reason:</strong> "{viewingOrder.cancellationRequest?.reason || 'No reason provided'}"</p>
+                    <p className="alert-time">Requested on: {formatDate(viewingOrder.cancellationRequest?.requestedAt)}</p>
+                  </div>
+                  <div className="alert-actions">
+                    <button className="btn-approve-sm" onClick={() => handleApproveCancellation(viewingOrder.id)}>
+                      <FiCheck /> Approve
+                    </button>
+                    <button className="btn-reject-sm" onClick={() => handleRejectCancellation(viewingOrder.id)}>
+                      <FiX /> Reject
+                    </button>
+                  </div>
+                </div>
+              )}
               <div className="order-details-grid-new">
                 <div className="details-main">
                   {/* Customer Info */}

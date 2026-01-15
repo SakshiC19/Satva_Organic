@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   FiShoppingCart, 
   FiUser, 
@@ -45,6 +45,7 @@ const Header = () => {
   const { cartCount, openCart } = useCart();
   const { wishlistCount } = useWishlist();
   const navigate = useNavigate();
+  const location = useLocation();
   const [products, setProducts] = useState([]);
 
   useEffect(() => {
@@ -318,21 +319,23 @@ const Header = () => {
       </div>
 
       {/* Secondary Navigation (Categories) */}
-      <div className="header-categories">
-        <div className="container">
-          <div className="category-nav">
-            {navItems.map((item, index) => (
-              <div key={index} className="category-nav-item-wrapper">
-                <Link to={item.path} className="category-nav-item text-only">
-                  <span className="category-name">
-                    {item.name}
-                  </span>
-                </Link>
-              </div>
-            ))}
+      {location.pathname !== '/account/wishlist' && (
+        <div className="header-categories">
+          <div className="container">
+            <div className="category-nav">
+              {navItems.map((item, index) => (
+                <div key={index} className="category-nav-item-wrapper">
+                  <Link to={item.path} className="category-nav-item text-only">
+                    <span className="category-name">
+                      {item.name}
+                    </span>
+                  </Link>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
       {/* Mobile Sidebar */}
       <div className={`mobile-sidebar-overlay ${mobileMenuOpen ? 'open' : ''}`} onClick={() => setMobileMenuOpen(false)} />
       <div className={`mobile-sidebar ${mobileMenuOpen ? 'open' : ''}`}>
