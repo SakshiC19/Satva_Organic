@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { doc, getDoc, addDoc, collection, serverTimestamp, updateDoc, increment, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { FiHeart, FiMinus, FiPlus, FiCheck, FiStar, FiChevronLeft } from 'react-icons/fi';
+import { FiHeart, FiMinus, FiPlus, FiCheck, FiStar, FiChevronLeft, FiX } from 'react-icons/fi';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
 import Recommendations from '../../components/product/Recommendations';
@@ -26,6 +26,12 @@ const ProductDetail = () => {
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [reviews, setReviews] = useState([]);
   const [fetchingReviews, setFetchingReviews] = useState(false);
+  
+  // Pincode state
+  const [pincode, setPincode] = useState('');
+  const [isCheckingPincode, setIsCheckingPincode] = useState(false);
+  const [pincodeStatus, setPincodeStatus] = useState(null); // null, 'available', 'unavailable'
+  const [pincodeError, setPincodeError] = useState('');
 
   const fetchProduct = async () => {
     try {
@@ -139,10 +145,19 @@ const ProductDetail = () => {
 
   const currentPrice = product ? calculateDynamicPrice(product, selectedSize) : 0;
 
-  const { addToCart, openCart } = useCart();
+  const { addToCart, openCart, cartItems } = useCart();
+
+  const isInCart = cartItems.some(item => 
+    item.id === product?.id && item.selectedSize === selectedSize
+  );
 
   const handleAddToCart = () => {
     if (!product) return;
+    
+    if (isInCart) {
+      openCart();
+      return;
+    }
     
     addToCart({
       ...product,
@@ -160,6 +175,43 @@ const ProductDetail = () => {
   const handleBuyNow = () => {
     handleAddToCart();
     navigate('/checkout');
+  };
+
+  const handlePincodeCheck = async () => {
+    if (!pincode || pincode.length !== 6) {
+      setPincodeError('Please enter a valid 6-digit pincode');
+      return;
+    }
+
+    setIsCheckingPincode(true);
+    setPincodeError('');
+    
+    try {
+      // Mock API call - in a real app, this would check against a database or shipping API
+      // For now, let's assume pincodes starting with '4' are available (common in Maharashtra)
+      // and others are checked against a mock list or just allowed for demo purposes
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      if (product.availablePincodes && product.availablePincodes.length > 0) {
+        if (product.availablePincodes.includes(pincode)) {
+          setPincodeStatus('available');
+        } else {
+          setPincodeStatus('unavailable');
+        }
+      } else {
+        // Default logic if no specific pincodes are defined for the product
+        if (pincode.startsWith('4') || pincode.startsWith('1')) {
+          setPincodeStatus('available');
+        } else {
+          setPincodeStatus('unavailable');
+        }
+      }
+    } catch (error) {
+      console.error("Error checking pincode:", error);
+      setPincodeError('Failed to check pincode. Please try again.');
+    } finally {
+      setIsCheckingPincode(false);
+    }
   };
 
   const handleSubmitReview = async (e) => {
@@ -254,9 +306,6 @@ const ProductDetail = () => {
             )}
             <div className="main-image">
               <img src={currentImage} alt={product.name} />
-              <button className="mobile-wishlist-btn" title="Add to Wishlist">
-                <FiHeart />
-              </button>
             </div>
           </div>
 
@@ -316,10 +365,7 @@ const ProductDetail = () => {
             </div>
 
             <div className="product-features" style={{ marginTop: '8px', marginBottom: '16px', borderTop: 'none', paddingTop: 0 }}>
-              <div className="feature-item">
-                <FiCheck className="feature-icon" />
-                <span>Type: {product.productType || 'Organic'}</span>
-              </div>
+
               <div className="feature-item">
                 <FiCheck className={`feature-icon ${product.codAvailable !== false ? 'success' : 'error'}`} />
                 <span>Cash on Delivery: {product.codAvailable !== false ? 'Available' : 'Not Available'}</span>
@@ -342,7 +388,42 @@ const ProductDetail = () => {
               )}
             </div>
 
-            <p className="product-description">{product.description}</p>
+            <div className="pincode-check-section">
+              <label className="option-label">Check Delivery Availability</label>
+              <div className="pincode-input-group">
+                <input 
+                  type="text" 
+                  placeholder="Enter Pincode" 
+                  value={pincode}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    setPincode(val);
+                    if (pincodeStatus) setPincodeStatus(null);
+                  }}
+                  className={`pincode-input ${pincodeStatus}`}
+                />
+                <button 
+                  className="btn-check-pincode"
+                  onClick={handlePincodeCheck}
+                  disabled={isCheckingPincode || pincode.length !== 6}
+                >
+                  {isCheckingPincode ? 'Checking...' : 'Check'}
+                </button>
+              </div>
+              {pincodeError && <p className="pincode-error">{pincodeError}</p>}
+              {pincodeStatus === 'available' && (
+                <p className="pincode-success">
+                  <FiCheck /> Delivery available to {pincode}
+                </p>
+              )}
+              {pincodeStatus === 'unavailable' && (
+                <p className="pincode-error">
+                  <FiX /> Sorry, delivery not available for this product in your area.
+                </p>
+              )}
+            </div>
+
+
 
             {product.brands && product.brands.length > 0 && (
               <div className="product-option">
@@ -374,6 +455,7 @@ const ProductDetail = () => {
                         key={index}
                         className={`option-btn ${selectedSize === size ? 'active' : ''}`}
                         onClick={() => setSelectedSize(size)}
+                        disabled={pincodeStatus !== 'available'}
                       >
                         {size}
                       </button>
@@ -440,25 +522,25 @@ const ProductDetail = () => {
 
             <div className="product-actions">
               <button 
-                className="btn-add-to-cart"
+                className={`btn-add-to-cart ${isInCart ? 'in-cart' : ''}`}
                 onClick={handleAddToCart}
-                disabled={product.stock <= 0}
+                disabled={product.stock <= 0 || pincodeStatus !== 'available'}
               >
-                Add to Basket
+                {isInCart ? 'View Basket' : 'Add to Basket'}
               </button>
               <button 
                 className="btn-buy-now"
                 onClick={handleBuyNow}
-                disabled={product.stock <= 0}
+                disabled={product.stock <= 0 || pincodeStatus !== 'available'}
                 style={{
                   flex: 1,
-                  backgroundColor: '#f59e0b',
+                  backgroundColor: pincodeStatus === 'available' ? '#f59e0b' : '#cbd5e1',
                   color: 'white',
                   border: 'none',
                   padding: '12px 24px',
                   borderRadius: '8px',
                   fontWeight: '600',
-                  cursor: 'pointer',
+                  cursor: pincodeStatus === 'available' ? 'pointer' : 'not-allowed',
                   marginLeft: '10px'
                 }}
               >
@@ -496,7 +578,6 @@ const ProductDetail = () => {
           <div className="tabs-content">
             {activeTab === 'description' && (
               <div className="tab-pane">
-                <h3>Product Description</h3>
                 <p>{product.description || 'No description available.'}</p>
                 {product.longDescription && <p>{product.longDescription}</p>}
               </div>
