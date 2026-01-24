@@ -416,6 +416,7 @@
     flex-direction: column;
     border-radius: 8px;
     transition: all 0.2s;
+    border: 1px solid #e0e0e0;
 }
 
 .payment-method-group.active {
@@ -427,6 +428,171 @@
     border: none;
     background: transparent;
     box-shadow: none;
+}
+
+.payment-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    cursor: pointer;
+}
+
+.payment-label input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #27ae60;
+}
+
+.payment-label span {
+    font-size: 15px;
+    font-weight: 500;
+    color: #212121;
+}
+
+.cod-unavailable-badge {
+    background: #fee2e2;
+    color: #ef4444;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    margin-left: auto;
+}
+
+.payment-action-container {
+    padding: 0 16px 16px 46px;
+}
+
+.pay-now-btn {
+    background: #fb641b;
+    color: white;
+    border: none;
+    padding: 12px 32px;
+    font-weight: 700;
+    font-size: 14px;
+    border-radius: 2px;
+    cursor: pointer;
+    text-transform: uppercase;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s;
+}
+
+.pay-now-btn:hover:not(:disabled) {
+    background: #f4511e;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.pay-now-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+/* Sidebar Enhancements */
+.products-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.breakdown-header {
+    font-size: 14px;
+    color: #212121;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.product-price-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.product-price-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.product-price-thumb {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid #f0f0f0;
+}
+
+.product-price-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.product-price-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: #212121;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.product-price-meta {
+    font-size: 11px;
+    color: #878787;
+    display: flex;
+    gap: 8px;
+}
+
+.product-price-amount {
+    font-size: 14px;
+    font-weight: 600;
+    color: #212121;
+}
+
+.price-divider {
+    height: 1px;
+    background: #f0f0f0;
+    margin: 16px 0;
+}
+
+.secure-badge {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    margin-top: 16px;
+    color: #878787;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.secure-icon {
+    font-size: 24px;
+    color: #878787;
+    flex-shrink: 0;
+}
+
+.checkout-footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 24px;
+    font-size: 12px;
+    color: #878787;
+}
+
+.checkout-footer-links a {
+    color: #878787;
+    text-decoration: none;
+}
+
+.checkout-footer-links a:hover {
+    color: #27ae60;
 }
 
 /* Mobile Checkout Flow Styles */
@@ -668,27 +834,56 @@
 }
 
 .mobile-product-card.summary {
-    padding: 12px 0;
-    border-bottom: 1px solid #f0f0f0;
+    padding: 12px;
+    border: 1px solid #f0f0f0;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    background: #fff;
+    display: flex;
+    gap: 12px;
+    align-items: center;
 }
 
 .mobile-product-card.summary:last-child {
-    border-bottom: none;
+    margin-bottom: 0;
 }
 
 .mobile-product-card.summary .mobile-product-img {
-    width: 50px;
-    height: 50px;
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    border-radius: 4px;
+    border: 1px solid #eee;
+
 }
 
 .mobile-product-card.summary .mobile-product-name {
-    font-size: 13px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #212121;
+    margin: 0;
+}
+
+.mobile-product-card.summary .mobile-product-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .mobile-product-card.summary .mobile-product-meta {
-    margin-top: 2px;
-    font-weight: 600;
-    color: #212121;
+    font-size: 12px;
+    color: #878787;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    color: #878787;
+}
+
+.mobile-product-card.summary .mobile-product-price {
+    font-weight: 700;
+    color: #27ae60;
 }
 
 /* Confirmation Modal Styles */

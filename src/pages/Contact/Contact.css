@@ -8,7 +8,7 @@
 /* Contact Header Section */
 .contact-header-section {
     padding: var(--spacing-20) 0 var(--spacing-12) 0;
-    background: linear-gradient(135deg, #84cc16 0%, #65a30d 100%);
+    background: linear-gradient(135deg, #27ae60 0%, #1e8449 100%);
     color: var(--text-on-primary);
     text-align: center;
     position: relative;
@@ -131,7 +131,7 @@
     right: -5px;
     width: 24px;
     height: 24px;
-    background: #84cc16;
+    background: #27ae60;
     border-radius: var(--radius-full);
     border: 3px solid var(--bg-primary);
 }
@@ -216,8 +216,8 @@
 .form-group-icon select:focus,
 .form-group-icon textarea:focus {
     outline: none;
-    border-color: #84cc16;
-    box-shadow: 0 0 0 3px rgba(132, 204, 22, 0.1);
+    border-color: #27ae60;
+    box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.1);
 }
 
 .form-group-icon select {
@@ -245,7 +245,7 @@
     top: 50%;
     transform: translateY(-50%);
     font-size: 1.25rem;
-    color: #84cc16;
+    color: #27ae60;
     pointer-events: none;
 }
 
@@ -260,7 +260,7 @@
     font-size: var(--font-size-base);
     font-weight: var(--font-weight-semibold);
     color: var(--text-on-primary);
-    background: #84cc16;
+    background: #27ae60;
     border: none;
     border-radius: var(--radius-md);
     cursor: pointer;
@@ -270,9 +270,9 @@
 }
 
 .submit-btn:hover {
-    background: #65a30d;
+    background: #1e8449;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(132, 204, 22, 0.3);
+    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
 }
 
 .submit-btn:active {
@@ -337,19 +337,19 @@
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
     color: var(--text-on-primary);
-    background: #84cc16;
+    background: #27ae60;
     border: none;
     border-radius: var(--radius-md);
     cursor: pointer;
     transition: all var(--transition-base);
     font-family: var(--font-family-primary);
-    box-shadow: 0 2px 8px rgba(132, 204, 22, 0.3);
+    box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
 }
 
 .map-directions-btn:hover {
-    background: #65a30d;
+    background: #1e8449;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(132, 204, 22, 0.4);
+    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.4);
 }
 
 /* Update responsive styles */

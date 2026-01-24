@@ -47,6 +47,20 @@ const Orders = () => {
     return () => unsubscribe();
   }, []);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (activeDropdown && !event.target.closest('.action-cell')) {
+        setActiveDropdown(null);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [activeDropdown]);
+
   // Calculate comprehensive stats
   const calculateStats = () => {
     if (!orders || orders.length === 0) {
@@ -360,9 +374,13 @@ const Orders = () => {
 
     return true;
   }).sort((a, b) => {
-    const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
-    const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
-    return dateB - dateA;
+    const getTime = (d) => {
+        if (!d) return 0;
+        if (d.toDate) return d.toDate().getTime();
+        if (d.seconds) return d.seconds * 1000;
+        return new Date(d).getTime() || 0;
+    };
+    return getTime(b.createdAt) - getTime(a.createdAt);
   });
 
   if (loading) {
@@ -425,6 +443,7 @@ const Orders = () => {
               <option value="pending">Pending</option>
               <option value="accepted">Accepted</option>
               <option value="processing">Processing</option>
+              <option value="packed">Packed</option>
               <option value="shipped">Shipped</option>
               <option value="delivered">Delivered</option>
               <option value="cancelled">Cancelled</option>
@@ -561,6 +580,7 @@ const Orders = () => {
                 <option value="" disabled>Update Status</option>
                 <option value="Accepted">Accept</option>
                 <option value="Processing">Process</option>
+                <option value="Packed">Pack</option>
                 <option value="Shipped">Ship</option>
                 <option value="Delivered">Deliver</option>
                 <option value="Cancelled">Cancel</option>
@@ -622,7 +642,11 @@ const Orders = () => {
                   const isSelected = selectedOrders.includes(order.id);
                   
                   return (
-                    <tr key={order.id} className={isSelected ? 'selected' : ''}>
+                    <tr 
+                      key={order.id} 
+                      className={isSelected ? 'selected' : ''}
+                      style={{ zIndex: activeDropdown === order.id ? 100 : 1, position: 'relative' }}
+                    >
                       <td className="checkbox-col">
                         <input
                           type="checkbox"
@@ -766,7 +790,11 @@ const Orders = () => {
 
                           <button
                             className="action-menu-btn"
-                            onClick={() => setActiveDropdown(activeDropdown === order.id ? null : order.id)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setActiveDropdown(activeDropdown === order.id ? null : order.id);
+                            }}
                           >
                             <FiMoreVertical />
                           </button>
@@ -784,9 +812,14 @@ const Orders = () => {
                               )}
 
                               {(order.status?.toLowerCase() === 'accepted' || order.status?.toLowerCase() === 'processing') && (
-                                <button className="dropdown-item info" onClick={() => { updateOrderStatus(order.id, 'Shipped'); setActiveDropdown(null); }}>
-                                  <FiTruck /> Ship Order
-                                </button>
+                                <>
+                                  <button className="dropdown-item info" onClick={() => { updateOrderStatus(order.id, 'Packed'); setActiveDropdown(null); }}>
+                                    <FiPackage /> Mark as Packed
+                                  </button>
+                                  <button className="dropdown-item info" onClick={() => { updateOrderStatus(order.id, 'Shipped'); setActiveDropdown(null); }}>
+                                    <FiTruck /> Ship Order
+                                  </button>
+                                </>
                               )}
 
                               {order.status?.toLowerCase() === 'shipped' && (

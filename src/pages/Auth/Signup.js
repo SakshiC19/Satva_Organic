@@ -207,6 +207,9 @@ const Signup = () => {
             <button type="submit" className="auth-button" disabled={loading}>
               {loading ? 'Creating Account...' : 'Sign Up'}
             </button>
+            <p className="terms-agreement">
+              By signing up, you agree to our <Link to="/terms">Terms</Link> and <Link to="/privacy">Privacy Policy</Link>.
+            </p>
           </form>
 
           <div className="auth-divider">

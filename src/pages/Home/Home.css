@@ -305,18 +305,18 @@
 
 .category-name-container {
     width: 100%;
-    overflow: hidden;
     position: relative;
     padding: 4px 0;
-    -webkit-mask: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent);
-    mask: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent);
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .category-name-scroll {
-    display: inline-flex;
-    white-space: nowrap;
-    animation: scrollText 12s linear infinite;
+    display: flex;
     align-items: center;
+    justify-content: center;
+    text-align: center;
 }
 
 .category-name-scroll span {
@@ -335,20 +335,6 @@
 
 .category-card-compact:hover .category-name-scroll span {
     color: #27ae60;
-}
-
-.category-card-compact:hover .category-name-scroll {
-    animation-play-state: paused;
-}
-
-@keyframes scrollText {
-    0% {
-        transform: translateX(0);
-    }
-
-    100% {
-        transform: translateX(-50%);
-    }
 }
 
 /* ========================================

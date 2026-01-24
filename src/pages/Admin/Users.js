@@ -598,8 +598,14 @@ const Users = () => {
     let valB = b[key] || '';
     
     if (key === 'createdAt') {
-      valA = valA.seconds || new Date(valA).getTime();
-      valB = valB.seconds || new Date(valB).getTime();
+      const getTime = (d) => {
+          if (!d) return 0;
+          if (d.seconds) return d.seconds * 1000;
+          if (d.toDate) return d.toDate().getTime();
+          return new Date(d).getTime() || 0;
+      };
+      valA = getTime(valA);
+      valB = getTime(valB);
     }
 
     if (valA < valB) return direction === 'asc' ? -1 : 1;

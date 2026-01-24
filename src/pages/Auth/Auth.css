@@ -419,3 +419,19 @@
         font-size: var(--font-size-xl);
     }
 }
+
+.terms-agreement {
+    text-align: center;
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    margin-top: var(--spacing-3);
+}
+
+.terms-agreement a {
+    color: var(--color-primary-600);
+    text-decoration: none;
+}
+
+.terms-agreement a:hover {
+    text-decoration: underline;
+}

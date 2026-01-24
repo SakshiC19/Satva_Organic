@@ -68,6 +68,28 @@ const Header = () => {
     fetchProducts();
   }, []);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (activeMenu !== 'login') return;
+
+    const handleClickOutside = (event) => {
+      const loginItem = document.querySelector('.login-item');
+      if (loginItem && !loginItem.contains(event.target)) {
+        setActiveMenu(null);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [activeMenu]);
+
+  // Close dropdown when navigating
+  useEffect(() => {
+    setActiveMenu(null);
+  }, [location.pathname]);
+
   useEffect(() => {
     if (searchQuery.trim().length > 0) {
       const filtered = products.filter(p => 
@@ -240,13 +262,15 @@ const Header = () => {
           {/* Header Actions */}
           <div className="header-actions">
             {/* Login Button */}
-            <div 
-              className="action-item login-item desktop-only"
-              onMouseEnter={() => setActiveMenu('login')}
-              onMouseLeave={() => setActiveMenu(null)}
-            >
+            <div className="action-item login-item desktop-only">
               {currentUser ? (
-                <button className="login-btn logged-in">
+                <button 
+                  className="login-btn logged-in"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveMenu(activeMenu === 'login' ? null : 'login');
+                  }}
+                >
                   <FiUser />
                   <span>{currentUser.displayName ? currentUser.displayName.split(' ')[0] : 'Account'}</span>
                   <FiChevronDown className={`chevron ${activeMenu === 'login' ? 'rotate' : ''}`} />
@@ -261,21 +285,21 @@ const Header = () => {
               <div className={`action-dropdown ${activeMenu === 'login' ? 'show' : ''}`}>
                 {currentUser ? (
                   <>
-                    <Link to="/account/profile" className="dropdown-item">
+                    <Link to="/account/profile" className="dropdown-item" onClick={() => setActiveMenu(null)}>
                       My Profile
                     </Link>
-                    <Link to="/account/orders" className="dropdown-item">
+                    <Link to="/account/orders" className="dropdown-item" onClick={() => setActiveMenu(null)}>
                       My Orders
                     </Link>
-                    <Link to="/account/wishlist" className="dropdown-item">
+                    <Link to="/account/wishlist" className="dropdown-item" onClick={() => setActiveMenu(null)}>
                       My Wishlist
                     </Link>
                     {isAdmin && (
-                      <Link to="/admin/dashboard" className="dropdown-item">
+                      <Link to="/admin/dashboard" className="dropdown-item" onClick={() => setActiveMenu(null)}>
                         Admin Dashboard
                       </Link>
                     )}
-                    <button onClick={handleLogout} className="dropdown-item logout">
+                    <button onClick={() => { handleLogout(); setActiveMenu(null); }} className="dropdown-item logout">
                       Logout
                     </button>
                   </>
@@ -283,12 +307,12 @@ const Header = () => {
                   <>
                     <div className="dropdown-header">
                       <span>New customer?</span>
-                      <Link to="/signup">Sign Up</Link>
+                      <Link to="/signup" onClick={() => setActiveMenu(null)}>Sign Up</Link>
                     </div>
-                    <Link to="/login" className="dropdown-item">
+                    <Link to="/login" className="dropdown-item" onClick={() => setActiveMenu(null)}>
                       <FiUser /> My Profile
                     </Link>
-                    <Link to="/account/orders" className="dropdown-item">
+                    <Link to="/account/orders" className="dropdown-item" onClick={() => setActiveMenu(null)}>
                       <FiPackage /> Orders
                     </Link>
                   </>

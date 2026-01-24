@@ -277,21 +277,24 @@ const OrderDetails = () => {
           <div className="order-card items-card">
             <h3 className="card-title">Items Ordered ({order.items?.length})</h3>
             <div className="order-items-list">
-              {order.items?.map((item, index) => (
-                <div key={index} className="order-item-row">
-                  <img src={item.image} alt={item.name} className="item-img" />
-                  <div className="item-details">
-                    <h4>{item.name}</h4>
-                    <p>Size: {item.selectedSize || '500g'} | Qty: {item.quantity}</p>
-                    <span className="item-price">₹{item.price} × {item.quantity} = ₹{item.price * item.quantity}</span>
+              {order.items?.map((item, index) => {
+                const itemImage = item.image || (item.images && item.images[0] ? (item.images[0].url || item.images[0]) : '');
+                return (
+                  <div key={index} className="order-item-row">
+                    <img src={itemImage} alt={item.name} className="item-img" />
+                    <div className="item-details">
+                      <h4>{item.name}</h4>
+                      <p>Size: {item.selectedSize || 'Standard'} | Qty: {item.quantity}</p>
+                      <span className="item-price">₹{item.price} × {item.quantity} = ₹{item.price * item.quantity}</span>
+                    </div>
+                    {order.status === 'Delivered' && (
+                      <button className="btn-rate" onClick={() => setShowReviewForm(true)}>
+                        Rate & Review
+                      </button>
+                    )}
                   </div>
-                  {order.status === 'Delivered' && (
-                    <button className="btn-rate" onClick={() => setShowReviewForm(true)}>
-                      Rate & Review
-                    </button>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

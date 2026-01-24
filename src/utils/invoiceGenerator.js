@@ -65,7 +65,7 @@ export const generateInvoice = (order) => {
   doc.setFont('helvetica', 'bold');
   doc.text('Email us at :', textLeftX, startY + 37);
   doc.setFont('helvetica', 'normal');
-  doc.text('info@satvaorganics.com', textLeftX + 25, startY + 37);
+  doc.text('info.satvaorganics@gmail.com', textLeftX + 25, startY + 37);
   
   // Invoice Number
   doc.setFont('helvetica', 'bold');

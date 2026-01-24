@@ -32,11 +32,15 @@ import SpecialOffer from './pages/Admin/SpecialOffer';
 import DiscountsAndDeals from './pages/Admin/DiscountsAndDeals';
 import Categories from './pages/Admin/Categories';
 import Users from './pages/Admin/Users';
+import Dispatch from './pages/Admin/Dispatch';
+import CourierSettings from './pages/Admin/CourierSettings';
+import APILogs from './pages/Admin/APILogs';
 import MakeAdmin from './components/admin/MakeAdmin';
 import ProductDetail from './pages/ProductDetail/ProductDetail';
 import FlashDeals from './pages/FlashDeals/FlashDeals';
 import Checkout from './pages/Checkout/Checkout';
 import Terms from './pages/Terms/Terms';
+import Privacy from './pages/Privacy/Privacy';
 import CartDrawer from './components/cart/CartDrawer';
 import { CategoryProvider } from './contexts/CategoryContext';
 import { WishlistProvider } from './contexts/WishlistContext';
@@ -77,6 +81,7 @@ function App() {
                 <Route path="/flash-deals" element={<Layout><FlashDeals /></Layout>} />
                 <Route path="/contact" element={<Layout><Contact /></Layout>} />
                 <Route path="/terms" element={<Layout><Terms /></Layout>} />
+                <Route path="/privacy" element={<Layout><Privacy /></Layout>} />
                 
                 {/* Auth Routes (Standalone) */}
                 <Route path="/login" element={<Login />} />
@@ -116,11 +121,14 @@ function App() {
                   <Route path="products/add" element={<AddProduct />} />
                   <Route path="products/edit/:id" element={<EditProduct />} />
                   <Route path="orders" element={<AdminOrders />} />
+                  <Route path="dispatch" element={<Dispatch />} />
                   <Route path="banners" element={<HeroBanners />} />
                   <Route path="special-offer" element={<SpecialOffer />} />
                   <Route path="discounts" element={<DiscountsAndDeals />} />
                   <Route path="categories" element={<Categories />} />
                   <Route path="users" element={<Users />} />
+                  <Route path="courier-settings" element={<CourierSettings />} />
+                  <Route path="api-logs" element={<APILogs />} />
                 </Route>
   
                 {/* Fallback for other routes */}

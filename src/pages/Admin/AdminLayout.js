@@ -5,7 +5,8 @@ import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestor
 import { db } from '../../config/firebase';
 import {
   FiGrid, FiBox, FiPackage, FiImage, FiList,
-  FiUsers, FiHome, FiLogOut, FiSearch, FiBell, FiTag, FiPercent, FiAlertCircle, FiCheckCircle
+  FiUsers, FiHome, FiLogOut, FiSearch, FiBell, FiTag, FiPercent, FiAlertCircle, FiCheckCircle,
+  FiTruck, FiSettings, FiActivity
 } from 'react-icons/fi';
 import './Admin.css';
 
@@ -75,11 +76,14 @@ const AdminLayout = () => {
     { path: '/admin/dashboard', icon: <FiGrid />, label: 'Dashboard' },
     { path: '/admin/products', icon: <FiBox />, label: 'Products' },
     { path: '/admin/orders', icon: <FiPackage />, label: 'Orders' },
+    { path: '/admin/dispatch', icon: <FiTruck />, label: 'Dispatch' },
     { path: '/admin/banners', icon: <FiImage />, label: 'Hero Banners' },
     { path: '/admin/special-offer', icon: <FiTag />, label: 'Special Offer' },
     { path: '/admin/discounts', icon: <FiPercent />, label: 'Discounts & Deals' },
     { path: '/admin/categories', icon: <FiList />, label: 'Categories' },
     { path: '/admin/users', icon: <FiUsers />, label: 'Total Customers' },
+    { path: '/admin/courier-settings', icon: <FiSettings />, label: 'Courier Settings' },
+    { path: '/admin/api-logs', icon: <FiActivity />, label: 'API Logs' },
   ];
 
   return (

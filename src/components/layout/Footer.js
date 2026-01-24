@@ -49,7 +49,7 @@ const Footer = () => {
               <div className="footer-contact">
                 <div className="footer-contact-item">
                   <FiMapPin />
-                  <span>Flat No. 1001, Gala Eternia, Thakur Village, Kandivali East, Mumbai - 400101, Maharashtra, India</span>
+                  <span>Sangli-kolhapur Byepass Road, Village - Jainapur (Jaysingpur), Kolhapur, Maharashtra - 416101</span>
                 </div>
                 <div className="footer-contact-item">
                   <FiPhone />
@@ -57,7 +57,7 @@ const Footer = () => {
                 </div>
                 <div className="footer-contact-item">
                   <FiMail />
-                  <a href="mailto:satvaorganics@gmail.com">satvaorganics@gmail.com</a>
+                  <a href="mailto:info.satvaorganics@gmail.com">info.satvaorganics@gmail.com</a>
                 </div>
               </div>
 

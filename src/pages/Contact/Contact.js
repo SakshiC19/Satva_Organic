@@ -46,8 +46,8 @@ const Contact = () => {
                 <span className="contact-icon-badge"></span>
               </div>
               <h3 className="contact-info-title">Email Address</h3>
-              <p className="contact-info-text">info@webmail.com</p>
-              <p className="contact-info-text">jobs@webexample.com</p>
+              <p className="contact-info-text">info.satvaorganics@gmail.com</p>
+              <p className="contact-info-text">satvaorganics@gmail.com</p>
             </div>
 
             {/* Phone Number */}
@@ -57,8 +57,7 @@ const Contact = () => {
                 <span className="contact-icon-badge"></span>
               </div>
               <h3 className="contact-info-title">Phone Number</h3>
-              <p className="contact-info-text">+0123-456789</p>
-              <p className="contact-info-text">+987-6543210</p>
+              <p className="contact-info-text">+91 75175 55383</p>
             </div>
 
             {/* Office Address */}
@@ -68,8 +67,9 @@ const Contact = () => {
                 <span className="contact-icon-badge"></span>
               </div>
               <h3 className="contact-info-title">Office Address</h3>
-              <p className="contact-info-text">18/A, New Born Town Hall</p>
-              <p className="contact-info-text">New York, US</p>
+              <p className="contact-info-text">Sangli-kolhapur Byepass Road,</p>
+              <p className="contact-info-text">Village - Jainapur (Jaysingpur),</p>
+              <p className="contact-info-text">Kolhapur, Maharashtra - 416101</p>
             </div>
           </div>
         </div>

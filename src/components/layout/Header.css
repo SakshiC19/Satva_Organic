@@ -439,18 +439,26 @@
 @media (max-width: 768px) {
     .header-container {
         padding: 0 12px;
-        gap: 4px;
-        width: 100%;
+        gap: 8px;
+        width: 90%;
+        height: 60px;
+        display: flex;
+        align-items: center;
     }
 
     .mobile-menu-btn {
         display: block;
         order: -1;
         padding: 4px;
+        margin-right: 4px;
     }
 
     .header-logo {
         margin-right: auto;
+    }
+
+    .logo-image {
+        height: 40px;
     }
 
     .header-search {
@@ -467,6 +475,42 @@
 
     .header-search-mobile {
         display: block;
+        margin: 0 4px;
+        flex: 0 0 auto;
+    }
+
+    .search-wrapper-mobile {
+        background-color: #f3f4f6;
+        border-radius: 8px;
+        padding: 0 12px;
+        display: flex;
+        align-items: center;
+
+        width: 180px;
+        height: 38px;
+    }
+
+    .search-input-mobile {
+        display: block;
+        flex: 1;
+        border: none;
+        background: transparent;
+        font-size: 14px;
+        color: #333;
+        outline: none;
+        padding: 4px 0;
+        width: 100%;
+    }
+
+    .search-icon-btn-mobile {
+        padding: 0;
+        margin-left: 4px;
+        font-size: 18px;
+        color: #666;
+        display: flex;
+        align-items: center;
+        background: none;
+        border: none;
     }
 
     .action-item.wishlist-item span:not(.cart-count),
@@ -476,10 +520,12 @@
 
     .action-item {
         gap: 0;
+        padding: 4px;
     }
 
     .header-actions {
-        gap: 16px;
+        gap: 12px;
+        margin-left: 0;
     }
 
     .action-dropdown {
