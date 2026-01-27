@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { 
-  FiShoppingCart, 
-  FiUser, 
+import {
+  FiShoppingCart,
+  FiUser,
   FiSearch,
   FiChevronDown,
   FiPackage,
@@ -47,6 +47,7 @@ const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [products, setProducts] = useState([]);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -70,18 +71,19 @@ const Header = () => {
 
   // Close dropdown when clicking outside
   useEffect(() => {
-    if (activeMenu !== 'login') return;
-
     const handleClickOutside = (event) => {
-      const loginItem = document.querySelector('.login-item');
-      if (loginItem && !loginItem.contains(event.target)) {
+      // If menu is active and we click outside the ref, close it
+      if (activeMenu && dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setActiveMenu(null);
       }
     };
 
-    document.addEventListener('click', handleClickOutside);
+    if (activeMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
     return () => {
-      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [activeMenu]);
 
@@ -92,7 +94,7 @@ const Header = () => {
 
   useEffect(() => {
     if (searchQuery.trim().length > 0) {
-      const filtered = products.filter(p => 
+      const filtered = products.filter(p =>
         p.name.toLowerCase().includes(searchQuery.toLowerCase())
       ).slice(0, 5);
       setFilteredProducts(filtered);
@@ -132,9 +134,9 @@ const Header = () => {
   // Map dynamic categories to nav structure, ensuring unique categories by name
   const uniqueCategories = categories.filter((cat, index, self) => {
     if (!cat || !cat.name) return false;
-    
+
     const normalizedName = cat.name.trim().toLowerCase();
-    
+
     // List of legacy/old category names to ALWAYS exclude
     const legacyNamesToExclude = [
       'organic exotic products',
@@ -145,17 +147,17 @@ const Header = () => {
       'organic items ', // with trailing space
       'organic powders'
     ];
-    
+
     // Exclude if it's a legacy name
     if (legacyNamesToExclude.includes(normalizedName)) {
       return false;
     }
-    
+
     // Check if it's a unique name (case-insensitive)
-    const isFirstOccurrence = index === self.findIndex((c) => 
+    const isFirstOccurrence = index === self.findIndex((c) =>
       c && c.name && c.name.trim().toLowerCase() === normalizedName
     );
-    
+
     return isFirstOccurrence;
   });
 
@@ -171,7 +173,7 @@ const Header = () => {
       <div className="header-main">
         <div className="header-container">
           {/* Mobile Menu Button */}
-          <button 
+          <button
             className="mobile-menu-btn"
             onClick={() => setMobileMenuOpen(true)}
           >
@@ -212,7 +214,7 @@ const Header = () => {
                 onFocus={() => searchQuery && setShowSuggestions(true)}
                 className="search-input"
               />
-              
+
               {showSuggestions && (searchQuery.length > 0) && (
                 <div className="search-suggestions-dropdown">
                   <div className="suggestions-section">
@@ -262,9 +264,9 @@ const Header = () => {
           {/* Header Actions */}
           <div className="header-actions">
             {/* Login Button */}
-            <div className="action-item login-item desktop-only">
+            <div className="action-item login-item desktop-only" ref={dropdownRef}>
               {currentUser ? (
-                <button 
+                <button
                   className="login-btn logged-in"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -282,37 +284,37 @@ const Header = () => {
               )}
 
               {/* Login Dropdown */}
-              <div className={`action-dropdown ${activeMenu === 'login' ? 'show' : ''}`}>
+              <div className={`header-dropdown ${activeMenu === 'login' ? 'show' : ''}`} onClick={(e) => e.stopPropagation()}>
                 {currentUser ? (
                   <>
-                    <Link to="/account/profile" className="dropdown-item" onClick={() => setActiveMenu(null)}>
+                    <Link to="/account/profile" className="header-dropdown-item" onClick={() => setActiveMenu(null)}>
                       My Profile
                     </Link>
-                    <Link to="/account/orders" className="dropdown-item" onClick={() => setActiveMenu(null)}>
+                    <Link to="/account/orders" className="header-dropdown-item" onClick={() => setActiveMenu(null)}>
                       My Orders
                     </Link>
-                    <Link to="/account/wishlist" className="dropdown-item" onClick={() => setActiveMenu(null)}>
+                    <Link to="/account/wishlist" className="header-dropdown-item" onClick={() => setActiveMenu(null)}>
                       My Wishlist
                     </Link>
                     {isAdmin && (
-                      <Link to="/admin/dashboard" className="dropdown-item" onClick={() => setActiveMenu(null)}>
+                      <Link to="/admin/dashboard" className="header-dropdown-item" onClick={() => setActiveMenu(null)}>
                         Admin Dashboard
                       </Link>
                     )}
-                    <button onClick={() => { handleLogout(); setActiveMenu(null); }} className="dropdown-item logout">
+                    <button onClick={() => { handleLogout(); setActiveMenu(null); }} className="header-dropdown-item logout">
                       Logout
                     </button>
                   </>
                 ) : (
                   <>
-                    <div className="dropdown-header">
+                    <div className="header-dropdown-header">
                       <span>New customer?</span>
                       <Link to="/signup" onClick={() => setActiveMenu(null)}>Sign Up</Link>
                     </div>
-                    <Link to="/login" className="dropdown-item" onClick={() => setActiveMenu(null)}>
+                    <Link to="/login" className="header-dropdown-item" onClick={() => setActiveMenu(null)}>
                       <FiUser /> My Profile
                     </Link>
-                    <Link to="/account/orders" className="dropdown-item" onClick={() => setActiveMenu(null)}>
+                    <Link to="/account/orders" className="header-dropdown-item" onClick={() => setActiveMenu(null)}>
                       <FiPackage /> Orders
                     </Link>
                   </>
@@ -327,8 +329,8 @@ const Header = () => {
             </Link>
 
             {/* Cart */}
-            <button 
-              className="action-item cart-item" 
+            <button
+              className="action-item cart-item"
               onClick={(e) => {
                 e.preventDefault();
                 openCart();
@@ -372,7 +374,7 @@ const Header = () => {
             <FiX />
           </button>
         </div>
-        
+
         <div className="mobile-sidebar-content">
           {/* Auth Section in Sidebar */}
           <div className="mobile-auth-section">
@@ -420,8 +422,8 @@ const Header = () => {
 
           {/* Menu Items */}
           <div className="mobile-menu-items">
-            <Link 
-              to="/" 
+            <Link
+              to="/"
               className="mobile-menu-item home-item"
               onClick={() => setMobileMenuOpen(false)}
             >
@@ -434,7 +436,7 @@ const Header = () => {
             {/* Products Dropdown */}
             <div className="mobile-products-section">
               <div className={`mobile-menu-item products-toggle ${productsOpen ? 'active' : ''}`}>
-                <div 
+                <div
                   className="menu-item-content"
                   onClick={() => {
                     navigate('/shop');
@@ -445,7 +447,7 @@ const Header = () => {
                   <FiLayers className="menu-icon" />
                   Products
                 </div>
-                <span 
+                <span
                   className="mobile-toggle-icon"
                   onClick={() => setProductsOpen(!productsOpen)}
                   style={{ cursor: 'pointer', padding: '10px' }}
@@ -469,7 +471,7 @@ const Header = () => {
                   return (
                     <div key={index} className="mobile-category-item">
                       <div className="mobile-category-header">
-                        <div 
+                        <div
                           className="category-label"
                           onClick={() => {
                             navigate(item.path);
@@ -511,7 +513,7 @@ const Header = () => {
             </div>
           </div>
         </div>
-        
+
         {currentUser && (
           <div className="mobile-sidebar-footer">
             <button onClick={() => { handleLogout(); setMobileMenuOpen(false); }} className="mobile-logout-btn-subtle">

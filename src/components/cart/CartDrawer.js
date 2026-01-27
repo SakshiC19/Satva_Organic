@@ -7,7 +7,7 @@ import './CartDrawer.css';
 
 const CartDrawer = () => {
   const { isCartOpen, closeCart, cartItems, updateQuantity, removeFromCart } = useCart();
-  const [showNotice, setShowNotice] = React.useState(true);
+  const [showNotice, setShowNotice] = React.useState(false);
   const { currentUser } = useAuth();
   const navigate = useNavigate();
 
@@ -97,28 +97,30 @@ const CartDrawer = () => {
                           <p className="item-unit">{item.selectedSize || item.weight || item.unit || 'Standard'}</p>
                           <div className="item-price-row">
                             <span className="item-price">₹{item.price}</span>
-                            <div className="item-quantity-controls">
+                            <div className="item-actions-right">
+                              <div className="item-quantity-controls">
+                                <button 
+                                  onClick={() => updateQuantity(item.id, item.selectedSize, item.quantity - 1)}
+                                  className="qty-control-btn"
+                                >
+                                  <FiMinus />
+                                </button>
+                                <span>{item.quantity}</span>
+                                <button 
+                                  onClick={() => updateQuantity(item.id, item.selectedSize, item.quantity + 1)}
+                                  className="qty-control-btn"
+                                >
+                                  <FiPlus />
+                                </button>
+                              </div>
                               <button 
-                                onClick={() => updateQuantity(item.id, item.selectedSize, item.quantity - 1)}
-                                className="qty-control-btn"
+                                className="remove-item-icon-btn" 
+                                onClick={() => removeFromCart(item.id, item.selectedSize)}
+                                title="Remove item"
                               >
-                                <FiMinus />
-                              </button>
-                              <span>{item.quantity}</span>
-                              <button 
-                                onClick={() => updateQuantity(item.id, item.selectedSize, item.quantity + 1)}
-                                className="qty-control-btn"
-                              >
-                                <FiPlus />
+                                <FiX />
                               </button>
                             </div>
-                            <button 
-                              className="remove-item-icon-btn" 
-                              onClick={() => removeFromCart(item.id, item.selectedSize)}
-                              title="Remove item"
-                            >
-                              <FiX />
-                            </button>
                           </div>
                         </div>
                       </div>
@@ -140,7 +142,7 @@ const CartDrawer = () => {
                 <span className="total-label">TOTAL</span>
               </div>
               <button className="btn-proceed">
-                {currentUser ? 'Proceed to Pay' : 'Login to Proceed'} 
+                {currentUser ? 'Continue' : 'Login to Continue'} 
                 <span className="arrow-icon">›</span>
               </button>
             </div>

@@ -28,7 +28,9 @@ const Footer = () => {
     setEmail('');
   };
 
-  const hideWhatsApp = location.pathname.startsWith('/shop') || location.pathname.startsWith('/product');
+  const hideWhatsApp = location.pathname.startsWith('/shop') || 
+                       location.pathname.startsWith('/product') || 
+                       location.pathname.startsWith('/checkout');
 
 
   return (

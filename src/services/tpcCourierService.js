@@ -78,6 +78,36 @@ class TPCCourierService {
   }
 
   /**
+   * Safe JSON parser that handles common API response issues
+   * specifically "Bad control character" errors caused by unescaped newlines
+   */
+  async safeJsonParse(response) {
+    const text = await response.text();
+    try {
+      return JSON.parse(text);
+    } catch (error) {
+      console.warn('Standard JSON parse failed, attempting sanitization:', error);
+      
+      // Check if it's HTML
+      if (text.trim().startsWith('<')) {
+        throw new Error('Received HTML response instead of JSON');
+      }
+
+      // Fix "Bad control character" (newlines in strings)
+      // We replace newlines with spaces. This preserves JSON structure (newlines are whitespace)
+      // and fixes invalid strings.
+      const sanitized = text.replace(/[\n\r]/g, ' ');
+      try {
+        return JSON.parse(sanitized);
+      } catch (e2) {
+        console.error('Sanitized JSON parse failed:', e2);
+        console.log('Original Text:', text);
+        throw new Error(`Failed to parse API response: ${error.message}`);
+      }
+    }
+  }
+
+  /**
    * 1. PIN Code Service Check
    * Checks if delivery and COD are available for a given PIN code
    * 
@@ -115,7 +145,7 @@ class TPCCourierService {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = await this.safeJsonParse(response);
       console.log('📥 TPC Response:', data);
       console.log('📊 Response Type:', typeof data);
       console.log('📋 Response Keys:', Object.keys(data));
@@ -234,7 +264,7 @@ class TPCCourierService {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = await this.safeJsonParse(response);
       console.log('📥 TPC Response:', data);
       
       // Log successful API call
@@ -306,7 +336,7 @@ class TPCCourierService {
         }
       });
 
-      const data = await response.json();
+      const data = await this.safeJsonParse(response);
       
       // Log successful API call
       await this.logAPICall(apiName, requestPayload, data, 'success');
