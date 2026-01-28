@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { auth, db } from "../../config/firebase";
 import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { FiPhone, FiArrowLeft, FiCheck } from "react-icons/fi";
+import { FiPhone, FiArrowLeft, FiCheck, FiLoader } from "react-icons/fi";
 import './Auth.css';
 
 export default function LoginWithOTP() {
@@ -15,12 +15,10 @@ export default function LoginWithOTP() {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Get redirect path if available
   const searchParams = new URLSearchParams(location.search);
   const redirect = searchParams.get('redirect');
 
   useEffect(() => {
-    // Cleanup recaptcha on unmount
     return () => {
       if (window.recaptchaVerifier) {
         window.recaptchaVerifier.clear();
@@ -30,37 +28,42 @@ export default function LoginWithOTP() {
   }, []);
 
   const setupRecaptcha = () => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 
-        "recaptcha-container",
-        { 
-          size: "invisible",
-          callback: (response) => {
-            // reCAPTCHA solved, allow signInWithPhoneNumber.
-            // onSignInSubmit();
+    try {
+      if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 
+          "recaptcha-container",
+          { 
+            size: "normal",
+            callback: (response) => {
+              console.log("reCAPTCHA solved");
+            }
           }
-        }
-      );
+        );
+      }
+    } catch (err) {
+      console.error("Recaptcha setup error:", err);
+      setError("Security check failed to load. Please refresh.");
     }
   };
 
   const formatPhoneNumber = (phoneNumber) => {
-    // Remove any non-digit characters
     const cleaned = phoneNumber.replace(/\D/g, '');
-    // Check if it already has country code (assuming 10 digit number + code)
+    if (cleaned.length === 10) {
+      return `+91${cleaned}`;
+    }
     if (cleaned.length > 10) {
       return `+${cleaned}`;
     }
-    // Default to India +91 if just 10 digits
-    return `+91${cleaned}`;
+    return null;
   };
 
   const sendOTP = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setError("");
     
-    if (!phone || phone.length < 10) {
-      setError("Please enter a valid phone number");
+    const formattedPhone = formatPhoneNumber(phone);
+    if (!formattedPhone) {
+      setError("Please enter a valid 10-digit phone number");
       return;
     }
 
@@ -68,7 +71,6 @@ export default function LoginWithOTP() {
     try {
       setupRecaptcha();
       const appVerifier = window.recaptchaVerifier;
-      const formattedPhone = formatPhoneNumber(phone);
       
       const confirmation = await signInWithPhoneNumber(
         auth,
@@ -77,11 +79,18 @@ export default function LoginWithOTP() {
       );
       window.confirmationResult = confirmation;
       setStep(2);
-      // alert("OTP sent successfully");
     } catch (error) {
-      console.error(error);
-      setError(error.message || "Failed to send OTP. Please try again.");
-      // Reset recaptcha if failed
+      console.error("SMS Error:", error);
+      if (error.code === 'auth/captcha-check-failed') {
+        setError("Security check failed. Please refresh and try again.");
+      } else if (error.code === 'auth/too-many-requests') {
+        setError("Too many attempts. Please try again later.");
+      } else if (error.code === 'auth/billing-not-enabled') {
+        setError("SMS service is currently unavailable (Billing issue).");
+      } else {
+        setError("Failed to send OTP. Make sure the number is correct.");
+      }
+      
       if (window.recaptchaVerifier) {
         window.recaptchaVerifier.clear();
         window.recaptchaVerifier = null;
@@ -93,15 +102,18 @@ export default function LoginWithOTP() {
 
   const verifyOTP = async (e) => {
     e.preventDefault();
+    if (otp.length !== 6) {
+      setError("Please enter the 6-digit code");
+      return;
+    }
+
     setError("");
     setLoading(true);
 
     try {
       const result = await window.confirmationResult.confirm(otp);
       const user = result.user;
-      console.log("Logged in user:", user);
 
-      // Check if user document exists in Firestore, if not create it
       const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
 
@@ -118,10 +130,9 @@ export default function LoginWithOTP() {
         });
       }
 
-      // alert("Login successful");
       navigate(redirect ? `/${redirect}` : '/');
     } catch (error) {
-      console.error(error);
+      console.error("Verify Error:", error);
       setError("Invalid OTP. Please check and try again.");
     } finally {
       setLoading(false);
@@ -140,8 +151,8 @@ export default function LoginWithOTP() {
             <h1 className="auth-title">Login with OTP</h1>
             <p className="auth-subtitle">
               {step === 1 
-                ? "Enter your phone number to receive a verification code" 
-                : `Enter the code sent to ${phone}`
+                ? "Enter your phone number to receive a real verification code" 
+                : `Enter the 6-digit code sent to +91 ${phone.slice(-10)}`
               }
             </p>
           </div>
@@ -153,22 +164,22 @@ export default function LoginWithOTP() {
               <div className="form-group">
                 <label htmlFor="phone" className="form-label">Phone Number</label>
                 <div className="input-wrapper">
-                  <FiPhone className="input-icon" />
+                  <span className="country-code">+91</span>
                   <input
                     type="tel"
                     id="phone"
-                    className="form-input"
+                    className="form-input phone-input"
                     placeholder="98765 43210"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                     required
                   />
                 </div>
-                <small className="form-help">We'll send a 6-digit code to this number.</small>
+                <small className="form-help">We'll send a real SMS to this number.</small>
               </div>
 
-              <button type="submit" className="auth-button" disabled={loading}>
-                {loading ? 'Sending OTP...' : 'Send OTP'}
+              <button type="submit" className="auth-button" disabled={loading || phone.length < 10}>
+                {loading ? <><FiLoader className="spin" /> Sending...</> : 'Send OTP'}
               </button>
             </form>
           )}
@@ -185,19 +196,26 @@ export default function LoginWithOTP() {
                     className="form-input"
                     placeholder="Enter 6-digit OTP"
                     value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     required
-                    maxLength={6}
+                    autoFocus
                   />
                 </div>
               </div>
 
-              <button type="submit" className="auth-button" disabled={loading}>
-                {loading ? 'Verifying...' : 'Verify & Login'}
+              <button type="submit" className="auth-button" disabled={loading || otp.length < 6}>
+                {loading ? <><FiLoader className="spin" /> Verifying...</> : 'Verify & Login'}
               </button>
+              
+              <div className="resend-container">
+                <button type="button" className="resend-link" onClick={sendOTP} disabled={loading}>
+                  Didn't receive code? Resend
+                </button>
+              </div>
             </form>
           )}
 
+          {/* This is crucial for Firebase Phone Auth */}
           <div id="recaptcha-container"></div>
         </div>
       </div>
