@@ -1,0 +1,12 @@
+{
+  "buildCommand": "CI=false npm run build",
+  "framework": "create-react-app",
+  "env": {
+    "CI": "false"
+  },
+  "build": {
+    "env": {
+      "CI": "false"
+    }
+  }
+}
