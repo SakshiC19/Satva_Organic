@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { FiTrendingUp, FiTrendingDown, FiDollarSign, FiShoppingBag, FiBox, FiUsers, FiFilter, FiArrowRight } from 'react-icons/fi';
+import { FiTrendingUp, FiTrendingDown, FiDollarSign, FiShoppingBag, FiBox, FiUsers, FiFilter } from 'react-icons/fi';
 import './Dashboard.css';
 
 const Dashboard = () => {

@@ -4,7 +4,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { uploadMultipleImages } from '../../services/storageService';
 import ImageUpload from '../../components/admin/ImageUpload';
-import { FiSave, FiX, FiPlus, FiTrash2, FiArrowLeft } from 'react-icons/fi';
+import { FiSave, FiArrowLeft } from 'react-icons/fi';
 import { useCategories } from '../../contexts/CategoryContext';
 import './EditProduct.css';
 
@@ -185,11 +185,9 @@ const AddProduct = () => {
       // Construct final data
       // Map generatedSizes to packingSizes string and sizePrices object
       const activeSizes = formData.generatedSizes.filter(s => s.enabled);
-      const packingSizesStr = activeSizes.map(s => s.size).join(', ');
       
       // Create a map of size -> price (use custom if set, else auto)
       const sizePrices = {};
-      const sizeDiscounts = {}; // For backward compatibility if needed, or just use sizePrices
       
       activeSizes.forEach(s => {
         if (s.customPrice) {

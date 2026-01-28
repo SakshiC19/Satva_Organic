@@ -13,8 +13,6 @@ import {
   FiPhone,
   FiTruck,
   FiHelpCircle,
-  FiMapPin,
-  FiInfo,
   FiLogOut,
   FiGrid,
   FiChevronRight,
@@ -36,12 +34,11 @@ import logo from '../../assets/logo1.png';
 const Header = () => {
   const [activeMenu, setActiveMenu] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [expandedCategories, setExpandedCategories] = useState({});
   const [productsOpen, setProductsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [filteredProducts, setFilteredProducts] = useState([]);
-  const { currentUser, logout, isAdmin, userRole } = useAuth();
+  const { currentUser, logout, isAdmin } = useAuth();
   const { cartCount, openCart } = useCart();
   const { wishlistCount } = useWishlist();
   const navigate = useNavigate();
@@ -122,12 +119,7 @@ const Header = () => {
     }
   };
 
-  const toggleCategory = (index) => {
-    setExpandedCategories(prev => {
-      const isCurrentlyOpen = prev[index];
-      return isCurrentlyOpen ? {} : { [index]: true };
-    });
-  };
+
 
   const { categories } = useCategories();
 

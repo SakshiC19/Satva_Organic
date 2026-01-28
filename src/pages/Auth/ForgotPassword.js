@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiMail, FiPhone, FiArrowLeft } from 'react-icons/fi';
+import { FiArrowLeft } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import './Auth.css';
 
@@ -28,6 +28,7 @@ const ForgotPassword = () => {
 
       // Check if it's a phone number
       if (/^\d{10}$/.test(identifier)) {
+        type = 'phone';
         const userData = await findUserByPhone(identifier);
         if (userData && userData.email) {
           email = userData.email;

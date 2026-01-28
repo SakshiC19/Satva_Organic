@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCategories } from '../../contexts/CategoryContext';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { FiPlus, FiEdit2, FiTrash2, FiX, FiCheck, FiChevronDown, FiEye, FiImage, FiRefreshCw } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiX, FiImage } from 'react-icons/fi';
 import ImageUpload from '../../components/admin/ImageUpload';
 import { uploadImage } from '../../services/storageService';
 import './Categories.css';
@@ -11,7 +11,7 @@ import './CategoriesModalFix.css';
 
 const Categories = () => {
   const navigate = useNavigate();
-  const { categories, addCategory, updateCategory, deleteCategory, fetchCategories, syncProducts } = useCategories();
+  const { categories, addCategory, updateCategory, deleteCategory } = useCategories();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [productCounts, setProductCounts] = useState({});
@@ -181,23 +181,7 @@ const Categories = () => {
     }
   };
 
-  const handleManualSync = async () => {
-    if (window.confirm("This will scan all products and update their category names to match the current categories. Continue?")) {
-      setIsSyncing(true);
-      try {
-        // Run sync for each category to be safe
-        for (const cat of categories) {
-          await syncProducts(cat.name, cat.name);
-        }
-        alert("Sync completed successfully!");
-      } catch (error) {
-        console.error("Manual sync failed:", error);
-        alert("Sync failed: " + error.message);
-      } finally {
-        setIsSyncing(false);
-      }
-    }
-  };
+
 
   const handleNameChange = (e) => {
     const name = e.target.value;

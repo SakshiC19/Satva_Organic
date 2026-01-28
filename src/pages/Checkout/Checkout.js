@@ -5,8 +5,7 @@ import { useCart } from '../../contexts/CartContext';
 import { doc, updateDoc, arrayUnion, serverTimestamp, addDoc, collection, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import config from '../../config';
-import { FiCheck, FiShield, FiEdit2, FiPlus, FiTruck, FiChevronLeft, FiX, FiChevronRight, FiAlertCircle } from 'react-icons/fi';
-import tpcService from '../../services/tpcCourierService';
+import { FiCheck, FiShield, FiEdit2, FiPlus, FiTruck, FiChevronLeft } from 'react-icons/fi';
 import './Checkout.css';
 
 const Checkout = () => {
@@ -42,8 +41,6 @@ const Checkout = () => {
   const [name, setName] = useState('');
   const [isSignup, setIsSignup] = useState(false);
   const [error, setError] = useState('');
-  // const [isPhoneVerified, setIsPhoneVerified] = useState(true); // Default to true for demo
-  const isPhoneVerified = true; // Default to true for demo
   
   // Check if COD is available for all items in cart
   const isCodAvailable = cartItems.every(item => item.codAvailable !== false);
@@ -52,9 +49,6 @@ const Checkout = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [showMobilePayment, setShowMobilePayment] = useState(false);
-  const [showAddressModal, setShowAddressModal] = useState(false);
-  const [checkoutStep, setCheckoutStep] = useState('address'); // 'address', 'review', 'payment'
-  const [confirmedOrder, setConfirmedOrder] = useState(null);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -111,17 +105,6 @@ const Checkout = () => {
             locality: '' // Reset locality so user has to select
           }));
           setLocalities(localityOptions);
-
-          // Also check TPC service availability
-          try {
-            const tpcResult = await tpcService.checkPinCodeService(newPincode);
-            if (tpcResult.success) {
-              console.log('TPC Service check:', tpcResult);
-              // We can store this in state if needed to show service badges
-            }
-          } catch (e) {
-            console.warn('TPC service check failed:', e);
-          }
         } else {
            setLocalities([]);
         }
@@ -161,7 +144,8 @@ const Checkout = () => {
     } else {
       setActiveStep(1);
     }
-  }, [currentUser, fetchSavedAddresses]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser]);
 
   const handleLoginContinue = async (e) => {
     e.preventDefault();
@@ -181,11 +165,6 @@ const Checkout = () => {
 
   const handleAddressSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!isPhoneVerified) {
-      alert('Please verify your mobile number with OTP before proceeding. (Use 123456 for demo)');
-      return;
-    }
 
     try {
       const userRef = doc(db, 'users', currentUser.uid);
@@ -293,7 +272,15 @@ const Checkout = () => {
 
     const orderData = sanitizeData(rawOrderData);
 
-    const createRazorpayOrder = async () => {
+    if (selectedPaymentMethod === 'razorpay') {
+      const res = await loadRazorpay();
+      
+      if (!res) {
+        alert('Razorpay SDK failed to load. Are you online?');
+        setIsProcessing(false);
+        return;
+      }
+
       try {
         const backendUrl = config.API_URL;
         
@@ -308,31 +295,17 @@ const Checkout = () => {
         });
 
         if (!response.ok) {
-          throw new Error('Failed to create order on backend');
+          let errorMessage = 'Failed to create order on backend';
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } catch (e) {
+            errorMessage = `Server error: ${response.status} ${response.statusText}`;
+          }
+          throw new Error(errorMessage);
         }
 
-        return await response.json();
-      } catch (err) {
-        console.warn("Backend order creation failed, using mock for testing:", err);
-        return {
-          id: `order_mock_${Date.now()}`,
-          amount: Math.round((cartTotal || 0) * 100),
-          currency: 'INR'
-        };
-      }
-    };
-
-    if (selectedPaymentMethod === 'razorpay') {
-      const res = await loadRazorpay();
-      
-      if (!res) {
-        alert('Razorpay SDK failed to load. Are you online?');
-        setIsProcessing(false);
-        return;
-      }
-
-      try {
-        const razorpayOrder = await createRazorpayOrder();
+        const razorpayOrder = await response.json();
 
         const options = {
           key: "rzp_test_RyAk3DGa85x3tr", 
@@ -359,7 +332,6 @@ const Checkout = () => {
                 removeFromCart(item.id, item.selectedSize);
               });
               
-              setConfirmedOrder(orderToSave);
               setShowConfirmation(true);
               setIsProcessing(false);
             } catch (error) {
@@ -396,19 +368,11 @@ const Checkout = () => {
     } else {
       // Cash on Delivery
       try {
-        const orderToSave = {
+        await addDoc(collection(db, 'orders'), {
             ...orderData,
             createdAt: serverTimestamp(),
             paymentStatus: 'Pending'
-        };
-        await addDoc(collection(db, 'orders'), orderToSave);
-        
-        // Clear cart
-        cartItems.forEach(item => {
-          removeFromCart(item.id, item.selectedSize);
         });
-
-        setConfirmedOrder(orderToSave);
         setShowConfirmation(true);
       } catch (error) {
         console.error("Error saving order (COD):", error);
@@ -420,166 +384,18 @@ const Checkout = () => {
 
   return (
     <div className="checkout-page">
-      {showConfirmation && confirmedOrder && (
-        <div className="modal-overlay confirmation-overlay">
-          <div className="modal-content confirmation-modal-new">
-            <div className="conf-header">
-              <div className="conf-header-left">
-                <div className="conf-check-icon">
-                  <FiCheck />
-                </div>
-                <div className="conf-title-group">
-                  <h3>Order confirmed</h3>
-                  {confirmedOrder.items.reduce((acc, item) => acc + ((item.originalPrice || item.price) - item.price) * item.quantity, 0) > 0 && (
-                    <span className="conf-saved-badge">
-                      Saved ₹{confirmedOrder.items.reduce((acc, item) => acc + ((item.originalPrice || item.price) - item.price) * item.quantity, 0)} 🎊
-                    </span>
-                  )}
-                </div>
-              </div>
-              <button className="conf-close-btn" onClick={() => navigate('/shop')}>
-                <FiX />
-              </button>
+      {showConfirmation && (
+        <div className="modal-overlay">
+          <div className="modal-content confirmation-modal">
+            <div className="celebration-icon">
+              <FiCheck />
             </div>
-
-            <div className="conf-body">
-              {/* Delivery Address */}
-              <div className="conf-section address-section">
-                <div className="section-icon">
-                  <FiPlus style={{ transform: 'rotate(45deg)' }} /> {/* Using FiPlus as a pin icon fallback or just a dot */}
-                  <span className="dot-icon">📍</span>
-                </div>
-                <div className="section-content">
-                  <h4>Deliver to <strong>{confirmedOrder.shippingAddress.name}</strong></h4>
-                  <p>{confirmedOrder.shippingAddress.address}, {confirmedOrder.shippingAddress.locality}, {confirmedOrder.shippingAddress.city}, {confirmedOrder.shippingAddress.state} - {confirmedOrder.shippingAddress.pincode}</p>
-                  <p className="conf-contact">Contact Number - {confirmedOrder.shippingAddress.phone}</p>
-                </div>
-              </div>
-
-              {/* Products Section */}
-              <div className="conf-products-header">
-                <span>{confirmedOrder.items.length} Product{confirmedOrder.items.length > 1 ? 's' : ''}</span>
-                <button className="track-order-link" onClick={() => navigate('/account/orders')}>
-                  TRACK ORDER <FiChevronRight />
-                </button>
-              </div>
-
-              <div className="conf-products-list">
-                {confirmedOrder.items.map((item, idx) => (
-                  <div key={idx} className="conf-product-card">
-                    <div className="delivery-date-banner">
-                      <FiTruck /> Delivery by {new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                    </div>
-                    <div className="conf-product-main">
-                      <img src={item.image} alt={item.name} className="conf-product-img" />
-                      <div className="conf-product-info">
-                        <div className="conf-product-price-row">
-                          <span className="conf-price">₹{item.price}</span>
-                        </div>
-                        <p className="conf-meta">Size: {item.selectedSize || 'Standard'}  •  Qty: {item.quantity}</p>
-                        <p className="conf-returns">All issue easy returns</p>
-                      </div>
-                    </div>
-                    <div className="conf-deal-note">
-                      <div className="deal-left">
-                        <span className="deal-icon">🎊</span>
-                        <div className="deal-text">
-                          <p>Got a great deal on this product!</p>
-                          <span>Share with others too</span>
-                        </div>
-                      </div>
-                      <button className="conf-share-btn">
-                        <FiPlus style={{ transform: 'rotate(45deg)' }} /> SHARE
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Payment Info */}
-              <div className="conf-payment-info">
-                <div className="payment-method">
-                  <span className="payment-icon">
-                    {confirmedOrder.paymentMethod === 'cod' ? '💵' : '💳'}
-                  </span>
-                  <span>{confirmedOrder.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Online Payment'}</span>
-                </div>
-                <div className="payment-amount">
-                  ₹{confirmedOrder.totalAmount} <FiChevronRight />
-                </div>
-              </div>
-            </div>
-
-            <div className="conf-footer">
-              <button onClick={() => navigate('/shop')} className="conf-continue-shopping-btn">
-                CONTINUE SHOPPING
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Address Change Modal */}
-      {showAddressModal && (
-        <div className="modal-overlay" onClick={() => setShowAddressModal(false)}>
-          <div className="modal-content address-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>CHANGE DELIVERY ADDRESS</h3>
-              <button className="modal-close-btn" onClick={() => setShowAddressModal(false)}>
-                <FiX />
-              </button>
-            </div>
-            <div className="modal-body">
-              <button 
-                className="add-new-address-modal-btn"
-                onClick={() => {
-                  setAddress({
-                    name: '', phone: '', pincode: '', locality: '',
-                    address: '', city: '', state: ''
-                  });
-                  setEditingIndex(null);
-                  setIsAddingNew(true);
-                  setShowAddressModal(false);
-                }}
-              >
-                <FiPlus /> ADD NEW ADDRESS
-              </button>
-              
-              {savedAddresses.map((addr, index) => (
-                <div key={index} className="modal-address-card">
-                  <div className="modal-address-header">
-                    <input 
-                      type="radio" 
-                      name="selectedAddress" 
-                      checked={address.name === addr.name && address.phone === addr.phone}
-                      onChange={() => {}}
-                    />
-                    <div className="modal-address-info">
-                      <strong>{addr.name}</strong>
-                      <p>{addr.address}, {addr.locality}, {addr.city}, {addr.state} - {addr.pincode}</p>
-                      <p>{addr.phone}</p>
-                    </div>
-                  </div>
-                  <div className="modal-address-actions">
-                    <button className="modal-edit-btn" onClick={() => {
-                      handleEditAddress(index);
-                      setShowAddressModal(false);
-                    }}>
-                      EDIT
-                    </button>
-                  </div>
-                  <button 
-                    className="modal-deliver-btn"
-                    onClick={() => {
-                      handleSelectAddress(addr);
-                      setShowAddressModal(false);
-                    }}
-                  >
-                    Deliver to this Address
-                  </button>
-                </div>
-              ))}
-            </div>
+            <h2>Order Confirmed!</h2>
+            <p>Thank you for shopping with Satva Organics.</p>
+            <p className="order-id-text">Your order has been placed successfully.</p>
+            <button onClick={() => navigate('/shop')} className="continue-shopping-btn">
+              CONTINUE SHOPPING
+            </button>
           </div>
         </div>
       )}
@@ -589,30 +405,12 @@ const Checkout = () => {
         {isMobile && currentUser ? (
           <nav className="mobile-checkout-breadcrumb header-breadcrumb">
             <div className="breadcrumb-content">
-              <button className="breadcrumb-back-btn" onClick={() => {
-                if (showMobilePayment) {
-                  setShowMobilePayment(false);
-                  setCheckoutStep('review');
-                } else if (checkoutStep === 'review') {
-                  setCheckoutStep('address');
-                } else {
-                  navigate('/shop');
-                }
-              }} title="Go back">
+              <button className="breadcrumb-back-btn" onClick={() => showMobilePayment ? setShowMobilePayment(false) : navigate(-1)} title="Go back">
                 <FiChevronLeft />
               </button>
-              {!showMobilePayment && (
-                <>
-                  <span className="clickable" onClick={() => navigate('/shop')}>CART</span>
-                  <span className="separator">›</span>
-                </>
-              )}
               <span 
                 className={!showMobilePayment ? 'current' : 'clickable'} 
-                onClick={() => {
-                  setShowMobilePayment(false);
-                  setCheckoutStep('address');
-                }}
+                onClick={() => setShowMobilePayment(false)}
               >
                 ADDRESS & ITEMS
               </span>
@@ -650,7 +448,12 @@ const Checkout = () => {
                         )}
                       </div>
                       {address.name && !isAddingNew && (
-                        <button className="step-action-btn" onClick={() => setShowAddressModal(true)}>CHANGE</button>
+                        <button className="step-action-btn" onClick={() => {
+                          setAddress({
+                            name: '', phone: '', pincode: '', locality: '',
+                            address: '', city: '', state: ''
+                          });
+                        }}>CHANGE</button>
                       )}
                     </div>
                     <div className="step-body">
@@ -838,91 +641,104 @@ const Checkout = () => {
                 </>
               ) : (
                 <div className="mobile-payment-section">
-                  {/* Payment Method Selection */}
-                  <div className="checkout-step mobile-payment-step">
+                  <div className="checkout-step">
+                    <div className="step-header active">
+                      <span className="step-title">DELIVERY ADDRESS</span>
+                    </div>
+                    <div className="step-body">
+                      <div className="selected-address-summary">
+                        <p className="address-text">
+                          <strong>{address.name}</strong><br/>
+                          {address.address}, {address.city}, {address.state} - {address.pincode}
+                        </p>
+                        <p className="address-phone">{address.phone}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="checkout-step">
+                    <div className="step-header active">
+                      <span className="step-title">ORDER SUMMARY</span>
+                    </div>
+                    <div className="step-body">
+                      {safeCartItems.map(item => {
+                        const itemImage = item.images && item.images.length > 0
+                          ? (item.images[0].url || item.images[0])
+                          : item.image;
+                        return (
+                          <div key={`${item.id}-${item.selectedSize}`} className="mobile-product-card summary">
+                            <img src={itemImage} alt={item.name} className="mobile-product-img" />
+                            <div className="mobile-product-info">
+                              <h4 className="mobile-product-name">{item.name}</h4>
+                              <div className="mobile-product-meta">
+                                <span>Qty: {item.quantity}</span>
+                                <span>₹{item.price * item.quantity}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="checkout-step">
+                    <div className="step-header active">
+                      <span className="step-title">PRICE DETAILS</span>
+                    </div>
+                    <div className="step-body">
+                      <div className="price-row">
+                        <span>Price ({safeCartItems.length} items)</span>
+                        <span>₹{itemTotal.toLocaleString()}</span>
+                      </div>
+                      <div className="price-row">
+                        <span>Delivery Charges</span>
+                        <span className="green-text">₹{deliveryCharge}</span>
+                      </div>
+                      <div className="price-row">
+                        <span>Shipping Charges</span>
+                        <span className="green-text">₹{shippingCharge}</span>
+                      </div>
+                      {smallCartCharge > 0 && (
+                        <div className="price-row">
+                          <span>Small Basket Charge</span>
+                          <span>₹{smallCartCharge}</span>
+                        </div>
+                      )}
+                      <div className="price-row total">
+                        <span>Total Payable</span>
+                        <span>₹{grandTotal.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="checkout-step">
                     <div className="step-header active">
                       <span className="step-title">PAYMENT METHOD</span>
                     </div>
                     <div className="step-body">
-                      <p className="payment-instruction">Select payment method</p>
-                      
-                      {/* Cash on Delivery Option */}
-                      {isCodAvailable && (
-                        <div 
-                          className={`mobile-payment-card ${selectedPaymentMethod === 'cod' ? 'selected' : ''}`}
-                          onClick={() => setSelectedPaymentMethod('cod')}
-                        >
-                          <div className="payment-card-content">
-                            <div className="payment-card-left">
-                              <span className="payment-amount">₹{grandTotal.toLocaleString()}</span>
-                              <span className="payment-label">Cash on Delivery 💵</span>
-                            </div>
-                            <div className="payment-card-radio">
-                              <input 
-                                type="radio" 
-                                checked={selectedPaymentMethod === 'cod'} 
-                                readOnly 
-                              />
-                            </div>
+                      <div className="payment-options-container">
+                        <div className={`payment-method-group ${selectedPaymentMethod === 'razorpay' ? 'active' : ''}`}>
+                          <div className="payment-option" onClick={() => setSelectedPaymentMethod('razorpay')}>
+                            <input type="radio" checked={selectedPaymentMethod === 'razorpay'} readOnly />
+                            <span>Razorpay (Cards, UPI, NetBanking)</span>
                           </div>
                         </div>
-                      )}
-
-                      {/* Pay Online Option */}
-                      <div 
-                        className={`mobile-payment-card ${selectedPaymentMethod === 'razorpay' ? 'selected' : ''}`}
-                        onClick={() => setSelectedPaymentMethod('razorpay')}
-                      >
-                        <div className="payment-card-content">
-                          <div className="payment-card-left">
-                            <span className="payment-amount">₹{grandTotal.toLocaleString()}</span>
-                            <span className="payment-label">Pay Online ✨</span>
-                            {selectedPaymentMethod === 'razorpay' && (
-                              <span className="payment-discount">Extra discount with bank offers</span>
-                            )}
-                          </div>
-                          <div className="payment-card-radio">
-                            <input 
-                              type="radio" 
-                              checked={selectedPaymentMethod === 'razorpay'} 
-                              readOnly 
-                            />
-                          </div>
-                        </div>
-                        
-                        {/* Expanded Payment Options */}
-                        {selectedPaymentMethod === 'razorpay' && (
-                          <div className="payment-methods-expanded">
-                            <div className="payment-method-item">
-                              <span>💳 Debit/Credit Cards</span>
-                              <span className="offers-badge">Offers Available</span>
-                            </div>
-                            <div className="payment-method-item">
-                              <span>📱 UPI</span>
-                              <span className="offers-badge">Offers Available</span>
-                            </div>
-                            <div className="payment-method-item">
-                              <span>🏦 Net Banking</span>
-                            </div>
-                            <div className="payment-method-item">
-                              <span>💰 Wallet</span>
-                              <span className="offers-badge">Offers Available</span>
+                        {isCodAvailable && (
+                          <div className={`payment-method-group ${selectedPaymentMethod === 'cod' ? 'active' : ''}`}>
+                            <div className="payment-option" onClick={() => setSelectedPaymentMethod('cod')}>
+                              <input type="radio" checked={selectedPaymentMethod === 'cod'} readOnly />
+                              <span>Cash on Delivery</span>
                             </div>
                           </div>
                         )}
                       </div>
-
-                      {/* Price Details Link */}
-                      <button className="view-price-details-btn" onClick={() => setShowMobilePayment(false)}>
-                        VIEW PRICE DETAILS
-                      </button>
                     </div>
                   </div>
                 </div>
               )}
 
               {/* Mobile Sticky Footers - Moved outside animated containers */}
-              {!showAddressModal && !showMobilePayment ? (
+              {!showMobilePayment ? (
                 <div className="mobile-sticky-footer">
                   <div className="mobile-total-info">
                     <span className="total-amount">₹{safeCartTotal.toLocaleString()}</span>
@@ -933,13 +749,12 @@ const Checkout = () => {
                     onClick={() => {
                       window.scrollTo(0, 0);
                       setShowMobilePayment(true);
-                      setCheckoutStep('payment');
                     }}
                   >
-                    Continue <span style={{ fontSize: '20px', marginLeft: '4px' }}>›</span>
+                    Proceed to Pay <span style={{ fontSize: '20px', marginLeft: '4px' }}>›</span>
                   </button>
                 </div>
-              ) : !showAddressModal && showMobilePayment ? (
+              ) : (
                 <div className="mobile-sticky-footer payment-footer">
                   <div className="mobile-total-info">
                     <span className="total-amount">₹{safeCartTotal.toLocaleString()}</span>
@@ -953,7 +768,7 @@ const Checkout = () => {
                     {isProcessing ? 'PROCESSING...' : 'PAY NOW'} <span style={{ fontSize: '20px', marginLeft: '4px' }}>›</span>
                   </button>
                 </div>
-              ) : null}
+              )}
             </div>
           )}
 

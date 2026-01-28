@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, getDocs, updateDoc, doc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { FiSearch, FiSave, FiTag, FiPercent, FiArrowLeft } from 'react-icons/fi';
+import { FiSearch, FiSave } from 'react-icons/fi';
 import './DiscountsAndDeals.css';
 
 const DiscountsAndDeals = () => {

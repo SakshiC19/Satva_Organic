@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { FiGrid, FiList, FiChevronDown, FiX } from 'react-icons/fi';
+import { FiChevronDown, FiX } from 'react-icons/fi';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import ProductCard from '../../components/product/ProductCard';
@@ -10,7 +10,7 @@ import './Shop.css';
 
 const Shop = () => {
   const [searchParams] = useSearchParams();
-  const [viewMode, setViewMode] = useState('grid');
+  const [viewMode] = useState('grid');
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 

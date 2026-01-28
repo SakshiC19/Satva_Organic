@@ -5,7 +5,7 @@ import { db } from '../../config/firebase';
 import { uploadMultipleImages, deleteImage, getPathFromURL } from '../../services/storageService';
 import ImageUpload from '../../components/admin/ImageUpload';
 import { useCategories } from '../../contexts/CategoryContext';
-import { FiSave, FiX, FiTrash2, FiArrowLeft } from 'react-icons/fi';
+import { FiSave, FiTrash2, FiArrowLeft } from 'react-icons/fi';
 import './EditProduct.css';
 
 const EditProduct = () => {
@@ -44,6 +44,7 @@ const EditProduct = () => {
 
   useEffect(() => {
     fetchProduct();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchProduct = async () => {

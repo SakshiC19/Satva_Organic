@@ -1,9 +1,26 @@
+/**
+ * Login with OTP Component
+ * 
+ * IMPORTANT: To enable Phone Authentication, you need to configure it in Firebase Console:
+ * 
+ * 1. Go to Firebase Console (https://console.firebase.google.com)
+ * 2. Select your project: satva-organics
+ * 3. Go to Authentication > Sign-in method
+ * 4. Enable "Phone" provider
+ * 5. Add your domain to authorized domains (localhost, your-domain.com)
+ * 6. For production: Set up App Check and reCAPTCHA Enterprise
+ * 7. Enable Cloud Functions if using SMS verification
+ * 
+ * Note: Phone authentication may incur costs for SMS messages.
+ * Consider using email/password authentication as an alternative.
+ */
+
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { auth, db } from "../../config/firebase";
 import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { FiPhone, FiArrowLeft, FiCheck, FiLoader } from "react-icons/fi";
+import { FiArrowLeft, FiCheck, FiLoader } from "react-icons/fi";
 import './Auth.css';
 
 export default function LoginWithOTP() {
@@ -30,19 +47,27 @@ export default function LoginWithOTP() {
   const setupRecaptcha = () => {
     try {
       if (!window.recaptchaVerifier) {
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, 
+        window.recaptchaVerifier = new RecaptchaVerifier(
+          auth,
           "recaptcha-container",
           { 
             size: "normal",
             callback: (response) => {
-              console.log("reCAPTCHA solved");
+              console.log("reCAPTCHA solved", response);
+            },
+            'expired-callback': () => {
+              console.log("reCAPTCHA expired");
+              if (window.recaptchaVerifier) {
+                window.recaptchaVerifier.clear();
+                window.recaptchaVerifier = null;
+              }
             }
           }
         );
       }
     } catch (err) {
       console.error("Recaptcha setup error:", err);
-      setError("Security check failed to load. Please refresh.");
+      setError("Security check failed to load. Please refresh the page.");
     }
   };
 
@@ -69,7 +94,26 @@ export default function LoginWithOTP() {
 
     setLoading(true);
     try {
+      // Clear any existing verifier
+      if (window.recaptchaVerifier) {
+        try {
+          window.recaptchaVerifier.clear();
+        } catch (e) {
+          console.log("Error clearing verifier:", e);
+        }
+        window.recaptchaVerifier = null;
+      }
+      
+      // Setup new verifier
       setupRecaptcha();
+      
+      // Wait a bit for the verifier to initialize
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      if (!window.recaptchaVerifier) {
+        throw new Error("Failed to initialize reCAPTCHA");
+      }
+      
       const appVerifier = window.recaptchaVerifier;
       
       const confirmation = await signInWithPhoneNumber(
@@ -79,20 +123,32 @@ export default function LoginWithOTP() {
       );
       window.confirmationResult = confirmation;
       setStep(2);
+      setError("");
     } catch (error) {
       console.error("SMS Error:", error);
-      if (error.code === 'auth/captcha-check-failed') {
+      if (error.code === 'auth/invalid-app-credential') {
+        setError("Phone authentication is not configured. Please contact support or use email login.");
+      } else if (error.code === 'auth/captcha-check-failed') {
         setError("Security check failed. Please refresh and try again.");
       } else if (error.code === 'auth/too-many-requests') {
         setError("Too many attempts. Please try again later.");
-      } else if (error.code === 'auth/billing-not-enabled') {
-        setError("SMS service is currently unavailable (Billing issue).");
+      } else if (error.code === 'auth/invalid-phone-number') {
+        setError("Invalid phone number format.");
+      } else if (error.code === 'auth/argument-error') {
+        setError("Authentication error. Please refresh the page and try again.");
+      } else if (error.code === 'auth/quota-exceeded') {
+        setError("SMS quota exceeded. Please try again later or use email login.");
       } else {
-        setError("Failed to send OTP. Make sure the number is correct.");
+        setError(error.message || "Failed to send OTP. Please try email login instead.");
       }
       
+      // Clean up on error
       if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
+        try {
+          window.recaptchaVerifier.clear();
+        } catch (e) {
+          console.log("Error clearing verifier on error:", e);
+        }
         window.recaptchaVerifier = null;
       }
     } finally {
@@ -157,7 +213,20 @@ export default function LoginWithOTP() {
             </p>
           </div>
 
-          {error && <div className="auth-error">{error}</div>}
+          {error && (
+            <div className="auth-error">
+              {error}
+              {error.includes('not configured') && (
+                <div style={{ marginTop: '10px', fontSize: '0.9em' }}>
+                  <strong>Note:</strong> Phone authentication requires Firebase configuration. 
+                  <br />
+                  <a href="/login" style={{ color: '#059669', textDecoration: 'underline' }}>
+                    Use Email Login instead
+                  </a>
+                </div>
+              )}
+            </div>
+          )}
 
           {step === 1 && (
             <form onSubmit={sendOTP} className="auth-form">
