@@ -80,7 +80,7 @@ const MakeAdmin = () => {
 
   React.useEffect(() => {
     checkCurrentUserRole();
-  }, [currentUser]);
+  }, [currentUser, checkCurrentUserRole]);
 
   return (
     <div className="make-admin-container">

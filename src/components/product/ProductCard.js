@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import './ProductCard.css';
-import { FiHeart, FiShoppingBag, FiTrash2, FiTruck } from 'react-icons/fi';
+import { FiHeart, FiShoppingBag, FiTrash2 } from 'react-icons/fi';
 import { useCart } from '../../contexts/CartContext';
 import { useWishlist } from '../../contexts/WishlistContext';
 import ProductSelectionModal from './ProductSelectionModal';
@@ -60,7 +60,6 @@ const ProductCard = ({
   const { toggleWishlist, isInWishlist, removeFromWishlist } = useWishlist();
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [isQuickViewOpen, setIsQuickViewOpen] = React.useState(false);
-  const [quantity, setQuantity] = React.useState(1);
 
   const {
     id,
@@ -74,7 +73,6 @@ const ProductCard = ({
     rating = 0,
     inStock = true,
     stock = 0,
-    deliveryDays = '2-3 days',
     dealExpiry = null,
     dealStockLimit = null
   } = product;
@@ -132,7 +130,6 @@ const ProductCard = ({
   }
 
   const displayOriginalPrice = calculatePrice(effectiveOriginalPrice, defaultSize);
-  const displaySavings = displayOriginalPrice && displayOriginalPrice > displayPrice ? displayOriginalPrice - displayPrice : 0;
 
   const productImage = images && images.length > 0
     ? (images[0].url || images[0])
@@ -161,7 +158,7 @@ const ProductCard = ({
     if (product.packingSizes && product.packingSizes.length > 0) {
       setIsModalOpen(true);
     } else {
-      addToCart({ ...product, quantity });
+      addToCart({ ...product, quantity: 1 });
     }
   };
 
@@ -243,7 +240,7 @@ const ProductCard = ({
                 {showBuyNow && (
                   <button className="card-btn buy-now-btn" onClick={(e) => {
                     e.stopPropagation();
-                    addToCart({ ...product, quantity });
+                    addToCart({ ...product, quantity: 1 });
                     navigate('/checkout');
                   }}>
                     Buy Now

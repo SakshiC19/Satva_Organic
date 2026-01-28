@@ -3,9 +3,9 @@ import { collection, query, orderBy, getDocs, doc, updateDoc, where, onSnapshot,
 import { db } from '../../config/firebase';
 import { 
   FiSearch, FiFilter, FiMoreVertical, FiEdit, FiTrash2, FiEye, FiDownload, 
-  FiPrinter, FiTruck, FiX, FiCheck, FiClock, FiPackage, FiDollarSign,
+  FiTruck, FiX, FiCheck, FiClock, FiPackage, FiDollarSign,
   FiShoppingBag, FiAlertCircle, FiTrendingUp, FiCalendar, FiRefreshCw,
-  FiCheckCircle, FiMail, FiPhone, FiMapPin, FiCreditCard
+  FiCheckCircle, FiCreditCard
 } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import { downloadInvoice, viewInvoice } from '../../utils/invoiceGenerator';

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiLock, FiEye, FiEyeOff, FiCheckCircle } from 'react-icons/fi';
+import { FiEye, FiEyeOff, FiCheckCircle } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import './Auth.css';
 

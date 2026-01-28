@@ -139,6 +139,7 @@ const OTPVerification = () => {
     if (otp.every(digit => digit !== '')) {
       handleVerify();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [otp]);
 
   const handleResend = async () => {

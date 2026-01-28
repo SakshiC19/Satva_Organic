@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { FiEye, FiEyeOff, FiUser, FiLock, FiPhone } from 'react-icons/fi';
+import { FiEye, FiEyeOff, FiPhone } from 'react-icons/fi';
 import { FaGoogle } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 import './Auth.css';

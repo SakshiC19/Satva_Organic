@@ -198,7 +198,6 @@ export const listImages = async (path) => {
 export const getPathFromURL = (downloadURL) => {
   try {
     const baseUrl = 'https://firebasestorage.googleapis.com/v0/b/';
-    const startIndex = downloadURL.indexOf(baseUrl) + baseUrl.length;
     const endIndex = downloadURL.indexOf('/o/') + 3;
     const pathEncoded = downloadURL.substring(endIndex, downloadURL.indexOf('?'));
     return decodeURIComponent(pathEncoded);

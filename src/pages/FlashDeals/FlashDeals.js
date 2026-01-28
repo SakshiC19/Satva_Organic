@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, query, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import ProductCard from '../../components/product/ProductCard';
 import { FiTag, FiClock, FiFilter, FiTrendingUp, FiArrowDown } from 'react-icons/fi';

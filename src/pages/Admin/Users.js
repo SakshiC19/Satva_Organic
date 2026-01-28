@@ -3,9 +3,9 @@ import { collection, getDocs, query, orderBy, doc, updateDoc, deleteDoc, where, 
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { db, auth } from '../../config/firebase';
 import { 
-  FiSearch, FiUser, FiMail, FiCalendar, FiShield, FiPhone, 
+  FiSearch, FiUser, FiMail, FiShield, 
   FiMoreVertical, FiTrash2, FiLock, FiUnlock, FiEye, 
-  FiDownload, FiFilter, FiCheckCircle, FiXCircle, FiAlertCircle, FiClock, FiX, FiMapPin, FiPackage, FiStar
+  FiDownload, FiCheckCircle, FiXCircle, FiAlertCircle, FiClock, FiX, FiMapPin, FiPackage, FiStar
 } from 'react-icons/fi';
 import './Users.css';
 
@@ -328,7 +328,7 @@ const Users = () => {
   const [viewingReviews, setViewingReviews] = useState(null);
   const [reviewCounts, setReviewCounts] = useState({});
   
-  const [filters, setFilters] = useState({
+  const [filters] = useState({
     role: 'all',
     status: 'all',
     emailVerified: 'all'
@@ -449,26 +449,6 @@ const Users = () => {
     setActiveDropdown(null);
   };
 
-  const handleSelectAll = (e) => {
-      if (e.target.checked) {
-          setSelectedUsers(new Set(paginatedUsers.map(u => u.id)));
-      } else {
-          setSelectedUsers(new Set());
-      }
-  };
-
-  const handleSelectUser = (userId) => {
-      setSelectedUsers(prev => {
-          const newSet = new Set(prev);
-          if (newSet.has(userId)) {
-              newSet.delete(userId);
-          } else {
-              newSet.add(userId);
-          }
-          return newSet;
-      });
-  };
-
   const handleBulkAction = async (action) => {
       if (selectedUsers.size === 0) return;
 
@@ -528,16 +508,6 @@ const Users = () => {
     }));
   };
 
-  const getStatusIcon = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'active': return <FiCheckCircle />;
-      case 'inactive': return <FiXCircle />;
-      case 'blocked': return <FiAlertCircle />;
-      case 'pending': return <FiClock />;
-      default: return <FiCheckCircle />;
-    }
-  };
-
   const getStatusClass = (status) => {
     switch (status?.toLowerCase()) {
       case 'active': return 'status-active';
@@ -553,20 +523,6 @@ const Users = () => {
     if (date.toDate) return date.toDate().toLocaleDateString();
     if (date.seconds) return new Date(date.seconds * 1000).toLocaleDateString();
     return new Date(date).toLocaleDateString();
-  };
-
-  const getRelativeTime = (date) => {
-    if (!date) return '';
-    const dateObj = date.toDate ? date.toDate() : (date.seconds ? new Date(date.seconds * 1000) : new Date(date));
-    const now = new Date();
-    const diffTime = Math.abs(now - dateObj);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-    
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 30) return `${diffDays} days ago`;
-    if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
-    return `${Math.floor(diffDays / 365)} years ago`;
   };
 
   const getNewUsersCount = () => {

@@ -42,7 +42,6 @@ export const CategoryProvider = ({ children }) => {
       const snapshot = await getDocs(q);
       
       let count = 0;
-      const batch = []; // Use batch for better performance if many updates (optional but good practice, though here we'll just loop for simplicity or use Promise.all)
       
       const updatePromises = snapshot.docs.map(productDoc => {
         const productRef = doc(db, 'products', productDoc.id);

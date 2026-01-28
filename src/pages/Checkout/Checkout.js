@@ -41,7 +41,6 @@ const Checkout = () => {
   const [name, setName] = useState('');
   const [isSignup, setIsSignup] = useState(false);
   const [error, setError] = useState('');
-  const [isPhoneVerified, setIsPhoneVerified] = useState(true); // Default to true for demo
   
   // Check if COD is available for all items in cart
   const isCodAvailable = cartItems.every(item => item.codAvailable !== false);
@@ -145,6 +144,7 @@ const Checkout = () => {
     } else {
       setActiveStep(1);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
 
   const handleLoginContinue = async (e) => {
@@ -165,11 +165,6 @@ const Checkout = () => {
 
   const handleAddressSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!isPhoneVerified) {
-      alert('Please verify your mobile number with OTP before proceeding. (Use 123456 for demo)');
-      return;
-    }
 
     try {
       const userRef = doc(db, 'users', currentUser.uid);

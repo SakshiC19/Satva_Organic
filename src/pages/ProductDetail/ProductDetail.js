@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { doc, getDoc, addDoc, collection, serverTimestamp, updateDoc, increment, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { FiHeart, FiMinus, FiPlus, FiCheck, FiStar, FiChevronLeft, FiX } from 'react-icons/fi';
+import { FiHeart, FiMinus, FiPlus, FiCheck, FiStar, FiX } from 'react-icons/fi';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
 import Recommendations from '../../components/product/Recommendations';
@@ -94,6 +94,7 @@ const ProductDetail = () => {
   useEffect(() => {
     fetchProduct();
     fetchReviews();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const handleQuantityChange = (delta) => {

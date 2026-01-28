@@ -25,8 +25,6 @@ const ProductSelectionModal = ({ product, isOpen, onClose }) => {
     image,
     images,
     price,
-    originalPrice,
-    discount,
     packingSizes,
     weightOptions = ['250g', '500g', '1kg'],
     stock = 10

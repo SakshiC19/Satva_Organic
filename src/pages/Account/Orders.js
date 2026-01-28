@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { collection, query, where, getDocs, orderBy, doc, updateDoc, addDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, orderBy, doc, updateDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
@@ -8,14 +8,8 @@ import { downloadInvoice } from '../../utils/invoiceGenerator';
 import Badge from '../../components/common/Badge';
 import { 
   FiDownload, 
-  FiPackage, 
-  FiCalendar, 
-  FiSearch, 
-  FiFilter, 
-  FiRefreshCw, 
-  FiXCircle, 
-  FiRotateCcw,
-  FiTruck,
+  FiPackage,
+  FiXCircle,
   FiChevronRight,
   FiHome
 } from 'react-icons/fi';
@@ -30,7 +24,6 @@ const Orders = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [dateFilter, setDateFilter] = useState('All');
-  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -59,20 +52,7 @@ const Orders = () => {
     return () => unsubscribe();
   }, [currentUser]);
 
-  const handleReorder = (order) => {
-    order.items.forEach(item => {
-      addToCart({
-        ...item,
-        id: item.id,
-        name: item.name,
-        price: item.price,
-        image: item.image,
-        selectedSize: item.selectedSize || 'Standard',
-        quantity: item.quantity
-      });
-    });
-    openCart();
-  };
+
 
   const [cancelModal, setCancelModal] = useState({ isOpen: false, orderId: null });
   const [cancelReason, setCancelReason] = useState('');

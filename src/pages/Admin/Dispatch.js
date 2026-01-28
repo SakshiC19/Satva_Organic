@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { 
-  FiPackage, FiMapPin, FiPhone, FiUser, FiCreditCard, FiTruck, 
-  FiCheckCircle, FiAlertCircle, FiSearch, FiLoader
+  FiPackage, FiMapPin, FiPhone, FiUser, FiTruck, 
+  FiCheckCircle, FiAlertCircle, FiSearch, FiLoader, FiX
 } from 'react-icons/fi';
 import tpcService from '../../services/tpcCourierService';
 import './Dispatch.css';

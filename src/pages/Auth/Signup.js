@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiEye, FiEyeOff, FiUser, FiMail, FiPhone, FiLock } from 'react-icons/fi';
+import { FiEye, FiEyeOff } from 'react-icons/fi';
 import { FaGoogle } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 import './Auth.css';
@@ -17,7 +17,7 @@ const Signup = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signup, loginWithGoogle } = useAuth();
+  const { loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
