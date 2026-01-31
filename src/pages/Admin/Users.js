@@ -5,9 +5,126 @@ import { db, auth } from '../../config/firebase';
 import { 
   FiSearch, FiUser, FiMail, FiShield, 
   FiMoreVertical, FiTrash2, FiLock, FiUnlock, FiEye, 
-  FiDownload, FiCheckCircle, FiXCircle, FiAlertCircle, FiClock, FiX, FiMapPin, FiPackage, FiStar
+  FiDownload, FiCheckCircle, FiXCircle, FiAlertCircle, FiClock, FiX, FiMapPin, FiPackage, FiStar,
+  FiTruck, FiDollarSign, FiShoppingBag, FiCreditCard
 } from 'react-icons/fi';
 import './Users.css';
+
+const OrderDetailsModal = ({ order, onClose }) => {
+    if (!order) return null;
+
+    const formatDate = (date) => {
+        if (!date) return 'N/A';
+        if (date.toDate) return date.toDate().toLocaleDateString();
+        if (date.seconds) return new Date(date.seconds * 1000).toLocaleDateString();
+        return new Date(date).toLocaleDateString();
+    };
+
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            maximumFractionDigits: 0
+        }).format(amount || 0);
+    };
+
+    const getStatusClass = (status) => {
+        switch (status?.toLowerCase()) {
+          case 'pending': return 'status-pending';
+          case 'accepted': return 'status-accepted';
+          case 'processing': return 'status-processing';
+          case 'shipped': return 'status-shipped';
+          case 'delivered': return 'status-delivered';
+          case 'cancelled': return 'status-cancelled';
+          default: return 'status-pending';
+        }
+    };
+
+    return (
+        <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1100 }}>
+            <div className="modal-content-large" onClick={e => e.stopPropagation()}>
+                <div className="modal-header">
+                    <div className="modal-title-group">
+                        <h2>Order Details</h2>
+                        <span className="user-id">#{order.id.substring(0, 8)}</span>
+                    </div>
+                    <button className="close-btn" onClick={onClose}><FiX /></button>
+                </div>
+                <div className="modal-body">
+                    <div className="order-details-grid-new">
+                        <div className="details-main">
+                             {/* Items */}
+                            <div className="detail-card">
+                                <h3><FiPackage /> Order Items</h3>
+                                <table className="items-table-new">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>Quantity</th>
+                                            <th>Price</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {order.items?.map((item, idx) => (
+                                            <tr key={idx}>
+                                                <td>{item.name}</td>
+                                                <td>{item.quantity}</td>
+                                                <td>{formatCurrency(item.price)}</td>
+                                                <td>{formatCurrency(item.price * item.quantity)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colSpan="3" style={{ textAlign: 'right', fontWeight: 'bold' }}>Grand Total</td>
+                                            <td style={{ fontWeight: 'bold' }}>{formatCurrency(order.totalAmount || order.total)}</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+
+                            {/* Address */}
+                            <div className="detail-card">
+                                <h3><FiTruck /> Delivery Address</h3>
+                                <div className="address-box">
+                                    {order.shippingAddress ? (
+                                        <>
+                                            <p>{order.shippingAddress.address}</p>
+                                            <p>{order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.pincode}</p>
+                                        </>
+                                    ) : (
+                                        <p>No address provided</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="details-sidebar">
+                            <div className={`status-badge-large ${getStatusClass(order.status)}`}>
+                                {order.status?.toUpperCase() || 'PENDING'}
+                            </div>
+
+                            <div className="detail-card">
+                                <h3><FiCreditCard /> Payment Info</h3>
+                                <p><strong>Method:</strong> {order.paymentMethod?.toUpperCase()}</p>
+                                <p><strong>Status:</strong> {order.paymentStatus || 'Pending'}</p>
+                            </div>
+
+                            <div className="detail-card">
+                                <h3><FiClock /> Timeline</h3>
+                                <p>Ordered: {formatDate(order.createdAt)}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="modal-footer">
+                    <button className="btn-secondary" onClick={onClose}>Close</button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const UserDetailsModal = ({ user, onClose, userOrders, loadingOrders, handleAction }) => {
     if (!user) return null;
@@ -29,6 +146,8 @@ const UserDetailsModal = ({ user, onClose, userOrders, loadingOrders, handleActi
           default: return 'status-active';
         }
     };
+
+    const [viewingOrderDetails, setViewingOrderDetails] = useState(null);
 
     return (
       <div className="modal-overlay" onClick={onClose}>
@@ -59,18 +178,29 @@ const UserDetailsModal = ({ user, onClose, userOrders, loadingOrders, handleActi
                         <th>Order ID</th>
                         <th>Date</th>
                         <th>Items</th>
+                        <th>Payment</th>
                         <th>Amount</th>
                         <th>Status</th>
                       </tr>
                     </thead>
                     <tbody>
                       {userOrders.slice(0, 10).map(order => (
-                        <tr key={order.id}>
+                        <tr key={order.id} onClick={() => setViewingOrderDetails(order)} style={{ cursor: 'pointer' }} className="clickable-row">
                           <td style={{ fontWeight: 'bold' }}>#{order.id.substring(0, 8)}</td>
                           <td>{formatDate(order.createdAt)}</td>
-                          <td>{order.items?.map(item => item.name).join(', ') || 'NA'}</td>
+                          <td>
+                              {order.items?.length > 0 ? (
+                                  <span title={order.items.map(i => i.name).join(', ')}>
+                                      {order.items[0].name} {order.items.length > 1 && `+${order.items.length - 1}`}
+                                  </span>
+                              ) : 'NA'}
+                          </td>
+                          <td>{order.paymentMethod?.toUpperCase() || 'NA'}</td>
                           <td>₹{order.totalAmount || 'NA'}</td>
-                          <td><span className={`status-dot ${order.status?.toLowerCase()}`}></span>{order.status || 'NA'}</td>
+                          <td>
+                              <span className={`status-dot ${order.status?.toLowerCase()}`}></span>
+                              {order.status || 'NA'}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -158,6 +288,9 @@ const UserDetailsModal = ({ user, onClose, userOrders, loadingOrders, handleActi
             <button className="btn-secondary" onClick={onClose}>Close</button>
           </div>
         </div>
+        {viewingOrderDetails && (
+            <OrderDetailsModal order={viewingOrderDetails} onClose={() => setViewingOrderDetails(null)} />
+        )}
       </div>
     );
 };
@@ -327,8 +460,10 @@ const Users = () => {
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [viewingReviews, setViewingReviews] = useState(null);
   const [reviewCounts, setReviewCounts] = useState({});
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState('');
   
-  const [filters] = useState({
+  const [filters, setFilters] = useState({
     role: 'all',
     status: 'all',
     emailVerified: 'all'
@@ -453,7 +588,7 @@ const Users = () => {
       if (selectedUsers.size === 0) return;
 
       if (action === 'notification') {
-          alert(`Sending notification to ${selectedUsers.size} users (Mock)`);
+          setIsNotificationModalOpen(true);
           return;
       }
 
@@ -710,24 +845,10 @@ const Users = () => {
   };
 
 
-      {selectedUsers.size > 0 && (
-          <div className="bulk-actions-bar">
-              <span className="selected-count">{selectedUsers.size} users selected</span>
-              <div className="bulk-btns">
-                  <button className="bulk-btn" onClick={() => handleBulkAction('notification')}>
-                      <FiMail /> Send Notification
-                  </button>
-                  <button className="bulk-btn" onClick={() => handleBulkAction('block')}>
-                      <FiLock /> Block Users
-                  </button>
-                  <button className="bulk-btn" onClick={() => handleBulkAction('export')}>
-                      <FiDownload /> Export Selected
-                  </button>
-              </div>
-          </div>
-      )}
+
 
   return (
+    <>
     <div className="admin-users-page">
       <div className="users-header">
         <div className="header-left">
@@ -763,13 +884,7 @@ const Users = () => {
             <span className="stat-value">{users.filter(u => u.role === 'admin').length}</span>
           </div>
         </div>
-        <div className="user-stat-card">
-          <div className="stat-icon orange"><FiClock /></div>
-          <div className="stat-info">
-            <span className="stat-label">Pending</span>
-            <span className="stat-value">{users.filter(u => u.status === 'pending').length}</span>
-          </div>
-        </div>
+
         <div className="user-stat-card">
           <div className="stat-icon blue" style={{ background: '#fff7ed', color: '#f59e0b' }}><FiStar /></div>
           <div className="stat-info">
@@ -790,6 +905,25 @@ const Users = () => {
           />
         </div>
         <div className="filter-group">
+            <select 
+                className="filter-select"
+                value={filters.role}
+                onChange={(e) => setFilters({ ...filters, role: e.target.value })}
+            >
+                <option value="all">All Roles</option>
+                <option value="admin">Admins</option>
+                <option value="user">Users</option>
+            </select>
+            <select 
+                className="filter-select"
+                value={filters.status}
+                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+            >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="blocked">Blocked</option>
+            </select>
             <select 
                 className="filter-select"
                 value={dateFilter}
@@ -815,6 +949,23 @@ const Users = () => {
           <table className="users-table">
             <thead>
               <tr>
+                <th style={{ width: '40px' }}>
+                  <input 
+                    type="checkbox" 
+                    checked={paginatedUsers.length > 0 && paginatedUsers.every(u => selectedUsers.has(u.id))}
+                    onChange={(e) => {
+                        if (e.target.checked) {
+                            const newSelected = new Set(selectedUsers);
+                            paginatedUsers.forEach(u => newSelected.add(u.id));
+                            setSelectedUsers(newSelected);
+                        } else {
+                            const newSelected = new Set(selectedUsers);
+                            paginatedUsers.forEach(u => newSelected.delete(u.id));
+                            setSelectedUsers(newSelected);
+                        }
+                    }}
+                  />
+                </th>
                 <th onClick={() => handleSort('displayName')} className="sortable">
                   USER {sortConfig.key === 'displayName' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                 </th>
@@ -825,7 +976,6 @@ const Users = () => {
                   JOINED {sortConfig.key === 'createdAt' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                 </th>
                 <th>ORDER ITEMS</th>
-                <th>REVIEWS</th>
                 <th className="actions-col">ACTIONS</th>
               </tr>
             </thead>
@@ -833,6 +983,21 @@ const Users = () => {
               {paginatedUsers.length > 0 ? (
                 paginatedUsers.map(user => (
                   <tr key={user.id} className={selectedUsers.has(user.id) ? 'selected' : ''}>
+                    <td>
+                      <input 
+                        type="checkbox" 
+                        checked={selectedUsers.has(user.id)}
+                        onChange={(e) => {
+                            const newSelected = new Set(selectedUsers);
+                            if (e.target.checked) {
+                                newSelected.add(user.id);
+                            } else {
+                                newSelected.delete(user.id);
+                            }
+                            setSelectedUsers(newSelected);
+                        }}
+                      />
+                    </td>
                     <td>
                       <div className="user-cell" onClick={() => fetchUserDetails(user)}>
                         <div className="user-avatar">
@@ -875,25 +1040,6 @@ const Users = () => {
                         >
                             <FiPackage />
                             <span>{(orderCounts[user.id]?.count || 0) > 0 ? `${orderCounts[user.id].count} Orders` : 'NA'}</span>
-                        </div>
-                    </td>
-                    <td>
-                        <div 
-                            className="reviews-cell clickable" 
-                            style={{ display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 500, cursor: 'pointer' }}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setViewingReviews(user);
-                            }}
-                        >
-                            {reviewCounts[user.id] ? (
-                                <>
-                                    <span style={{ color: '#f59e0b' }}>⭐</span>
-                                    <span>{reviewCounts[user.id]}</span>
-                                </>
-                            ) : (
-                                <span>NA</span>
-                            )}
                         </div>
                     </td>
                     <td className="actions-col">
@@ -944,7 +1090,7 @@ const Users = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="9" className="no-results">
+                  <td colSpan="8" className="no-results">
                     <div className="no-results-content">
                       <FiSearch />
                       <p>No users found matching your criteria</p>
@@ -1003,7 +1149,88 @@ const Users = () => {
             onClose={() => setViewingReviews(null)} 
         />
       )}
+
+      {isNotificationModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsNotificationModalOpen(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <div className="modal-header">
+              <h2>Send Notification</h2>
+              <button className="close-btn" onClick={() => setIsNotificationModalOpen(false)}><FiX /></button>
+            </div>
+            <div className="modal-body">
+              <p style={{ marginBottom: '16px', color: '#64748b' }}>
+                Sending to <strong>{selectedUsers.size}</strong> selected users.
+              </p>
+              <div className="info-item" style={{ gap: '8px' }}>
+                <label>Message</label>
+                <textarea 
+                  style={{ 
+                    width: '100%', 
+                    minHeight: '120px', 
+                    padding: '12px', 
+                    borderRadius: '8px', 
+                    border: '1px solid #e2e8f0',
+                    fontSize: '14px',
+                    fontFamily: 'inherit'
+                  }}
+                  placeholder="Type your message here..."
+                  value={notificationMessage}
+                  onChange={(e) => setNotificationMessage(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={() => setIsNotificationModalOpen(false)}>Cancel</button>
+              <button 
+                className="btn-primary" 
+                onClick={() => {
+                  alert(`Notification sent to ${selectedUsers.size} users: ${notificationMessage}`);
+                  setIsNotificationModalOpen(false);
+                  setNotificationMessage('');
+                  setSelectedUsers(new Set());
+                }}
+                disabled={!notificationMessage.trim()}
+              >
+                Send Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {selectedUsers.size > 0 && (
+          <div className="bulk-actions-bar">
+              <div className="bulk-info">
+                <span className="selected-count">{selectedUsers.size} users selected</span>
+                {selectedUsers.size === paginatedUsers.length && filteredUsers.length > paginatedUsers.length && (
+                    <button 
+                        className="select-all-link"
+                        onClick={() => {
+                            const allIds = new Set(filteredUsers.map(u => u.id));
+                            setSelectedUsers(allIds);
+                        }}
+                    >
+                        Select all {filteredUsers.length} users
+                    </button>
+                )}
+              </div>
+              <div className="bulk-btns">
+                  <button className="bulk-btn" onClick={() => handleBulkAction('notification')}>
+                      <FiMail /> Send Notification
+                  </button>
+                  <button className="bulk-btn" onClick={() => handleBulkAction('block')}>
+                      <FiLock /> Block Users
+                  </button>
+                  <button className="bulk-btn" onClick={() => handleBulkAction('export')}>
+                      <FiDownload /> Export Selected
+                  </button>
+                  <button className="bulk-btn-close" onClick={() => setSelectedUsers(new Set())}>
+                      <FiX />
+                  </button>
+              </div>
+          </div>
+      )}
     </div>
+    </>
   );
 };
 

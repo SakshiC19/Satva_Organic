@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { doc, getDoc, addDoc, collection, serverTimestamp, updateDoc, increment, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../../config/firebase';
@@ -32,6 +32,8 @@ const ProductDetail = () => {
   const [isCheckingPincode, setIsCheckingPincode] = useState(false);
   const [pincodeStatus, setPincodeStatus] = useState(null); // null, 'available', 'unavailable'
   const [pincodeError, setPincodeError] = useState('');
+  const pincodeRef = useRef(null);
+  const [userAddressPincode, setUserAddressPincode] = useState('');
 
   const fetchProduct = async () => {
     try {
@@ -97,6 +99,59 @@ const ProductDetail = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  // Autofill pincode from user profile
+  useEffect(() => {
+    const autofillPincode = async () => {
+      if (currentUser) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            if (userData.addresses && userData.addresses.length > 0) {
+              const profilePincode = userData.addresses[0].pincode;
+              if (profilePincode && profilePincode.length === 6) {
+                setPincode(profilePincode);
+                setUserAddressPincode(profilePincode);
+                // Trigger check automatically if product is already loaded
+                if (product) {
+                  // Wait a bit to ensure product is fully ready if needed
+                  setTimeout(() => {
+                    handlePincodeCheckInternal(profilePincode);
+                  }, 100);
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching user address for autofill:", error);
+        }
+      }
+    };
+    autofillPincode();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser, product?.id]);
+
+  const handlePincodeCheckInternal = async (code) => {
+    if (!code || code.length !== 6) return;
+    setIsCheckingPincode(true);
+    setPincodeStatus(null);
+    setPincodeError('');
+    try {
+      await new Promise(resolve => setTimeout(resolve, 800));
+      let available = false;
+      if (product.availablePincodes && product.availablePincodes.length > 0) {
+        available = product.availablePincodes.includes(code);
+      } else {
+        available = code.startsWith('4') || code.startsWith('1');
+      }
+      setPincodeStatus(available ? 'available' : 'unavailable');
+    } catch (error) {
+      console.error("Error checking pincode:", error);
+    } finally {
+      setIsCheckingPincode(false);
+    }
+  };
+
   const handleQuantityChange = (delta) => {
     const newQuantity = quantity + delta;
     if (newQuantity >= 1 && newQuantity <= (product?.stock || 999)) {
@@ -154,6 +209,18 @@ const ProductDetail = () => {
 
   const handleAddToCart = () => {
     if (!product) return;
+
+    if (!currentUser) {
+      pincodeRef.current?.scrollIntoView({ behavior: 'smooth' });
+      pincodeRef.current?.focus();
+      return;
+    }
+
+    if (pincodeStatus !== 'available') {
+      pincodeRef.current?.scrollIntoView({ behavior: 'smooth' });
+      pincodeRef.current?.focus();
+      return;
+    }
     
     if (isInCart) {
       openCart();
@@ -168,12 +235,23 @@ const ProductDetail = () => {
       quantity,
       basePrice: product.price
     });
-    if (window.innerWidth > 768) {
-      openCart();
-    }
   };
 
   const handleBuyNow = () => {
+    if (!product) return;
+
+    if (!currentUser) {
+      pincodeRef.current?.scrollIntoView({ behavior: 'smooth' });
+      pincodeRef.current?.focus();
+      return;
+    }
+
+    if (pincodeStatus !== 'available') {
+      pincodeRef.current?.scrollIntoView({ behavior: 'smooth' });
+      pincodeRef.current?.focus();
+      return;
+    }
+
     handleAddToCart();
     navigate('/checkout');
   };
@@ -389,41 +467,6 @@ const ProductDetail = () => {
               )}
             </div>
 
-            <div className="pincode-check-section">
-              <label className="option-label">Check Delivery Availability</label>
-              <div className="pincode-input-group">
-                <input 
-                  type="text" 
-                  placeholder="Enter Pincode" 
-                  value={pincode}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, '').slice(0, 6);
-                    setPincode(val);
-                    if (pincodeStatus) setPincodeStatus(null);
-                  }}
-                  className={`pincode-input ${pincodeStatus}`}
-                />
-                <button 
-                  className="btn-check-pincode"
-                  onClick={handlePincodeCheck}
-                  disabled={isCheckingPincode || pincode.length !== 6}
-                >
-                  {isCheckingPincode ? 'Checking...' : 'Check'}
-                </button>
-              </div>
-              {pincodeError && <p className="pincode-error">{pincodeError}</p>}
-              {pincodeStatus === 'available' && (
-                <p className="pincode-success">
-                  <FiCheck /> Delivery available to {pincode}
-                </p>
-              )}
-              {pincodeStatus === 'unavailable' && (
-                <p className="pincode-error">
-                  <FiX /> Sorry, delivery not available for this product in your area.
-                </p>
-              )}
-            </div>
-
 
 
             {product.brands && product.brands.length > 0 && (
@@ -456,7 +499,6 @@ const ProductDetail = () => {
                         key={index}
                         className={`option-btn ${selectedSize === size ? 'active' : ''}`}
                         onClick={() => setSelectedSize(size)}
-                        disabled={pincodeStatus !== 'available'}
                       >
                         {size}
                       </button>
@@ -525,31 +567,56 @@ const ProductDetail = () => {
               <button 
                 className={`btn-add-to-cart ${isInCart ? 'in-cart' : ''}`}
                 onClick={handleAddToCart}
-                disabled={product.stock <= 0 || pincodeStatus !== 'available'}
+                disabled={product.stock <= 0}
               >
                 {isInCart ? 'View Basket' : 'Add to Basket'}
               </button>
               <button 
                 className="btn-buy-now"
                 onClick={handleBuyNow}
-                disabled={product.stock <= 0 || pincodeStatus !== 'available'}
-                style={{
-                  flex: 1,
-                  backgroundColor: pincodeStatus === 'available' ? '#f59e0b' : '#cbd5e1',
-                  color: 'white',
-                  border: 'none',
-                  padding: '12px 24px',
-                  borderRadius: '8px',
-                  fontWeight: '600',
-                  cursor: pincodeStatus === 'available' ? 'pointer' : 'not-allowed',
-                  marginLeft: '10px'
-                }}
+                disabled={product.stock <= 0}
               >
                 Buy Now
               </button>
               <button className="secondary-btn wishlist-inline-btn mobile-action-wishlist" title="Add to Wishlist">
                 <FiHeart />
               </button>
+            </div>
+
+            <div className="pincode-check-section">
+              <label className="option-label">Check Delivery Availability</label>
+              <div className="pincode-input-group">
+                <input 
+                  type="text" 
+                  placeholder="Enter Pincode" 
+                  value={pincode}
+                  ref={pincodeRef}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    setPincode(val);
+                    if (pincodeStatus) setPincodeStatus(null);
+                  }}
+                  className={`pincode-input ${pincodeStatus}`}
+                />
+                <button 
+                  className="btn-check-pincode"
+                  onClick={handlePincodeCheck}
+                  disabled={isCheckingPincode || pincode.length !== 6}
+                >
+                  {isCheckingPincode ? 'Checking...' : 'Check'}
+                </button>
+              </div>
+              {pincodeError && <p className="pincode-error">{pincodeError}</p>}
+              {pincodeStatus === 'available' && (
+                <p className="pincode-success">
+                  <FiCheck /> Delivery available to {pincode}
+                </p>
+              )}
+              {pincodeStatus === 'unavailable' && (
+                <p className="pincode-error">
+                  <FiX /> This product is currently not available in your location
+                </p>
+              )}
             </div>
           </div>
         </div>

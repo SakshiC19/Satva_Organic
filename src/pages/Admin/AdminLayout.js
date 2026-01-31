@@ -6,7 +6,7 @@ import { db } from '../../config/firebase';
 import {
   FiGrid, FiBox, FiPackage, FiImage, FiList,
   FiUsers, FiHome, FiLogOut, FiSearch, FiBell, FiTag, FiPercent, FiAlertCircle, FiCheckCircle,
-  FiTruck, FiSettings, FiActivity
+  FiTruck, FiSettings, FiActivity, FiBarChart2, FiPieChart, FiTrendingUp, FiDollarSign, FiShoppingBag
 } from 'react-icons/fi';
 import './Admin.css';
 
@@ -86,6 +86,13 @@ const AdminLayout = () => {
     { path: '/admin/api-logs', icon: <FiActivity />, label: 'API Logs' },
   ];
 
+  const analyticsItems = [
+      { path: '/admin/analytics', icon: <FiBarChart2 />, label: 'Overview' },
+      { path: '/admin/analytics/orders', icon: <FiShoppingBag />, label: 'Orders Analysis' },
+      { path: '/admin/analytics/customers', icon: <FiUsers />, label: 'Customer Analysis' },
+      { path: '/admin/analytics/revenue', icon: <FiDollarSign />, label: 'Revenue Analysis' },
+  ];
+
   return (
     <div className="admin-container">
       {/* Sidebar */}
@@ -96,6 +103,29 @@ const AdminLayout = () => {
 
         <nav className="admin-nav">
           {menuItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
+            >
+              {item.icon}
+              <span>{item.label}</span>
+            </NavLink>
+          ))}
+
+          <div className="admin-nav-divider"></div>
+          <div className="admin-nav-header" style={{ 
+              padding: '10px 20px', 
+              color: '#9ca3af', 
+              fontSize: '11px', 
+              fontWeight: '700', 
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em'
+          }}>
+              Data Analysis
+          </div>
+          
+          {analyticsItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}

@@ -179,6 +179,11 @@
     overflow: hidden;
 }
 
+.categories-slider .swiper-wrapper {
+    display: flex;
+    justify-content: center;
+}
+
 .cat-nav-btn {
     width: 40px;
     height: 40px;
@@ -765,21 +770,73 @@
    ======================================== */
 @media (max-width: 480px) {
     .hero-slider-section {
-        height: 300px;
+        height: auto;
+        padding: 16px;
+        background: #fff;
+    }
+
+    .hero-swiper {
+        border-radius: 20px;
+        overflow: hidden;
+        height: 240px;
+        /* Card height */
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    .hero-slide {
+        background-position: center;
+        background-size: cover;
+    }
+
+    .hero-overlay {
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.2) 60%, transparent 100%);
+    }
+
+    .hero-content-slider {
+        text-align: left;
+        padding: 20px;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: flex-start;
+        max-width: 100%;
+        animation: none;
     }
 
     .hero-title-slider {
-        font-size: 28px;
+        font-size: 24px;
+        margin-bottom: 6px;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
     }
 
     .hero-subtitle-slider {
-        font-size: 14px;
-        margin-bottom: 20px;
+        font-size: 13px;
+        margin-bottom: 16px;
+        line-height: 1.4;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        color: rgba(255, 255, 255, 0.9);
     }
 
     .hero-btn-slider {
-        padding: 10px 24px;
-        font-size: 14px;
+        padding: 8px 20px;
+        font-size: 13px;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .hero-swiper .swiper-pagination {
+        text-align: right !important;
+        padding-right: 16px !important;
+        bottom: 15px !important;
+        width: auto !important;
+        left: auto !important;
+        right: 0 !important;
+    }
+
+    .hero-swiper .swiper-pagination-bullet {
+        margin: 0 4px !important;
     }
 
     .view-all-link {
