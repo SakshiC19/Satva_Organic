@@ -268,6 +268,7 @@ const Home = () => {
               modules={[Navigation, Autoplay]}
               spaceBetween={16}
               slidesPerView="auto"
+              centerInsufficientSlides={true}
               autoplay={{
                 delay: 2500,
                 disableOnInteraction: false,
@@ -277,12 +278,13 @@ const Home = () => {
                 prevEl: '.cat-prev',
                 nextEl: '.cat-next',
               }}
-              loop={true}
+              loop={quickCategories.length > 6}
               breakpoints={{
-                320: { slidesPerView: 2.5, spaceBetween: 12 },
-                480: { slidesPerView: 3.5, spaceBetween: 12 },
-                768: { slidesPerView: 4.5, spaceBetween: 14 },
-                1024: { slidesPerView: 6, spaceBetween: 16 },
+                320: { slidesPerView: 2.5, spaceBetween: 12, loop: quickCategories.length > 2 },
+                480: { slidesPerView: 3.5, spaceBetween: 12, loop: quickCategories.length > 3 },
+                768: { slidesPerView: 4.2, spaceBetween: 14, loop: quickCategories.length > 4 },
+                1024: { slidesPerView: 5.2, spaceBetween: 16, loop: quickCategories.length > 5 },
+                1200: { slidesPerView: 6, spaceBetween: 20, loop: quickCategories.length > 6 },
               }}
               className="categories-slider"
             >

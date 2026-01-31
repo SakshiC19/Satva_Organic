@@ -35,6 +35,7 @@ import Users from './pages/Admin/Users';
 import Dispatch from './pages/Admin/Dispatch';
 import CourierSettings from './pages/Admin/CourierSettings';
 import APILogs from './pages/Admin/APILogs';
+import Analytics from './pages/Admin/Analytics';
 import MakeAdmin from './components/admin/MakeAdmin';
 import ProductDetail from './pages/ProductDetail/ProductDetail';
 import FlashDeals from './pages/FlashDeals/FlashDeals';
@@ -129,6 +130,13 @@ function App() {
                   <Route path="users" element={<Users />} />
                   <Route path="courier-settings" element={<CourierSettings />} />
                   <Route path="api-logs" element={<APILogs />} />
+                  
+                  {/* Analytics Routes */}
+                  <Route path="analytics" element={<Analytics />} />
+                  <Route path="analytics/orders" element={<Analytics />} />
+                  <Route path="analytics/products" element={<Analytics />} />
+                  <Route path="analytics/customers" element={<Analytics />} />
+                  <Route path="analytics/revenue" element={<Analytics />} />
                 </Route>
   
                 {/* Fallback for other routes */}

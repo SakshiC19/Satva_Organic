@@ -53,7 +53,7 @@
 /* Stats Row */
 .users-stats-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 24px;
     margin-bottom: 32px;
 }
@@ -148,7 +148,9 @@
 }
 
 .filter-group {
-    display:contents;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
     gap: 12px;
 }
 
@@ -624,4 +626,256 @@
     .modal-grid {
         grid-template-columns: 1fr;
     }
+}
+
+/* Bulk Actions Bar */
+.bulk-actions-bar {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translate(-50%, 100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translate(-50%, 0);
+        opacity: 1;
+    }
+}
+
+.selected-count {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.bulk-btns {
+    display: flex;
+    gap: 12px;
+}
+
+.bulk-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.bulk-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Badges */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.badge-registered {
+    background: #dcfce7;
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
+}
+
+.badge-phone-only {
+    background: #eff6ff;
+    color: #3b82f6;
+    border: 1px solid #bfdbfe;
+}
+
+.badge-guest {
+    background: #fff7ed;
+    color: #f59e0b;
+    border: 1px solid #fed7aa;
+}
+
+.badge-phone-only-small {
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+    text-transform: none;
+}
+
+/* Selected Row */
+.users-table tr.selected {
+    background-color: #eff6ff;
+}
+
+.users-table tr.selected td {
+    border-bottom-color: #dbeafe;
+}
+
+/* Status Colors for Orders */
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 8px;
+}
+
+.status-dot.shipped {
+    background-color: #3b82f6;
+}
+
+.status-dot.delivered {
+    background-color: #22c55e;
+}
+
+.status-dot.cancelled {
+    background-color: #ef4444;
+}
+
+.status-dot.pending {
+    background-color: #f59e0b;
+}
+
+.status-dot.processing {
+    background-color: #8b5cf6;
+}
+
+/* Order Details Modal Styles (Simplified) */
+.modal-content-large {
+    background: #fff;
+    width: 90%;
+    max-width: 1000px;
+    max-height: 90vh;
+    border-radius: 24px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.order-details-grid-new {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+    padding: 24px;
+}
+
+.detail-card {
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 24px;
+}
+
+.detail-card h3 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    font-size: 16px;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.items-table-new {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.items-table-new th {
+    text-align: left;
+    padding: 12px;
+    font-size: 12px;
+    color: #64748b;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.items-table-new td {
+    padding: 12px;
+    font-size: 14px;
+    color: #334155;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.status-badge-large {
+    padding: 12px;
+    border-radius: 12px;
+    text-align: center;
+    font-weight: 700;
+    margin-bottom: 24px;
+}
+
+/* Bulk Actions Bar Improvements */
+.bulk-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.select-all-link {
+    background: none;
+    border: none;
+    color: #3b82f6;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    text-align: left;
+    text-decoration: underline;
+}
+
+.select-all-link:hover {
+    color: #60a5fa;
+}
+
+.bulk-btn-close {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    margin-left: 8px;
+    transition: color 0.2s;
+}
+
+.bulk-btn-close:hover {
+    color: #fff;
+}
+
+.filter-select:hover {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+}
+
+.filter-select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
