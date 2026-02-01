@@ -181,7 +181,12 @@
 
 .categories-slider .swiper-wrapper {
     display: flex;
+}
+
+.categories-slider .swiper-slide {
+    display: flex;
     justify-content: center;
+    align-items: center;
 }
 
 .cat-nav-btn {

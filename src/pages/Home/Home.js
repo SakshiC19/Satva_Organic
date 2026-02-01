@@ -269,6 +269,8 @@ const Home = () => {
               spaceBetween={16}
               slidesPerView="auto"
               centerInsufficientSlides={true}
+              centeredSlides={true}
+              centeredSlidesBounds={true}
               autoplay={{
                 delay: 2500,
                 disableOnInteraction: false,
