@@ -268,6 +268,8 @@ const Home = () => {
               modules={[Navigation]}
               spaceBetween={12}
               slidesPerView={2}
+              centerInsufficientSlides={true}
+              watchOverflow={true}
               navigation={{
                 prevEl: '.cat-prev',
                 nextEl: '.cat-next',
