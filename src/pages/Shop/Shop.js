@@ -84,8 +84,29 @@ const Shop = () => {
       filtered = filtered.filter(product => {
         if (!product.category) return false;
         
-        const normalize = (str) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
-        const productCatNorm = normalize(product.category);
+        // Mapping for old category names to new ones for accurate filtering
+        const nameMapping = {
+          'Organic Exotic Products': 'Vegetable Basket',
+          'Organic Wood Cold Press Oils Products': 'Satva Pure Oils',
+          'Organic Powder': 'Healthy Life Powders',
+          'Organic Woodcold press Oils products': 'Satva Pure Oils',
+          'Organic Iteams': 'Organic Items',
+          'Organic Items ': 'Organic Items'
+        };
+
+        const normalize = (str) => {
+          if (!str) return '';
+          return str.toLowerCase()
+            .replace(/&/g, 'and')
+            .replace(/[^a-z0-9]/g, '');
+        };
+
+        let productCategory = product.category.trim();
+        if (nameMapping[productCategory]) {
+          productCategory = nameMapping[productCategory];
+        }
+
+        const productCatNorm = normalize(productCategory);
         const paramNorm = normalize(categoryParam);
         
         return productCatNorm.includes(paramNorm) || paramNorm.includes(productCatNorm);
@@ -100,11 +121,28 @@ const Shop = () => {
     }
 
     if (searchParam) {
-      const query = searchParam.toLowerCase();
-      filtered = filtered.filter(product => 
-        product.name.toLowerCase().includes(query) || 
-        (product.category && product.category.toLowerCase().includes(query))
-      );
+      const query = searchParam.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]/g, '');
+      filtered = filtered.filter(product => {
+        const nameMatch = product.name.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]/g, '').includes(query);
+        
+        const nameMapping = {
+          'Organic Exotic Products': 'Vegetable Basket',
+          'Organic Wood Cold Press Oils Products': 'Satva Pure Oils',
+          'Organic Powder': 'Healthy Life Powders',
+          'Organic Woodcold press Oils products': 'Satva Pure Oils',
+          'Organic Iteams': 'Organic Items',
+          'Organic Items ': 'Organic Items'
+        };
+
+        let productCategory = product.category || '';
+        if (nameMapping[productCategory.trim()]) {
+          productCategory = nameMapping[productCategory.trim()];
+        }
+        
+        const categoryMatch = productCategory.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]/g, '').includes(query);
+        
+        return nameMatch || categoryMatch;
+      });
     }
 
     // Availability filter

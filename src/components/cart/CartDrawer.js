@@ -8,6 +8,7 @@ import './CartDrawer.css';
 const CartDrawer = () => {
   const { isCartOpen, closeCart, cartItems, updateQuantity, removeFromCart } = useCart();
   const [showNotice, setShowNotice] = React.useState(false);
+  const [showPolicy, setShowPolicy] = React.useState(false);
   const { currentUser } = useAuth();
   const navigate = useNavigate();
 
@@ -69,7 +70,7 @@ const CartDrawer = () => {
               )}
 
               {/* Delivery Info */}
-              <div className="delivery-info-card">
+              <div className="delivery-info-card highlighted">
                 <div className="delivery-icon">
                   <FiClock />
                 </div>
@@ -93,15 +94,22 @@ const CartDrawer = () => {
                         </div>
                         <div className="item-details">
                           <span className="item-category">{item.category}</span>
-                          <h4>{item.name}</h4>
-                          <p className="item-unit">{item.selectedSize || item.weight || item.unit || 'Standard'}</p>
+                          <h4 className="product-name">{item.name}</h4>
+                          <span className="item-unit-badge">{item.selectedSize || item.weight || item.unit || 'Standard'}</span>
+                          
+                          <div className="product-features">
+                            <span className="feature-item">No Preservatives</span>
+                            <span className="feature-item">✓ Returnable if Damaged</span>
+                          </div>
+
                           <div className="item-price-row">
                             <span className="item-price">₹{item.price}</span>
                             <div className="item-actions-right">
                               <div className="item-quantity-controls">
                                 <button 
-                                  onClick={() => updateQuantity(item.id, item.selectedSize, item.quantity - 1)}
-                                  className="qty-control-btn"
+                                  onClick={() => item.quantity > 1 && updateQuantity(item.id, item.selectedSize, item.quantity - 1)}
+                                  className={`qty-control-btn ${item.quantity <= 1 ? 'disabled' : ''}`}
+                                  disabled={item.quantity <= 1}
                                 >
                                   <FiMinus />
                                 </button>
@@ -130,8 +138,15 @@ const CartDrawer = () => {
 
               {/* Cancellation Policy */}
               <div className="cancellation-policy-card">
-                <h3>Cancellation Policy</h3>
-                <p>Orders cannot be cancelled once packed for delivery. In case of unexpected delays, a refund will be provided, if applicable.</p>
+                <div className="policy-header" onClick={() => setShowPolicy(!showPolicy)}>
+                  <h3>Cancellation Policy</h3>
+                  <button className="expand-btn">{showPolicy ? 'Read less' : 'Read more'}</button>
+                </div>
+                {showPolicy ? (
+                  <p className="policy-full">🔒 Orders can't be cancelled once packed. Refunds apply for delays. We strive to maintain the highest quality standards and timeliness for every delivery.</p>
+                ) : (
+                  <p className="policy-summary">🔒 Orders can't be cancelled once packed. Refunds apply for delays.</p>
+                )}
               </div>
             </div>
 

@@ -113,24 +113,6 @@ const Wishlist = () => {
         <div className="wishlist-info">
           <h2 className="account-title">My Wishlist ({wishlistCount})</h2>
         </div>
-        <div className="wishlist-controls">
-          <select 
-            className="wishlist-sort" 
-            value={sortBy} 
-            onChange={(e) => setSortBy(e.target.value)}
-          >
-            <option value="newest">Recently Added</option>
-            <option value="price-low">Price: Low to High</option>
-            <option value="price-high">Price: High to Low</option>
-            <option value="discount">Highest Discount</option>
-          </select>
-          <button className="btn-outline-danger" onClick={clearWishlist}>
-            <FiTrash2 /> Clear Wishlist
-          </button>
-          <button className="btn-primary" onClick={handleMoveAllToCart}>
-            <FiShoppingCart /> Move All to Basket
-          </button>
-        </div>
       </div>
 
       <div className="wishlist-grid">

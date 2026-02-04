@@ -1,17 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { doc, getDoc, addDoc, collection, serverTimestamp, updateDoc, increment, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { FiHeart, FiMinus, FiPlus, FiCheck, FiStar, FiX } from 'react-icons/fi';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useWishlist } from '../../contexts/WishlistContext';
 import Recommendations from '../../components/product/Recommendations';
 import './ProductDetail.css';
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { currentUser } = useAuth();
+  const { cartItems, addToCart, openCart } = useCart();
+  const { wishlistItems, toggleWishlist, isInWishlist } = useWishlist();
+  
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -34,6 +39,16 @@ const ProductDetail = () => {
   const [pincodeError, setPincodeError] = useState('');
   const pincodeRef = useRef(null);
   const [userAddressPincode, setUserAddressPincode] = useState('');
+  
+  // Fixed bottom footer state for mobile
+  const [showFixedFooter, setShowFixedFooter] = useState(true);
+  const productActionsRef = useRef(null);
+
+  const isInCart = cartItems.some(item => 
+    item.id === product?.id && item.selectedSize === selectedSize
+  );
+  
+  const isItemInWishlist = isInWishlist(product?.id);
 
   const fetchProduct = async () => {
     try {
@@ -102,7 +117,11 @@ const ProductDetail = () => {
   // Autofill pincode from user profile
   useEffect(() => {
     const autofillPincode = async () => {
-      if (currentUser) {
+      // Only check pincode automatically if it's an exotic vegetable
+      const isExoticVegetable = product?.category?.toLowerCase().includes('exotic') || 
+                               product?.category?.toLowerCase().includes('vegetable basket');
+      
+      if (currentUser && isExoticVegetable) {
         try {
           const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
           if (userDoc.exists()) {
@@ -112,13 +131,10 @@ const ProductDetail = () => {
               if (profilePincode && profilePincode.length === 6) {
                 setPincode(profilePincode);
                 setUserAddressPincode(profilePincode);
-                // Trigger check automatically if product is already loaded
-                if (product) {
-                  // Wait a bit to ensure product is fully ready if needed
-                  setTimeout(() => {
-                    handlePincodeCheckInternal(profilePincode);
-                  }, 100);
-                }
+                // Trigger check automatically
+                setTimeout(() => {
+                  handlePincodeCheckInternal(profilePincode);
+                }, 100);
               }
             }
           }
@@ -129,7 +145,35 @@ const ProductDetail = () => {
     };
     autofillPincode();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser, product?.id]);
+  }, [currentUser, product?.id, product?.category]);
+
+  // Scroll tracking for fixed footer visibility
+  useEffect(() => {
+    const handleScroll = () => {
+      if (productActionsRef.current) {
+        const rect = productActionsRef.current.getBoundingClientRect();
+        const windowHeight = window.innerHeight;
+        
+        // Check if the product actions section is visible in viewport
+        // Hide fixed footer when actions are visible, show when they're not
+        if (rect.top >= 0 && rect.bottom <= windowHeight) {
+          setShowFixedFooter(false);
+        } else {
+          setShowFixedFooter(true);
+        }
+      }
+    };
+
+    // Only add scroll listener on mobile
+    if (window.innerWidth <= 768) {
+      window.addEventListener('scroll', handleScroll);
+      handleScroll(); // Initial check
+    }
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [product]);
 
   const handlePincodeCheckInternal = async (code) => {
     if (!code || code.length !== 6) return;
@@ -149,6 +193,13 @@ const ProductDetail = () => {
       console.error("Error checking pincode:", error);
     } finally {
       setIsCheckingPincode(false);
+    }
+  };
+
+  const handleWishlistToggle = (e) => {
+    e.stopPropagation();
+    if (product) {
+      toggleWishlist(product);
     }
   };
 
@@ -201,25 +252,24 @@ const ProductDetail = () => {
 
   const currentPrice = product ? calculateDynamicPrice(product, selectedSize) : 0;
 
-  const { addToCart, openCart, cartItems } = useCart();
-
-  const isInCart = cartItems.some(item => 
-    item.id === product?.id && item.selectedSize === selectedSize
-  );
-
   const handleAddToCart = () => {
     if (!product) return;
 
-    if (!currentUser) {
-      pincodeRef.current?.scrollIntoView({ behavior: 'smooth' });
-      pincodeRef.current?.focus();
-      return;
-    }
+    const isExoticVegetable = product.category?.toLowerCase().includes('exotic') || 
+                             product.category?.toLowerCase().includes('vegetable basket');
 
-    if (pincodeStatus !== 'available') {
-      pincodeRef.current?.scrollIntoView({ behavior: 'smooth' });
-      pincodeRef.current?.focus();
-      return;
+    if (isExoticVegetable) {
+      if (!currentUser) {
+        pincodeRef.current?.scrollIntoView({ behavior: 'smooth' });
+        pincodeRef.current?.focus();
+        return;
+      }
+
+      if (pincodeStatus !== 'available') {
+        pincodeRef.current?.scrollIntoView({ behavior: 'smooth' });
+        pincodeRef.current?.focus();
+        return;
+      }
     }
     
     if (isInCart) {
@@ -240,16 +290,21 @@ const ProductDetail = () => {
   const handleBuyNow = () => {
     if (!product) return;
 
-    if (!currentUser) {
-      pincodeRef.current?.scrollIntoView({ behavior: 'smooth' });
-      pincodeRef.current?.focus();
-      return;
-    }
+    const isExoticVegetable = product.category?.toLowerCase().includes('exotic') || 
+                             product.category?.toLowerCase().includes('vegetable basket');
 
-    if (pincodeStatus !== 'available') {
-      pincodeRef.current?.scrollIntoView({ behavior: 'smooth' });
-      pincodeRef.current?.focus();
-      return;
+    if (isExoticVegetable) {
+      if (!currentUser) {
+        pincodeRef.current?.scrollIntoView({ behavior: 'smooth' });
+        pincodeRef.current?.focus();
+        return;
+      }
+
+      if (pincodeStatus !== 'available') {
+        pincodeRef.current?.scrollIntoView({ behavior: 'smooth' });
+        pincodeRef.current?.focus();
+        return;
+      }
     }
 
     handleAddToCart();
@@ -266,9 +321,6 @@ const ProductDetail = () => {
     setPincodeError('');
     
     try {
-      // Mock API call - in a real app, this would check against a database or shipping API
-      // For now, let's assume pincodes starting with '4' are available (common in Maharashtra)
-      // and others are checked against a mock list or just allowed for demo purposes
       await new Promise(resolve => setTimeout(resolve, 800));
       
       if (product.availablePincodes && product.availablePincodes.length > 0) {
@@ -278,7 +330,6 @@ const ProductDetail = () => {
           setPincodeStatus('unavailable');
         }
       } else {
-        // Default logic if no specific pincodes are defined for the product
         if (pincode.startsWith('4') || pincode.startsWith('1')) {
           setPincodeStatus('available');
         } else {
@@ -443,32 +494,6 @@ const ProductDetail = () => {
               {product.stock > 0 ? 'IN STOCK' : 'OUT OF STOCK'}
             </div>
 
-            <div className="product-features" style={{ marginTop: '8px', marginBottom: '16px', borderTop: 'none', paddingTop: 0 }}>
-
-              <div className="feature-item">
-                <FiCheck className={`feature-icon ${product.codAvailable !== false ? 'success' : 'error'}`} />
-                <span>Cash on Delivery: {product.codAvailable !== false ? 'Available' : 'Not Available'}</span>
-              </div>
-              <div className="feature-item">
-                <FiCheck className={`feature-icon ${product.refundPolicyAvailable ? 'success' : 'error'}`} />
-                <span>Refund Policy: {product.refundPolicyAvailable ? 'Available' : 'Not Available'}</span>
-              </div>
-              {product.mfgDate && (
-                <div className="feature-item">
-                  <FiCheck className="feature-icon" />
-                  <span>MFG: {product.mfgDate}</span>
-                </div>
-              )}
-              {product.shelfLife && (
-                <div className="feature-item">
-                  <FiCheck className="feature-icon" />
-                  <span>LIFE: {product.shelfLife}</span>
-                </div>
-              )}
-            </div>
-
-
-
             {product.brands && product.brands.length > 0 && (
               <div className="product-option">
                 <label className="option-label">Brands</label>
@@ -563,7 +588,7 @@ const ProductDetail = () => {
               </div>
             )}
 
-            <div className="product-actions">
+            <div className="product-actions" ref={productActionsRef}>
               <button 
                 className={`btn-add-to-cart ${isInCart ? 'in-cart' : ''}`}
                 onClick={handleAddToCart}
@@ -578,46 +603,76 @@ const ProductDetail = () => {
               >
                 Buy Now
               </button>
-              <button className="secondary-btn wishlist-inline-btn mobile-action-wishlist" title="Add to Wishlist">
-                <FiHeart />
+              <button 
+                className={`secondary-btn wishlist-inline-btn mobile-action-wishlist ${isItemInWishlist ? 'active' : ''}`} 
+                onClick={handleWishlistToggle}
+                title={isItemInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+              >
+                <FiHeart className={isItemInWishlist ? 'filled' : ''} />
               </button>
             </div>
 
-            <div className="pincode-check-section">
-              <label className="option-label">Check Delivery Availability</label>
-              <div className="pincode-input-group">
-                <input 
-                  type="text" 
-                  placeholder="Enter Pincode" 
-                  value={pincode}
-                  ref={pincodeRef}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, '').slice(0, 6);
-                    setPincode(val);
-                    if (pincodeStatus) setPincodeStatus(null);
-                  }}
-                  className={`pincode-input ${pincodeStatus}`}
-                />
-                <button 
-                  className="btn-check-pincode"
-                  onClick={handlePincodeCheck}
-                  disabled={isCheckingPincode || pincode.length !== 6}
-                >
-                  {isCheckingPincode ? 'Checking...' : 'Check'}
-                </button>
+            <div className="product-features" style={{ marginTop: '16px', marginBottom: '16px', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
+              <div className="feature-item">
+                <FiCheck className={`feature-icon ${product.codAvailable !== false ? 'success' : 'error'}`} />
+                <span>Cash on Delivery: {product.codAvailable !== false ? 'Available' : 'Not Available'}</span>
               </div>
-              {pincodeError && <p className="pincode-error">{pincodeError}</p>}
-              {pincodeStatus === 'available' && (
-                <p className="pincode-success">
-                  <FiCheck /> Delivery available to {pincode}
-                </p>
+              <div className="feature-item">
+                <FiCheck className={`feature-icon ${product.refundPolicyAvailable ? 'success' : 'error'}`} />
+                <span>Refund Policy: {product.refundPolicyAvailable ? 'Available' : 'Not Available'}</span>
+              </div>
+              {product.mfgDate && (
+                <div className="feature-item">
+                  <FiCheck className="feature-icon" />
+                  <span>MFG: {product.mfgDate}</span>
+                </div>
               )}
-              {pincodeStatus === 'unavailable' && (
-                <p className="pincode-error">
-                  <FiX /> This product is currently not available in your location
-                </p>
+              {product.shelfLife && (
+                <div className="feature-item">
+                  <FiCheck className="feature-icon" />
+                  <span>LIFE: {product.shelfLife}</span>
+                </div>
               )}
             </div>
+
+            {(product.category?.toLowerCase().includes('exotic') || 
+              product.category?.toLowerCase().includes('vegetable basket')) && (
+              <div className="pincode-check-section">
+                <label className="option-label">Check Delivery Availability</label>
+                <div className="pincode-input-group">
+                  <input 
+                    type="text" 
+                    placeholder="Enter Pincode" 
+                    value={pincode}
+                    ref={pincodeRef}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                      setPincode(val);
+                      if (pincodeStatus) setPincodeStatus(null);
+                    }}
+                    className={`pincode-input ${pincodeStatus}`}
+                  />
+                  <button 
+                    className="btn-check-pincode"
+                    onClick={handlePincodeCheck}
+                    disabled={isCheckingPincode || pincode.length !== 6}
+                  >
+                    {isCheckingPincode ? 'Checking...' : 'Check'}
+                  </button>
+                </div>
+                {pincodeError && <p className="pincode-error">{pincodeError}</p>}
+                {pincodeStatus === 'available' && (
+                  <p className="pincode-success">
+                    <FiCheck /> Delivery available to {pincode}
+                  </p>
+                )}
+                {pincodeStatus === 'unavailable' && (
+                  <p className="pincode-error">
+                    <FiX /> This product is currently not available in your location
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -757,6 +812,31 @@ const ProductDetail = () => {
           category={product.category} 
           currentProductId={product.id} 
         />
+      </div>
+
+      {/* Fixed Bottom Footer for Mobile */}
+      <div className={`fixed-bottom-footer ${showFixedFooter ? 'visible' : 'hidden'}`}>
+        <button 
+          className={`btn-add-to-cart ${isInCart ? 'in-cart' : ''}`}
+          onClick={handleAddToCart}
+          disabled={product.stock <= 0}
+        >
+          {isInCart ? 'View Basket' : 'Add to Basket'}
+        </button>
+        <button 
+          className="btn-buy-now"
+          onClick={handleBuyNow}
+          disabled={product.stock <= 0}
+        >
+          Buy Now
+        </button>
+        <button 
+          className={`wishlist-btn ${isItemInWishlist ? 'active' : ''}`} 
+          onClick={handleWishlistToggle}
+          title={isItemInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+        >
+          <FiHeart className={isItemInWishlist ? 'filled' : ''} />
+        </button>
       </div>
     </div>
   );

@@ -386,18 +386,15 @@ const Header = () => {
                   </div>
                 </div>
                 <div className="mobile-user-links">
-                  <Link to="/account/profile" className="user-link-item" onClick={() => setMobileMenuOpen(false)}>
-                    <FiUser className="link-icon" /> My Profile
-                  </Link>
                   <Link to="/account/orders" className="user-link-item" onClick={() => setMobileMenuOpen(false)}>
-                    <FiPackage className="link-icon" /> My Orders
+                    My Orders
                   </Link>
                   <Link to="/account/wishlist" className="user-link-item" onClick={() => setMobileMenuOpen(false)}>
-                    <FiHeart className="link-icon" /> My Wishlist
+                    My Wishlist
                   </Link>
                   {isAdmin && (
                     <Link to="/admin/dashboard" className="user-link-item" onClick={() => setMobileMenuOpen(false)}>
-                      <FiGrid className="link-icon" /> Admin Dashboard
+                      Admin Dashboard
                     </Link>
                   )}
                 </div>
@@ -420,7 +417,6 @@ const Header = () => {
               onClick={() => setMobileMenuOpen(false)}
             >
               <span className="menu-item-content">
-                <FiHome className="menu-icon" />
                 Home
               </span>
             </Link>
@@ -436,7 +432,6 @@ const Header = () => {
                   }}
                   style={{ cursor: 'pointer', flex: 1 }}
                 >
-                  <FiLayers className="menu-icon" />
                   Products
                 </div>
                 <span
@@ -449,36 +444,22 @@ const Header = () => {
               </div>
 
               <div className={`mobile-products-list ${productsOpen ? 'open' : ''}`}>
-                {navItems.map((item, index) => {
-                  // Determine icon based on category name
-                  let CategoryIcon = FiPackage;
-                  const lowerName = item.name.toLowerCase();
-                  if (lowerName.includes('organic items')) CategoryIcon = FiPackage;
-                  else if (lowerName.includes('millets')) CategoryIcon = FiGrid;
-                  else if (lowerName.includes('oil')) CategoryIcon = FiDroplet;
-                  else if (lowerName.includes('vegetable') || lowerName.includes('basket')) CategoryIcon = FiStar;
-                  else if (lowerName.includes('powder')) CategoryIcon = FiLayers;
-                  else if (lowerName.includes('seeds')) CategoryIcon = FiDisc;
-
-                  return (
-                    <div key={index} className="mobile-category-item">
-                      <div className="mobile-category-header">
-                        <div
-                          className="category-label"
-                          onClick={() => {
-                            navigate(item.path);
-                            setMobileMenuOpen(false);
-                          }}
-                          style={{ cursor: 'pointer', flex: 1 }}
-                        >
-                          <CategoryIcon className="category-icon" />
-                          <span className="category-text">{item.name}</span>
-                        </div>
-                        <FiChevronRight className="mobile-cat-arrow" />
+                {navItems.map((item, index) => (
+                  <div key={index} className="mobile-category-item">
+                    <div className="mobile-category-header">
+                      <div
+                        className="category-label"
+                        onClick={() => {
+                          navigate(item.path);
+                          setMobileMenuOpen(false);
+                        }}
+                        style={{ cursor: 'pointer', flex: 1 }}
+                      >
+                        <span className="category-text">{item.name}</span>
                       </div>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -488,20 +469,14 @@ const Header = () => {
             <div className="mobile-utility-menu">
               <Link to="/contact" className="mobile-menu-item" onClick={() => setMobileMenuOpen(false)}>
                 <span className="menu-item-content">
-                  <FiPhone className="menu-icon" /> Contact Us
+                  Contact Us
                 </span>
               </Link>
               <Link to="/track-order" className="mobile-menu-item" onClick={() => setMobileMenuOpen(false)}>
                 <span className="menu-item-content">
-                  <FiTruck className="menu-icon" /> Track Order
+                  Track Order
                 </span>
               </Link>
-              <Link to="/support" className="mobile-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                <span className="menu-item-content">
-                  <FiHelpCircle className="menu-icon" /> Help & Support
-                </span>
-              </Link>
-
             </div>
           </div>
         </div>

@@ -330,10 +330,9 @@
 
 .btn-add-to-cart {
     flex: 1;
-    background: #27ae60;
-    /* Flipkart Orange for Add to Basket */
-    color: white;
-    border: none;
+    background: transparent;
+    color: #27ae60;
+    border: 2px solid #27ae60;
     padding: 16px 24px;
     border-radius: 2px;
     font-size: 16px;
@@ -343,16 +342,20 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    transition: box-shadow 0.2s ease;
+    transition: all 0.2s ease;
     text-transform: uppercase;
 }
 
 .btn-add-to-cart:hover:not(:disabled) {
+    background: #27ae60;
+    color: #fff;
     box-shadow: 0 2px 4px 0 rgba(0, 0, 0, .2);
 }
 
 .btn-add-to-cart:disabled {
-    background: #ccc;
+    background: transparent;
+    color: #ccc;
+    border-color: #ccc;
     cursor: not-allowed;
 }
 

@@ -516,7 +516,7 @@
         border: none;
     }
 
-    .action-item.wishlist-item span:not(.cart-count),
+    .action-item.wishlist-item span:not(.wishlist-count),
     .action-item.cart-item span:not(.cart-count) {
         display: none;
     }
@@ -527,7 +527,7 @@
     }
 
     .header-actions {
-        gap: 12px;
+        gap: 16px;
         margin-left: 0;
     }
 
@@ -612,7 +612,7 @@
 .sidebar-brand-name {
     font-size: 18px;
     font-weight: 700;
-    color: #27ae60;
+    color: #fff;
     letter-spacing: -0.5px;
 }
 
@@ -695,7 +695,7 @@
 
 .view-profile-link {
     font-size: 12px;
-    color: #27ae60;
+    color: #fff;
     text-decoration: none;
     display: flex;
     align-items: center;
@@ -714,7 +714,7 @@
     align-items: center;
     gap: 12px;
     padding: 10px 12px;
-    color: #27ae60;
+    color: #fff;
     text-decoration: none;
     font-size: 14px;
     font-weight: 500;
@@ -729,7 +729,7 @@
 
 .link-icon {
     font-size: 18px;
-    color: #27ae60;
+    color: #fff;
 }
 
 .user-link-item:hover .link-icon {
@@ -754,8 +754,8 @@
 }
 
 .mobile-auth-btn.login {
-    border: 1px solid #27ae60;
-    color: #27ae60;
+    border: 1px solid #fff;
+    color: #fff;
     background: transparent;
 }
 
@@ -777,7 +777,7 @@
     align-items: center;
     text-decoration: none;
     padding: 12px 0;
-    color: #27ae60;
+    color: #fff;
     border-bottom: 1px solid #2c3e50;
     cursor: pointer;
 }
@@ -796,7 +796,7 @@
 
 .menu-icon {
     font-size: 20px;
-    color: #27ae60;
+    color: #fff;
     min-width: 24px;
 }
 
@@ -855,7 +855,7 @@
 
 .products-chevron {
     font-size: 18px;
-    color: #27ae60;
+    color: #fff;
     transition: transform 0.3s;
 }
 
@@ -903,24 +903,24 @@
 
 .category-icon {
     font-size: 18px;
-    color: #27ae60;
+    color: #fff;
     min-width: 20px;
 }
 
 .category-text {
     font-size: 14px;
     font-weight: 500;
-    color: #27ae60;
+    color: #fff;
 }
 
 .mobile-cat-arrow {
     font-size: 16px;
-    color: #2c3e50;
+    color: #fff;
 }
 
 .mobile-cat-toggle-icon {
     font-size: 16px;
-    color: #27ae60;
+    color: #fff;
     transition: transform 0.3s;
 }
 
@@ -954,7 +954,7 @@
 .mobile-subcategory-link {
     display: block;
     padding: 6px 0;
-    color: #27ae60;
+    color: #fff;
     text-decoration: none;
     font-size: 13px;
     transition: color 0.2s;
@@ -984,9 +984,9 @@
 /* Sidebar Footer */
 .mobile-sidebar-footer {
     margin-top: auto;
-    padding: 20px;
-    border-top: 1px solid #2c3e50;
-    background: #172337;
+    padding: 16px 20px;
+    background: #27ae60;
+    border: none;
 }
 
 .mobile-logout-btn-subtle {
@@ -994,19 +994,23 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 10px;
     background: none;
     border: none;
-    color: #27ae60;
-    font-size: 15px;
-    font-weight: 500;
-    padding: 10px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    padding: 8px;
     cursor: pointer;
-    transition: color 0.2s;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .mobile-logout-btn-subtle:hover {
-    color: #ef4444;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
 }
 
 .mobile-logout-btn-subtle svg {

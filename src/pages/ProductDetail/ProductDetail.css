@@ -482,9 +482,16 @@
     transition: all 0.2s;
 }
 
-.wishlist-inline-btn:hover {
-    border-color: #16a34a;
-    color: #16a34a;
+.wishlist-inline-btn:hover,
+.wishlist-inline-btn.active {
+    border-color: #27ae60;
+    color: #27ae60;
+    background: #f0fdf4;
+}
+
+.wishlist-inline-btn svg.filled {
+    fill: #27ae60;
+    stroke: #27ae60;
 }
 
 /* Actions */
@@ -500,19 +507,26 @@
 .btn-add-to-cart {
     flex: 1;
     min-width: 140px;
-    background-color: #27ae60;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
+    background-color: transparent;
+    color: #27ae60;
+    border: 2px solid #27ae60;
+    border-radius: 8px;
     font-weight: 600;
     font-size: 15px;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all 0.2s;
     height: 44px;
 }
 
 .btn-add-to-cart:hover:not(:disabled) {
-    background-color: #219150;
+    background-color: #27ae60;
+    color: #fff;
+}
+
+/* When hovering Add to Cart, Buy Now becomes outline */
+.btn-add-to-cart:hover:not(:disabled)~.btn-buy-now:not(:disabled) {
+    background-color: transparent;
+    color: #27ae60;
 }
 
 .btn-add-to-cart:disabled {
@@ -522,19 +536,21 @@
 }
 
 .btn-add-to-cart.in-cart {
-    background-color: #1e293b;
+    background-color: #27ae60;
+    color: #fff;
+    border-color: #27ae60;
 }
 
 .btn-add-to-cart.in-cart:hover {
-    background-color: #0f172a;
+    background-color: #219150;
 }
 
 .btn-buy-now {
     flex: 1;
     min-width: 140px;
-    background-color: #f59e0b;
+    background-color: #27ae60;
     color: #fff;
-    border: none;
+    border: 2px solid #27ae60;
     border-radius: 8px;
     font-weight: 600;
     font-size: 15px;
@@ -547,7 +563,13 @@
 }
 
 .btn-buy-now:hover:not(:disabled) {
-    background-color: #d97706;
+    background-color: #219150;
+}
+
+/* When hovering Buy Now, Add to Cart stays outline (default) */
+.product-actions:has(.btn-buy-now:hover) .btn-add-to-cart:not(:disabled):not(.in-cart) {
+    background-color: transparent;
+    color: #27ae60;
 }
 
 .btn-buy-now:disabled {
@@ -761,7 +783,7 @@
 /* Responsive */
 @media (max-width: 768px) {
     .product-detail-page {
-        padding: 10px 8px 20px;
+        padding: 10px 8px 80px;
     }
 
     .product-detail-main {
@@ -869,6 +891,129 @@
 
     .btn-submit-review {
         width: 100%;
+    }
+}
+
+/* Fixed Bottom Footer for Mobile */
+.fixed-bottom-footer {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    padding: 12px 16px;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 999;
+    gap: 8px;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.fixed-bottom-footer.visible {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.fixed-bottom-footer.hidden {
+    transform: translateY(100%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.fixed-bottom-footer .btn-add-to-cart,
+.fixed-bottom-footer .btn-buy-now {
+    flex: 1;
+    height: 48px;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.fixed-bottom-footer .btn-add-to-cart {
+    background-color: transparent;
+    color: #27ae60;
+    border: 2px solid #27ae60;
+}
+
+.fixed-bottom-footer .btn-add-to-cart:hover:not(:disabled) {
+    background-color: #27ae60;
+    color: #fff;
+}
+
+/* When hovering Add to Cart in fixed footer, Buy Now becomes outline */
+.fixed-bottom-footer .btn-add-to-cart:hover:not(:disabled)~.btn-buy-now:not(:disabled) {
+    background-color: transparent;
+    color: #27ae60;
+}
+
+.fixed-bottom-footer .btn-add-to-cart.in-cart {
+    background-color: #27ae60;
+    color: #fff;
+    border-color: #27ae60;
+}
+
+.fixed-bottom-footer .btn-add-to-cart.in-cart:hover {
+    background-color: #219150;
+}
+
+.fixed-bottom-footer .btn-buy-now {
+    background-color: #27ae60;
+    color: #fff;
+    border: 2px solid #27ae60;
+}
+
+.fixed-bottom-footer .btn-buy-now:hover:not(:disabled) {
+    background-color: #219150;
+}
+
+/* When hovering Buy Now in fixed footer, Add to Cart stays outline */
+.fixed-bottom-footer:has(.btn-buy-now:hover) .btn-add-to-cart:not(:disabled):not(.in-cart) {
+    background-color: transparent;
+    color: #27ae60;
+}
+
+.fixed-bottom-footer .btn-add-to-cart:disabled,
+.fixed-bottom-footer .btn-buy-now:disabled {
+    background-color: #e2e8f0;
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+
+.fixed-bottom-footer .wishlist-btn {
+    width: 48px;
+    height: 48px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #fff;
+    color: #4b5563;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.fixed-bottom-footer .wishlist-btn:hover,
+.fixed-bottom-footer .wishlist-btn.active {
+    border-color: #27ae60;
+    color: #27ae60;
+    background: #f0fdf4;
+}
+
+.fixed-bottom-footer .wishlist-btn svg.filled {
+    fill: #27ae60;
+    stroke: #27ae60;
+}
+
+/* Show fixed footer only on mobile */
+@media (max-width: 768px) {
+    .fixed-bottom-footer {
+        display: flex;
     }
 }
 

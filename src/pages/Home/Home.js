@@ -265,28 +265,18 @@ const Home = () => {
             </button>
 
             <Swiper
-              modules={[Navigation, Autoplay]}
-              spaceBetween={16}
-              slidesPerView="auto"
-              centerInsufficientSlides={true}
-              centeredSlides={true}
-              centeredSlidesBounds={true}
-              autoplay={{
-                delay: 2500,
-                disableOnInteraction: false,
-                pauseOnMouseEnter: true
-              }}
+              modules={[Navigation]}
+              spaceBetween={12}
+              slidesPerView={2}
               navigation={{
                 prevEl: '.cat-prev',
                 nextEl: '.cat-next',
               }}
-              loop={quickCategories.length > 6}
               breakpoints={{
-                320: { slidesPerView: 2.5, spaceBetween: 12, loop: quickCategories.length > 2 },
-                480: { slidesPerView: 3.5, spaceBetween: 12, loop: quickCategories.length > 3 },
-                768: { slidesPerView: 4.2, spaceBetween: 14, loop: quickCategories.length > 4 },
-                1024: { slidesPerView: 5.2, spaceBetween: 16, loop: quickCategories.length > 5 },
-                1200: { slidesPerView: 6, spaceBetween: 20, loop: quickCategories.length > 6 },
+                480: { slidesPerView: 3, spaceBetween: 14 },
+                768: { slidesPerView: 4, spaceBetween: 16 },
+                1024: { slidesPerView: 5, spaceBetween: 18 },
+                1200: { slidesPerView: 6, spaceBetween: 20 },
               }}
               className="categories-slider"
             >
@@ -436,7 +426,7 @@ const Home = () => {
             <Swiper
               modules={[Autoplay, Navigation]}
               spaceBetween={16}
-              slidesPerView="auto"
+              slidesPerView={2}
               autoplay={{
                 delay: 3000,
                 disableOnInteraction: false,
@@ -448,9 +438,9 @@ const Home = () => {
               }}
               loop={true}
               breakpoints={{
-                320: { slidesPerView: 2.1, spaceBetween: 12 },
-                480: { slidesPerView: 2.4, spaceBetween: 14 },
-                768: { slidesPerView: 3.2, spaceBetween: 14 },
+                320: { slidesPerView: 2, spaceBetween: 12 },
+                480: { slidesPerView: 3, spaceBetween: 14 },
+                768: { slidesPerView: 4, spaceBetween: 14 },
                 1024: { slidesPerView: 4, spaceBetween: 16 },
                 1200: { slidesPerView: 5, spaceBetween: 20 },
               }}

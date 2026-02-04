@@ -1,8 +1,8 @@
-﻿/* Account.css */
+/* Account.css */
 :root {
     --primary-green: #27ae60;
     --primary-dark: #1e8449;
-    --bg-light: #f8fafc;
+    --bg-light: var(--bg-primary);
     --text-main: #1e293b;
     --text-muted: #64748b;
     --border-color: #e2e8f0;
@@ -33,7 +33,7 @@
 
 /* Sidebar Styling */
 .account-sidebar {
-    background: white;
+    background: var(--bg-primary);
     border-radius: 16px;
     padding: 24px;
     height: fit-content;
@@ -96,7 +96,7 @@
 
 /* Content Area Styling */
 .account-content {
-    background: white;
+    background: var(--bg-primary);
     border-radius: 16px;
     padding: 32px;
     /* box-shadow: var(--shadow-md); */

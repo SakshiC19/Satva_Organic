@@ -5,7 +5,7 @@ import { useCart } from '../../contexts/CartContext';
 import { doc, updateDoc, arrayUnion, serverTimestamp, addDoc, collection, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import config from '../../config';
-import { FiCheck, FiShield, FiEdit2, FiPlus, FiTruck, FiChevronLeft } from 'react-icons/fi';
+import { FiCheck, FiShield, FiEdit2, FiPlus, FiTruck, FiChevronLeft, FiCheckCircle, FiChevronDown, FiChevronUp, FiLock } from 'react-icons/fi';
 import './Checkout.css';
 
 const Checkout = () => {
@@ -49,6 +49,8 @@ const Checkout = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [showMobilePayment, setShowMobilePayment] = useState(false);
+  const [showPriceBreakdown, setShowPriceBreakdown] = useState(false);
+  const [showShippingDetails, setShowShippingDetails] = useState(false);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -437,141 +439,148 @@ const Checkout = () => {
               {/* Address Section on Top for Mobile */}
               {!showMobilePayment ? (
                 <>
-                  {/* Address Section on Top for Mobile */}
-                  <div className="checkout-step mobile-address-step">
-                    <div className="step-header active">
+                  {/* DELIVERY ADDRESS / Shipping details Collapsible */}
+                  <div className="checkout-step mobile-address-step collapsible">
+                    <div className="step-header clickable" onClick={() => setShowShippingDetails(!showShippingDetails)}>
                       <div className="step-number">1</div>
                       <div className="step-title-wrapper">
-                        <span className="step-title">DELIVERY ADDRESS</span>
-                        {address.name && !isAddingNew && (
-                          <span className="step-info">{address.name}, {address.pincode}</span>
+                        <span className="step-title">Shipping details</span>
+                        {address.name && !isAddingNew && !showShippingDetails && (
+                          <span className="step-info-summary">{address.name}, {address.pincode}</span>
                         )}
                       </div>
-                      {address.name && !isAddingNew && (
-                        <button className="step-action-btn" onClick={() => {
-                          setAddress({
-                            name: '', phone: '', pincode: '', locality: '',
-                            address: '', city: '', state: ''
-                          });
-                        }}>CHANGE</button>
-                      )}
+                      <div className="collapse-icon">
+                        {showShippingDetails ? <FiChevronUp /> : <FiChevronDown />}
+                      </div>
                     </div>
-                    <div className="step-body">
-                      {!address.name || isAddingNew ? (
-                        <>
-                          {!isAddingNew && savedAddresses.length > 0 ? (
-                            <div className="saved-addresses-list">
-                              {savedAddresses.map((addr, index) => (
-                                <div key={index} className="saved-address-card">
-                                  <div className="address-header">
-                                    <span className="address-name">{addr.name}</span>
-                                    <span className="address-type">{addr.locality}</span>
-                                  </div>
-                                  <p className="address-text">
-                                    {addr.address}, {addr.city}, {addr.state} - {addr.pincode}
-                                  </p>
-                                  <p className="address-phone">Phone: {addr.phone}</p>
-                                  <div className="address-actions">
-                                    <button 
-                                      className="deliver-here-btn"
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        handleSelectAddress(addr);
-                                      }}
-                                      style={{ cursor: 'pointer', position: 'relative', zIndex: 10 }}
+                    {showShippingDetails && (
+                      <div className="step-body expanded">
+                        {!address.name || isAddingNew ? (
+                          <>
+                            {!isAddingNew && savedAddresses.length > 0 ? (
+                              <div className="saved-addresses-list">
+                                {savedAddresses.map((addr, index) => {
+                                  const isSelected = address && address.phone === addr.phone && address.address === addr.address;
+                                  const isDefault = index === 0;
+                                  
+                                  return (
+                                    <div 
+                                      key={index} 
+                                      className={`saved-address-card-v2 ${isSelected ? 'selected' : ''}`}
+                                      onClick={() => handleSelectAddress(addr)}
                                     >
-                                      DELIVER HERE
-                                    </button>
-                                    <button 
-                                      className="edit-address-btn"
-                                      onClick={() => handleEditAddress(index)}
-                                    >
-                                      <FiEdit2 /> EDIT
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                              <button 
-                                className="add-new-address-btn"
-                                onClick={() => {
-                                  setAddress({
-                                    name: '', phone: '', pincode: '', locality: '',
-                                    address: '', city: '', state: ''
-                                  });
-                                  setEditingIndex(null);
-                                  setIsAddingNew(true);
-                                }}
-                              >
-                                <FiPlus /> ADD A NEW ADDRESS
-                              </button>
-                            </div>
-                          ) : (
-                            <form className="address-form" onSubmit={handleAddressSubmit}>
-                              <input 
-                                type="text" 
-                                className="checkout-input" 
-                                placeholder="Name" 
-                                required 
-                                value={address.name}
-                                onChange={e => setAddress({...address, name: e.target.value})}
-                              />
-                              <input 
-                                type="text" 
-                                className="checkout-input" 
-                                placeholder="10-digit mobile number" 
-                                required 
-                                value={address.phone}
-                                onChange={e => setAddress({...address, phone: e.target.value})}
-                              />
-                              <input 
-                                type="text" 
-                                className="checkout-input" 
-                                placeholder="Pincode" 
-                                required 
-                                value={address.pincode}
-                                onChange={handlePincodeChange}
-                                maxLength={6}
-                              />
-                              <textarea 
-                                className="checkout-input full-width" 
-                                placeholder="Address (Area and Street)" 
-                                rows="3" 
-                                required
-                                value={address.address}
-                                onChange={e => setAddress({...address, address: e.target.value})}
-                              ></textarea>
-                              <div className="form-actions">
-                                <button type="submit" className="continue-btn">
-                                  SAVE AND DELIVER HERE
+                                      <div className="address-card-header">
+                                        <div className="address-card-title">
+                                          <span className="address-name-v2">{addr.name}</span>
+                                          {isDefault && <span className="default-tag">HOME (DEFAULT)</span>}
+                                          {!isDefault && <span className="type-tag">{addr.locality}</span>}
+                                        </div>
+                                        <button 
+                                          className="edit-address-icon-btn"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleEditAddress(index);
+                                          }}
+                                        >
+                                          <FiEdit2 />
+                                        </button>
+                                        {isSelected && <FiCheckCircle className="selection-checkmark" />}
+                                      </div>
+                                      
+                                      <p className="address-text-v2">
+                                        {addr.address}, {addr.city} - {addr.pincode}
+                                      </p>
+                                      <p className="address-phone-v2">Phone: {addr.phone}</p>
+                                      
+                                      {isSelected && (
+                                        <div className="selected-address-badge">
+                                          DELIVERING TO THIS ADDRESS
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                                <button 
+                                  className="add-new-address-btn"
+                                  onClick={() => {
+                                    setAddress({
+                                      name: '', phone: '', pincode: '', locality: '',
+                                      address: '', city: '', state: ''
+                                    });
+                                    setEditingIndex(null);
+                                    setIsAddingNew(true);
+                                  }}
+                                >
+                                  <FiPlus /> ADD A NEW ADDRESS
                                 </button>
-                                {savedAddresses.length > 0 && (
-                                  <button type="button" className="cancel-btn" onClick={() => setIsAddingNew(false)}>
-                                    CANCEL
-                                  </button>
-                                )}
                               </div>
-                            </form>
-                          )}
-                        </>
-                      ) : (
-                        <div className="selected-address-summary">
-                          <p className="address-text">
-                            <strong>{address.name}</strong><br/>
-                            {address.address}, {address.city}, {address.state} - {address.pincode}
-                          </p>
-                          <p className="address-phone">{address.phone}</p>
-                        </div>
-                      )}
-                    </div>
+                            ) : (
+                              <form className="address-form" onSubmit={handleAddressSubmit}>
+                                <input 
+                                  type="text" 
+                                  className="checkout-input" 
+                                  placeholder="Name" 
+                                  required 
+                                  value={address.name}
+                                  onChange={e => setAddress({...address, name: e.target.value})}
+                                />
+                                <input 
+                                  type="text" 
+                                  className="checkout-input" 
+                                  placeholder="10-digit mobile number" 
+                                  required 
+                                  value={address.phone}
+                                  onChange={e => setAddress({...address, phone: e.target.value})}
+                                />
+                                <input 
+                                  type="text" 
+                                  className="checkout-input" 
+                                  placeholder="Pincode" 
+                                  required 
+                                  value={address.pincode}
+                                  onChange={handlePincodeChange}
+                                  maxLength={6}
+                                />
+                                <textarea 
+                                  className="checkout-input full-width" 
+                                  placeholder="Address (Area and Street)" 
+                                  rows="3" 
+                                  required
+                                  value={address.address}
+                                  onChange={e => setAddress({...address, address: e.target.value})}
+                                ></textarea>
+                                <div className="form-actions">
+                                  <button type="submit" className="continue-btn">
+                                    SAVE AND DELIVER HERE
+                                  </button>
+                                  {savedAddresses.length > 0 && (
+                                    <button type="button" className="cancel-btn" onClick={() => setIsAddingNew(false)}>
+                                      CANCEL
+                                    </button>
+                                  )}
+                                </div>
+                              </form>
+                            )}
+                          </>
+                        ) : (
+                          <div className="selected-address-summary">
+                            <p className="address-text">
+                              <strong>{address.name}</strong><br/>
+                              {address.address}, {address.city}, {address.state} - {address.pincode}
+                            </p>
+                            <p className="address-phone">{address.phone}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Product Details Section for Mobile */}
+                  {/* Product Details Section for Mobile - ALWAYS OPEN */}
                   <div className="checkout-step mobile-products-step">
                     <div className="step-header">
                       <div className="step-number">2</div>
                       <div className="step-title-wrapper">
-                        <span className="step-title">PRODUCT DETAILS</span>
+                        <span className="step-title">Product details</span>
                       </div>
                     </div>
                     <div className="step-body">
@@ -608,33 +617,49 @@ const Checkout = () => {
                     </div>
                   </div>
 
-                  {/* Bill Details Section for Mobile */}
+                  {/* Bill Details Section for Mobile - Total Always Open, Breakdown Collapsible */}
                   <div className="checkout-step mobile-bill-details">
-                    <div className="step-header">
-                      <span className="step-title">Bill details</span>
+                    <div className="step-header clickable" onClick={() => setShowPriceBreakdown(!showPriceBreakdown)}>
+                      <div className="step-title-wrapper">
+                        <span className="step-title">Price details</span>
+                      </div>
+                      <div className="collapse-icon">
+                        {showPriceBreakdown ? <FiChevronUp /> : <FiChevronDown />}
+                      </div>
                     </div>
                     <div className="step-body">
-                      <div className="bill-row">
-                        <span>Items total</span>
-                        <span>₹{itemTotal.toLocaleString()}</span>
-                      </div>
-                      <div className="bill-row">
-                        <span>Delivery charge</span>
-                        <span>₹{deliveryCharge}</span>
-                      </div>
-                      <div className="bill-row">
-                        <span>Shipping charge</span>
-                        <span>₹{shippingCharge}</span>
-                      </div>
-                      {smallCartCharge > 0 && (
-                        <div className="bill-row">
-                          <span>Small basket charge</span>
-                          <span>₹{smallCartCharge}</span>
+                      {showPriceBreakdown && (
+                        <div className="price-breakdown-expanded">
+                          <div className="bill-row">
+                            <span>Items total</span>
+                            <span>₹{itemTotal.toLocaleString()}</span>
+                          </div>
+                          <div className="bill-row">
+                            <span>Delivery charge</span>
+                            <span>₹{deliveryCharge}</span>
+                          </div>
+                          <div className="bill-row">
+                            <span>Shipping charge</span>
+                            <span>₹{shippingCharge}</span>
+                          </div>
+                          {smallCartCharge > 0 && (
+                            <div className="bill-row">
+                              <span>Small basket charge</span>
+                              <span>₹{smallCartCharge}</span>
+                            </div>
+                          )}
                         </div>
                       )}
+                      
                       <div className="bill-row grand-total">
-                        <span>Grand total</span>
+                        <span>Total payable</span>
                         <span>₹{grandTotal.toLocaleString()}</span>
+                      </div>
+
+                      {/* Savings Highlight */}
+                      <div className="savings-highlight">
+                         <span className="savings-icon">🎉</span>
+                         <span className="savings-text">You saved ₹8 on shipping 🎉</span>
                       </div>
                     </div>
                   </div>
@@ -720,7 +745,7 @@ const Checkout = () => {
                         <div className={`payment-method-group ${selectedPaymentMethod === 'razorpay' ? 'active' : ''}`}>
                           <div className="payment-option" onClick={() => setSelectedPaymentMethod('razorpay')}>
                             <input type="radio" checked={selectedPaymentMethod === 'razorpay'} readOnly />
-                            <span>Razorpay (Cards, UPI, NetBanking)</span>
+                            <span>UPI / Cards / NetBanking (Powered by Razorpay)</span>
                           </div>
                         </div>
                         {isCodAvailable && (
@@ -732,6 +757,18 @@ const Checkout = () => {
                           </div>
                         )}
                       </div>
+
+                      {/* Trust Badges */}
+                      <div className="trust-badges-container">
+                        <div className="trust-badge">
+                          <FiLock />
+                          <span>🔐 100% Secure Payments</span>
+                        </div>
+                        <div className="trust-badge">
+                          <FiShield />
+                          <span>📦 Fresh & Hygienic Packaging</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -739,33 +776,38 @@ const Checkout = () => {
 
               {/* Mobile Sticky Footers - Moved outside animated containers */}
               {!showMobilePayment ? (
-                <div className="mobile-sticky-footer">
+                <div className="mobile-sticky-footer-v2">
                   <div className="mobile-total-info">
                     <span className="total-amount">₹{safeCartTotal.toLocaleString()}</span>
                     <span className="total-label">TOTAL</span>
                   </div>
                   <button 
-                    className="mobile-place-order-btn"
+                    className={`mobile-place-order-btn-v2 ${!address.name ? 'disabled' : ''}`}
                     onClick={() => {
+                      if (!address.name) {
+                        setShowShippingDetails(true);
+                        alert('Please select or add a delivery address first');
+                        return;
+                      }
                       window.scrollTo(0, 0);
                       setShowMobilePayment(true);
                     }}
                   >
-                    Proceed to Pay <span style={{ fontSize: '20px', marginLeft: '4px' }}>›</span>
+                    Continue <span style={{ fontSize: '20px', marginLeft: '4px' }}>›</span>
                   </button>
                 </div>
               ) : (
-                <div className="mobile-sticky-footer payment-footer">
+                <div className="mobile-sticky-footer-v2 payment-footer">
                   <div className="mobile-total-info">
                     <span className="total-amount">₹{safeCartTotal.toLocaleString()}</span>
                     <span className="total-label">TOTAL</span>
                   </div>
                   <button 
-                    className="mobile-place-order-btn"
+                    className="mobile-place-order-btn-v2"
                     onClick={handleConfirmOrder}
                     disabled={isProcessing}
                   >
-                    {isProcessing ? 'PROCESSING...' : 'PAY NOW'} <span style={{ fontSize: '20px', marginLeft: '4px' }}>›</span>
+                    {isProcessing ? 'PROCESSING...' : 'Place Order'} <span style={{ fontSize: '20px', marginLeft: '4px' }}>›</span>
                   </button>
                 </div>
               )}
