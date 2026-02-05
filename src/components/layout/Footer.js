@@ -32,9 +32,13 @@ const Footer = () => {
                        location.pathname.startsWith('/product') || 
                        location.pathname.startsWith('/checkout');
 
+  const isOrdersPage = location.pathname.includes('/account/orders');
+  const isProductDetailPage = location.pathname.includes('/product/');
+  const hideFooterOnMobile = isOrdersPage || isProductDetailPage;
+
 
   return (
-    <footer className="footer">
+    <footer className={`footer ${hideFooterOnMobile ? 'hide-on-mobile' : ''}`}>
       <div className="footer-main">
         <div className="container">
           <div className="footer-content">

@@ -50,10 +50,10 @@ body.modal-open {
 }
 
 .modal-body {
-    padding: 32px !important;
+    padding: 24px !important;
     display: grid !important;
     grid-template-columns: 1fr !important;
-    gap: 24px !important;
+    gap: 20px !important;
     overflow-y: scroll !important;
     overflow-x: hidden !important;
     flex: 1 1 auto !important;

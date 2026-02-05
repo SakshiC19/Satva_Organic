@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { doc, getDoc, addDoc, collection, serverTimestamp, updateDoc, increment, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { FiHeart, FiMinus, FiPlus, FiCheck, FiStar, FiX } from 'react-icons/fi';
+import { FiHeart, FiMinus, FiPlus, FiCheck, FiStar, FiX, FiTruck, FiRefreshCw, FiPackage } from 'react-icons/fi';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWishlist } from '../../contexts/WishlistContext';
@@ -460,18 +460,29 @@ const ProductDetail = () => {
                 <span className="rating-value" style={{ marginLeft: '8px', fontWeight: '600', color: '#4b5563' }}>
                   {product.rating ? product.rating.toFixed(1) : '4.0'}
                 </span>
+                <span className="stock-status-inline" style={{ marginLeft: '12px' }}>
+                  {product.stock > 0 ? (
+                    product.stock <= 5 ? (
+                      <span className="low-stock">🔴 Only {product.stock} left</span>
+                    ) : (
+                      <span className="in-stock">🟢 In Stock</span>
+                    )
+                  ) : (
+                    <span className="out-of-stock">🔴 Out of Stock</span>
+                  )}
+                </span>
               </div>
             </div>
 
             <div className="product-price-group">
               <div className="product-price">
                 <span className="current-price">₹{currentPrice}</span>
-                <span className="unit-price-label" style={{ fontSize: '14px', color: '#6b7280', marginLeft: '8px', fontWeight: 'normal' }}>
+                <span className="unit-price-label">
                    (₹{product.price} / 100{product.unit === 'ml' || product.unit === 'l' ? 'ml' : 'g'})
                 </span>
                 
                 {product.sizeDiscounts && product.sizeDiscounts[selectedSize] && (
-                   <span className="discount-badge" style={{ color: '#dc2626', marginLeft: '10px', fontWeight: '600', fontSize: '14px' }}>
+                   <span className="discount-badge">
                       {product.sizeDiscounts[selectedSize]}% OFF
                    </span>
                 )}
@@ -480,7 +491,7 @@ const ProductDetail = () => {
                   const discVal = typeof product.discount === 'object' ? product.discount?.value : product.discount;
                   if (discVal > 0 && !product.sizeDiscounts?.[selectedSize]) {
                     return (
-                      <span className="discount-badge" style={{ color: '#dc2626', marginLeft: '10px', fontWeight: '600', fontSize: '14px' }}>
+                      <span className="discount-badge">
                         {discVal}% OFF
                       </span>
                     );
@@ -488,11 +499,10 @@ const ProductDetail = () => {
                   return null;
                 })()}
               </div>
+              <div className="tax-info">Inclusive of all taxes</div>
             </div>
 
-            <div className={`stock-status ${product.stock > 0 ? 'in-stock' : 'out-of-stock'}`}>
-              {product.stock > 0 ? 'IN STOCK' : 'OUT OF STOCK'}
-            </div>
+
 
             {product.brands && product.brands.length > 0 && (
               <div className="product-option">
@@ -612,25 +622,33 @@ const ProductDetail = () => {
               </button>
             </div>
 
-            <div className="product-features" style={{ marginTop: '16px', marginBottom: '16px', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
-              <div className="feature-item">
-                <FiCheck className={`feature-icon ${product.codAvailable !== false ? 'success' : 'error'}`} />
-                <span>Cash on Delivery: {product.codAvailable !== false ? 'Available' : 'Not Available'}</span>
+            <div className="trust-signals">
+              <div className="trust-signal-item">
+                <div className="trust-signal-icon"><FiTruck /></div>
+                <div className="trust-signal-content">
+                  <span className="trust-signal-title">Free Shipping above ₹499</span>
+                </div>
               </div>
-              <div className="feature-item">
-                <FiCheck className={`feature-icon ${product.refundPolicyAvailable ? 'success' : 'error'}`} />
-                <span>Refund Policy: {product.refundPolicyAvailable ? 'Available' : 'Not Available'}</span>
+              <div className="trust-signal-item">
+                <div className="trust-signal-icon"><FiRefreshCw /></div>
+                <div className="trust-signal-content">
+                  <span className="trust-signal-title">Easy 7-day Returns</span>
+                </div>
               </div>
-              {product.mfgDate && (
-                <div className="feature-item">
-                  <FiCheck className="feature-icon" />
-                  <span>MFG: {product.mfgDate}</span>
+              {product.codAvailable !== false && !product.category?.toLowerCase().includes('vegetable basket') && (
+                <div className="trust-signal-item">
+                  <div className="trust-signal-icon"><FiPackage /></div>
+                  <div className="trust-signal-content">
+                    <span className="trust-signal-title">Cash on Delivery</span>
+                  </div>
                 </div>
               )}
-              {product.shelfLife && (
-                <div className="feature-item">
-                  <FiCheck className="feature-icon" />
-                  <span>LIFE: {product.shelfLife}</span>
+              {!product.category?.toLowerCase().includes('vegetable basket') && (
+                <div className="trust-signal-item">
+                  <div className="trust-signal-icon"><FiCheck /></div>
+                  <div className="trust-signal-content">
+                    <span className="trust-signal-title">No Preservatives</span>
+                  </div>
                 </div>
               )}
             </div>
@@ -700,35 +718,80 @@ const ProductDetail = () => {
 
           <div className="tabs-content">
             {activeTab === 'description' && (
-              <div className="tab-pane">
-                <p>{product.description || 'No description available.'}</p>
-                {product.longDescription && <p>{product.longDescription}</p>}
+              <div className="tab-pane description-pane">
+                <div className="description-section">
+                  <h4 className="section-title">🌿 Product Overview</h4>
+                  <p>{product.description || 'No description available.'}</p>
+                </div>
+                
+                {product.benefits && product.benefits.length > 0 && (
+                  <div className="description-section">
+                    <h4 className="section-title">✅ Key Benefits</h4>
+                    <ul className="benefits-list">
+                      {product.benefits.map((benefit, index) => (
+                        <li key={index}>{benefit}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {product.longDescription && (
+                  <div className="description-section">
+                    <p>{product.longDescription}</p>
+                  </div>
+                )}
               </div>
             )}
 
             {activeTab === 'additional' && (
               <div className="tab-pane">
-                <h3>Additional Information</h3>
+                <h3 className="section-title">Technical Specifications</h3>
                 <table className="info-table">
                   <tbody>
                     <tr>
-                      <th>Weight</th>
-                      <td>{product.weight || 'N/A'}</td>
+                      <th>Net Weight</th>
+                      <td>{selectedSize || product.weight || 'N/A'}</td>
+                    </tr>
+                    {product.ingredients && (
+                      <tr>
+                        <th>Ingredients</th>
+                        <td>{product.ingredients}</td>
+                      </tr>
+                    )}
+                    <tr>
+                      <th>Shelf Life</th>
+                      <td>{product.shelfLife || '12 Months'}</td>
                     </tr>
                     <tr>
-                      <th>Dimensions</th>
-                      <td>{product.dimensions || 'N/A'}</td>
+                      <th>Storage Instructions</th>
+                      <td>{product.storageInstructions || 'Store in a cool & dry place'}</td>
+                    </tr>
+                    <tr>
+                      <th>FSSAI License No</th>
+                      <td>{product.fssaiNo || '21523068000676'}</td>
+                    </tr>
+                    <tr>
+                      <th>Country of Origin</th>
+                      <td>India</td>
                     </tr>
                     <tr>
                       <th>Category</th>
-                      <td>{product.category || 'N/A'}</td>
+                      <td>{product.category || 'Healthy Life Powders'}</td>
                     </tr>
                     {product.subcategory && (
                       <tr>
-                        <th>Subcategory</th>
+                        <th>Sub-category</th>
                         <td>{product.subcategory}</td>
                       </tr>
                     )}
+                    <tr>
+                      <th>Manufacturer</th>
+                      <td>{product.manufacturer || 'Satva Organics'}</td>
+                    </tr>
+                    <tr>
+                      <th>Packed On</th>
+                      <td>{product.packedOn || '02/2024'}</td>
+                    </tr>
                   </tbody>
                 </table>
               </div>

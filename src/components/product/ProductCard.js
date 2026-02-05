@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import './ProductCard.css';
-import { FiHeart, FiShoppingBag, FiTrash2 } from 'react-icons/fi';
+import { FiHeart, FiShoppingBag, FiTrash2, FiStar } from 'react-icons/fi';
 import { useCart } from '../../contexts/CartContext';
 import { useWishlist } from '../../contexts/WishlistContext';
 import ProductSelectionModal from './ProductSelectionModal';
@@ -197,10 +197,15 @@ const ProductCard = ({
         <h3 className="product-name" title={name}>{name}</h3>
 
         <div className="rating-row">
-          <div className="product-rating-badge">
-            {rating} <span className="star">★</span>
+          <div className="rating-stars">
+            {[...Array(5)].map((_, i) => (
+              <FiStar 
+                key={i} 
+                className={`star-icon ${i < Math.floor(rating || 4) ? 'filled' : ''}`} 
+              />
+            ))}
           </div>
-          <span className="review-count">(12)</span>
+          <span className="review-count">({product.reviewCount || 12})</span>
         </div>
 
 
@@ -234,17 +239,25 @@ const ProductCard = ({
 
               
               <div className="main-buttons">
-                <button className="card-btn add-cart-btn" onClick={handleAddToCart}>
-                  Add to Basket
-                </button>
-                {showBuyNow && (
-                  <button className="card-btn buy-now-btn" onClick={(e) => {
-                    e.stopPropagation();
-                    addToCart({ ...product, quantity: 1 });
-                    navigate('/checkout');
-                  }}>
-                    Buy Now
+                {compact ? (
+                  <button className="icon-add-cart-btn" onClick={handleAddToCart} title="Add to Basket">
+                    <FiShoppingBag />
                   </button>
+                ) : (
+                  <>
+                    <button className="card-btn add-cart-btn" onClick={handleAddToCart}>
+                      Add to Basket
+                    </button>
+                    {showBuyNow && (
+                      <button className="card-btn buy-now-btn" onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart({ ...product, quantity: 1 });
+                        navigate('/checkout');
+                      }}>
+                        Buy Now
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </div>

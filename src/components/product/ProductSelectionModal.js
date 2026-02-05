@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { FiX, FiShoppingCart, FiMinus, FiPlus } from 'react-icons/fi';
+import { FiX, FiShoppingCart, FiMinus, FiPlus, FiHeart } from 'react-icons/fi';
 import { useCart } from '../../contexts/CartContext';
+import { useWishlist } from '../../contexts/WishlistContext';
 import './ProductSelectionModal.css';
 
 const ProductSelectionModal = ({ product, isOpen, onClose }) => {
   const { addToCart, openCart } = useCart();
+  const { toggleWishlist, isInWishlist } = useWishlist();
   const [selectedWeight, setSelectedWeight] = useState(product.weight || '500g');
   const [quantity, setQuantity] = useState(1);
 
@@ -110,33 +112,53 @@ const ProductSelectionModal = ({ product, isOpen, onClose }) => {
               </span>
             </div>
 
-            <div className="selection-group">
-              <label>Select Weight</label>
-              <div className="weight-options">
-                {availableOptions.map(w => (
-                  <button 
-                    key={w}
-                    className={`weight-btn ${selectedWeight === w ? 'active' : ''}`}
-                    onClick={() => setSelectedWeight(w)}
-                  >
-                    {w}
-                  </button>
-                ))}
+            <div className="modal-selection-row">
+              <div className="selection-group">
+                <label>Select Weight</label>
+                <div className="weight-options">
+                  {availableOptions.map(w => (
+                    <button 
+                      key={w}
+                      className={`weight-btn ${selectedWeight === w ? 'active' : ''}`}
+                      onClick={() => setSelectedWeight(w)}
+                    >
+                      {w}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="selection-group">
+                <label>Quantity</label>
+                <div className="quantity-selector">
+                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))}><FiMinus /></button>
+                  <span>{quantity}</span>
+                  <button onClick={() => setQuantity(Math.min(stock, quantity + 1))}><FiPlus /></button>
+                </div>
               </div>
             </div>
 
-            <div className="selection-group">
-              <label>Quantity</label>
-              <div className="quantity-selector">
-                <button onClick={() => setQuantity(Math.max(1, quantity - 1))}><FiMinus /></button>
-                <span>{quantity}</span>
-                <button onClick={() => setQuantity(Math.min(stock, quantity + 1))}><FiPlus /></button>
-              </div>
+            <div className="modal-action-row">
+              <button className="modal-view-details-btn" onClick={() => {
+                onClose();
+                window.location.href = `/product/${product.id}`;
+              }}>
+                View Details
+              </button>
+              <button className="modal-add-btn" onClick={handleAddToCart}>
+                <FiShoppingCart /> Add to Basket
+              </button>
+              <button 
+                className={`modal-wishlist-btn ${isInWishlist(product.id) ? 'active' : ''}`} 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleWishlist(product);
+                }}
+                title="Wishlist"
+              >
+                <FiHeart className={isInWishlist(product.id) ? 'filled' : ''} />
+              </button>
             </div>
-
-            <button className="modal-add-btn" onClick={handleAddToCart}>
-              <FiShoppingCart /> Add to Basket
-            </button>
           </div>
         </div>
       </div>

@@ -29,7 +29,7 @@ import { useCategories } from '../../contexts/CategoryContext';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import './Header.css';
-import logo from '../../assets/logo1.png';
+import logo from '../../assets/logo-new.png';
 
 const Header = () => {
   const [activeMenu, setActiveMenu] = useState(null);

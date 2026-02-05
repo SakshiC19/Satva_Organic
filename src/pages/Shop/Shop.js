@@ -97,7 +97,8 @@ const Shop = () => {
         const normalize = (str) => {
           if (!str) return '';
           return str.toLowerCase()
-            .replace(/&/g, 'and')
+            .replace(/&/g, ' ')
+            .replace(/\band\b/g, ' ')
             .replace(/[^a-z0-9]/g, '');
         };
 
@@ -121,9 +122,9 @@ const Shop = () => {
     }
 
     if (searchParam) {
-      const query = searchParam.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]/g, '');
+      const query = searchParam.toLowerCase().replace(/&/g, ' ').replace(/\band\b/g, ' ').replace(/[^a-z0-9]/g, '');
       filtered = filtered.filter(product => {
-        const nameMatch = product.name.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]/g, '').includes(query);
+        const nameMatch = product.name.toLowerCase().replace(/&/g, ' ').replace(/\band\b/g, ' ').replace(/[^a-z0-9]/g, '').includes(query);
         
         const nameMapping = {
           'Organic Exotic Products': 'Vegetable Basket',
@@ -139,7 +140,7 @@ const Shop = () => {
           productCategory = nameMapping[productCategory.trim()];
         }
         
-        const categoryMatch = productCategory.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]/g, '').includes(query);
+        const categoryMatch = productCategory.toLowerCase().replace(/&/g, ' ').replace(/\band\b/g, ' ').replace(/[^a-z0-9]/g, '').includes(query);
         
         return nameMatch || categoryMatch;
       });

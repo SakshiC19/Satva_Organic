@@ -398,6 +398,7 @@ const EditProduct = () => {
                 value={formData.description}
                 onChange={handleInputChange}
                 rows="4"
+                className="description-textarea"
                 placeholder="Enter product description"
               />
             </div>
@@ -574,7 +575,7 @@ const EditProduct = () => {
               </div>
             )}
 
-            <div className="form-checkboxes">
+            <div className="form-checkboxes" style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #f1f5f9' }}>
               <label className="checkbox-label">
                 <input
                   type="checkbox"

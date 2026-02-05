@@ -315,7 +315,7 @@ const Checkout = () => {
           currency: razorpayOrder.currency,
           name: "Satva Organics",
           description: "Grocery Purchase",
-          image: "https://firebasestorage.googleapis.com/v0/b/satva-organic.appspot.com/o/logo.png?alt=media",
+          image: "https://firebasestorage.googleapis.com/v0/b/satva-organics.firebasestorage.app/o/logo.png?alt=media&token=232ca39f-fb09-416b-ba77-6b5e01c5d058",
           order_id: razorpayOrder.id,
           handler: async function (response) {
             try {

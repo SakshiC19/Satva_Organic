@@ -207,6 +207,27 @@
     margin-top: 8px;
 }
 
+.description-textarea {
+    min-height: 150px;
+    line-height: 1.6;
+    resize: vertical;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background-color: #f8fafc;
+    padding: 16px;
+    font-family: inherit;
+    font-size: 0.95rem !important;
+    color: #1e293b;
+    transition: all 0.3s ease;
+}
+
+.description-textarea:focus {
+    border-color: #059669;
+    background-color: #fff;
+    box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.1);
+    outline: none;
+}
+
 .checkbox-label {
     display: flex;
     align-items: center;

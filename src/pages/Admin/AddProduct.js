@@ -281,6 +281,7 @@ const AddProduct = () => {
                 value={formData.description}
                 onChange={handleInputChange}
                 rows="4"
+                className="description-textarea"
                 placeholder="Enter product description"
               />
             </div>
@@ -331,26 +332,7 @@ const AddProduct = () => {
 
 
 
-            <div className="form-checkboxes">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  name="codAvailable"
-                  checked={formData.codAvailable}
-                  onChange={handleInputChange}
-                />
-                <span>Cash on Delivery Available</span>
-              </label>
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  name="refundPolicyAvailable"
-                  checked={formData.refundPolicyAvailable}
-                  onChange={handleInputChange}
-                />
-                <span>Refund Policy Available</span>
-              </label>
-            </div>
+
 
             {/* Image Upload Moved Here */}
             <div className="form-group" style={{ marginTop: '30px', paddingTop: '20px', borderTop: '1px solid #f1f5f9' }}>
@@ -463,6 +445,27 @@ const AddProduct = () => {
                 </div>
               </div>
             )}
+
+            <div className="form-checkboxes" style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #f1f5f9' }}>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="codAvailable"
+                  checked={formData.codAvailable}
+                  onChange={handleInputChange}
+                />
+                <span>Cash on Delivery Available</span>
+              </label>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="refundPolicyAvailable"
+                  checked={formData.refundPolicyAvailable}
+                  onChange={handleInputChange}
+                />
+                <span>Refund Policy Available</span>
+              </label>
+            </div>
 
 
 
