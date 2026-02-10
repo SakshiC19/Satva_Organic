@@ -1,5 +1,40 @@
 /* Auth Page Styles - Satva Organics Redesign */
 
+/* Brand Identity Section */
+.auth-brand {
+    text-align: center;
+    margin-bottom: var(--spacing-6);
+    padding-bottom: var(--spacing-4);
+    border-bottom: 1px solid var(--color-gray-200);
+}
+
+.auth-brand-logo {
+    width: 120px;
+    height: auto;
+    margin: 0 auto var(--spacing-3);
+    display: block;
+}
+
+.auth-brand-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto var(--spacing-3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--color-primary-400) 0%, var(--color-primary-600) 100%);
+    border-radius: 50%;
+    color: white;
+    font-size: 32px;
+}
+
+.auth-brand-tagline {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    margin: 0;
+    font-weight: var(--font-weight-medium);
+}
+
 .auth-page {
     min-height: 100vh;
     display: flex;
@@ -83,7 +118,7 @@
 .auth-form {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-5);
+    gap: var(--spacing-1);
 }
 
 .form-group {
@@ -117,23 +152,69 @@
 
 .form-input {
     width: 100%;
-    padding: 14px 16px 14px 50px;
-    border: 2px solid var(--color-gray-200);
+    height: 50px;
+    /* Increased from auto/44px */
+    padding: 10px 16px 10px 48px;
+    /* Space for icon */
+    border: 1px solid #cbd5e1;
+    /* Slightly lighter than gray-200 */
     border-radius: var(--radius-lg);
-    font-size: var(--font-size-base);
+    font-size: 15px;
+    /* Comfortable reading size */
     font-family: var(--font-family-primary);
-    transition: all var(--transition-fast);
+    transition: all 0.2s ease;
+    background: #f8fafc;
+    /* Very subtle background */
 }
 
 .form-input.no-icon {
-    padding: 14px 16px;
+    padding-left: 16px;
 }
 
 .form-input:focus {
     outline: none;
+    background: #ffffff;
     border-color: var(--color-primary-500);
-    background-color: var(--color-primary-50);
-    box-shadow: 0 0 0 4px var(--color-primary-100);
+    /* Green */
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15);
+    /* Soft green shadow */
+}
+
+/* Input Icons */
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-icon {
+    position: absolute;
+    left: 16px;
+    color: #94a3b8;
+    /* Slate-400 */
+    font-size: 18px;
+    z-index: 5;
+    pointer-events: none;
+}
+
+/* Country code adjustment */
+.country-code {
+    position: absolute;
+    left: 44px;
+    /* Move after icon */
+    top: 50%;
+    transform: translateY(-50%);
+    font-weight: 600;
+    color: var(--text-primary);
+    padding-left: 8px;
+    border-left: 1px solid #e2e8f0;
+    line-height: 1;
+    z-index: 5;
+}
+
+.form-input.phone-input {
+    padding-left: 90px !important;
+    /* Space for icon + code */
 }
 
 .password-toggle {
@@ -209,7 +290,7 @@
     display: flex;
     align-items: center;
     text-align: center;
-    margin: var(--spacing-6) 0;
+    margin: var(--spacing-5) 0;
     color: var(--text-secondary);
     font-size: var(--font-size-sm);
 }
@@ -480,4 +561,503 @@
     margin-top: 10px;
     display: flex;
     justify-content: center;
+}
+
+/* Remember Me Checkbox */
+.form-footer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: calc(var(--spacing-2) * -1);
+}
+
+.remember-me-label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+    user-select: none;
+}
+
+.remember-me-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--color-primary-600);
+}
+
+.remember-me-label:hover {
+    color: var(--text-primary);
+}
+
+/* Password Strength Indicator */
+.password-strength-container {
+    margin-top: var(--spacing-3);
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.password-strength-bar {
+    width: 100%;
+    height: 6px;
+    background-color: var(--color-gray-200);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: var(--spacing-2);
+}
+
+.password-strength-fill {
+    height: 100%;
+    transition: width 0.3s ease, background-color 0.3s ease;
+    border-radius: 3px;
+}
+
+.password-requirements {
+    display: flex;
+    gap: var(--spacing-4);
+    font-size: var(--font-size-xs);
+    flex-wrap: wrap;
+}
+
+.requirement-met {
+    color: #22c55e;
+    font-weight: var(--font-weight-medium);
+}
+
+.requirement-unmet {
+    color: var(--text-secondary);
+}
+
+/* Resend Timer */
+.resend-timer {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+/* Mobile adjustments */
+@media (max-width: 480px) {
+    .form-footer-row {
+        flex-direction: row;
+        /* Force row layout as requested */
+        align-items: center;
+        justify-content: space-between;
+        gap: 0;
+    }
+
+    .password-requirements {
+        flex-direction: column;
+        gap: var(--spacing-2);
+    }
+}
+
+/* ============================================
+   MOBILE-SPECIFIC OPTIMIZATIONS (CRITICAL)
+   ============================================ */
+
+@media (max-width: 768px) {
+
+    /* Ensure proper viewport behavior */
+    .auth-page {
+        min-height: 100vh;
+        min-height: -webkit-fill-available;
+        padding: 6px;
+        /* Ultra minimal padding */
+    }
+
+    .auth-container {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .auth-card {
+        padding: 16px;
+        /* Minimal card padding */
+        margin-bottom: 20px;
+        /* Minimal bottom margin */
+        border-radius: 12px;
+        box-shadow: none;
+        /* remove shadow for flatness/space if needed */
+    }
+
+    /* Larger tap targets for mobile (minimum 44px) */
+    /* Larger tap targets for mobile (reduced to 40px for compactness while keeping usability) */
+    .form-input,
+    .auth-button,
+    .google-button,
+    .password-toggle,
+    .remember-me-checkbox {
+        min-height: 40px;
+        /* Reduced from 44px standard to fit content */
+        -webkit-tap-highlight-color: rgba(39, 174, 96, 0.1);
+    }
+
+    .form-input {
+        padding: 10px 16px 10px 48px;
+        /* Ensure space for icon on mobile */
+        font-size: 16px;
+        /* Prevents zoom on iOS */
+        height: 50px;
+    }
+
+    .form-input.phone-input {
+        padding-left: 90px;
+        /* Ensure space for icon + country code */
+    }
+
+    /* Larger checkbox for easier tapping */
+    .remember-me-checkbox {
+        width: 20px;
+        height: 20px;
+        min-width: 20px;
+        min-height: 20px;
+    }
+
+    .remember-me-label {
+        padding: var(--spacing-2);
+        margin: calc(var(--spacing-2) * -1);
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+
+    /* Sticky Login/Signup Button on Mobile */
+    /* Sticky Login/Signup Button on Mobile */
+    .auth-button {
+        position: sticky;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        margin-top: 8px;
+        /* Minimal margin */
+        padding: 10px;
+        /* Compact padding */
+        font-size: 14px;
+        font-weight: var(--font-weight-bold);
+        z-index: 10;
+        box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+        /* Lighter shadow */
+        border-radius: 10px;
+    }
+
+    /* Ensure button stays visible above keyboard */
+    .auth-form {
+        padding-bottom: var(--spacing-2);
+    }
+
+    /* Larger touch targets for links */
+    .forgot-link,
+    .auth-link,
+    .resend-link {
+        padding: var(--spacing-2);
+        margin: calc(var(--spacing-2) * -1);
+        display: inline-block;
+        min-height: 44px;
+        line-height: 28px;
+    }
+
+    /* Google and OTP buttons with better spacing */
+    .google-button {
+        padding: 16px;
+        font-size: var(--font-size-base);
+        margin-bottom: var(--spacing-3);
+    }
+
+    /* OTP Input optimizations */
+    .otp-input {
+        width: 48px;
+        height: 56px;
+        font-size: var(--font-size-xl);
+        /* Ensure numeric keyboard on mobile */
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: textfield;
+    }
+
+    /* Password toggle button - larger touch area */
+    .password-toggle {
+        padding: var(--spacing-3);
+        min-width: 44px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .password-toggle svg {
+        font-size: 1.4rem;
+    }
+
+    /* Prevent zoom on input focus (iOS) */
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="password"] {
+        font-size: 16px !important;
+    }
+
+    /* Better spacing for form groups on mobile */
+    /* Better spacing for form groups on mobile */
+    .form-group {
+        margin-bottom: 12px;
+        /* Restored breathing room */
+    }
+
+    .form-input {
+        padding: 10px 12px;
+        font-size: 14px;
+        height: 42px;
+        /* Improve touch target */
+        min-height: 42px;
+    }
+
+    .form-label {
+        font-size: 13px;
+        margin-bottom: 4px;
+        font-weight: 500;
+    }
+
+    /* Adjust brand section for mobile */
+    .auth-brand-logo {
+        width: 56px;
+        /* Increased size (10-15%) */
+        margin-bottom: 6px;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .auth-brand-tagline {
+        font-size: 11px;
+        line-height: 1.2;
+        margin: 0;
+        color: var(--text-secondary);
+        opacity: 0.75;
+        /* Reduced opacity */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .auth-brand {
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--color-gray-100);
+        text-align: center;
+        padding-top: 24px;
+        /* Added significant top padding for notch/status bar */
+    }
+
+    .auth-brand-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+        margin-bottom: 4px;
+        display: flex;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* Compact header on mobile */
+    .auth-title {
+        font-size: 22px;
+        /* Larger heading */
+        margin-bottom: 4px;
+        line-height: 1.2;
+        font-weight: 700;
+        /* Bolder */
+        color: var(--text-primary);
+    }
+
+    .auth-subtitle {
+        font-size: 13px;
+        margin-bottom: 16px;
+        line-height: 1.4;
+        opacity: 0.7;
+        /* Reduced opacity for hierarchy */
+    }
+
+    /* Better visual feedback for touch */
+    .auth-button:active,
+    .google-button:active {
+        transform: scale(0.98);
+        transition: transform 0.1s ease;
+    }
+
+    /* Refined Divider */
+    .auth-divider {
+        margin: 16px 0;
+        color: #94a3b8;
+        /* Lighter slate */
+        font-size: 13px;
+        opacity: 0.8;
+    }
+
+    .auth-divider::before,
+    .auth-divider::after {
+        border-top-width: 1px;
+        border-color: #e2e8f0;
+        /* Very light slate */
+        opacity: 0.6;
+    }
+
+    /* Footer Row Enhancements */
+    .form-footer-row {
+        margin-top: 4px;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+
+    .remember-me-checkbox {
+        width: 18px;
+        /* Larger touch target */
+        height: 18px;
+        accent-color: var(--color-green-600);
+        margin-right: 8px;
+    }
+
+    .remember-me-label {
+        font-size: 13px;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+    }
+
+    .forgot-link {
+        font-size: 13px;
+        color: #2ecc71;
+        /* Lighter/Brighter brand green */
+        font-weight: 500;
+        text-align: right;
+    }
+
+    /* Ensure proper spacing with virtual keyboard */
+    .auth-footer {
+        margin-top: var(--spacing-6);
+        padding-bottom: var(--spacing-4);
+    }
+
+    /* OTP specific mobile optimizations */
+    .otp-input-container {
+        gap: var(--spacing-3);
+        justify-content: center;
+    }
+
+    /* Country code styling for mobile */
+    .country-code {
+        font-size: 16px;
+        padding-right: 12px;
+    }
+
+    /* Resend timer - better visibility */
+    .resend-timer,
+    .resend-link {
+        font-size: var(--font-size-base);
+        padding: var(--spacing-3);
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* Extra small devices optimization */
+@media (max-width: 375px) {
+    .auth-card {
+        padding: var(--spacing-4);
+    }
+
+    .otp-input {
+        width: 42px;
+        height: 52px;
+    }
+
+    .auth-brand-logo {
+        width: 90px;
+    }
+
+    .form-input {
+        font-size: 16px;
+        padding: 12px 14px;
+    }
+}
+
+/* Landscape mode on mobile - prevent issues */
+@media (max-width: 768px) and (orientation: landscape) {
+    .auth-page {
+        padding: var(--spacing-3) var(--spacing-4);
+    }
+
+    .auth-card {
+        margin-bottom: 60px;
+    }
+
+    .auth-brand {
+        margin-bottom: var(--spacing-3);
+        padding-bottom: var(--spacing-2);
+    }
+
+    .auth-brand-logo {
+        width: 80px;
+        margin-bottom: var(--spacing-2);
+    }
+
+    .auth-header {
+        margin-bottom: var(--spacing-4);
+    }
+
+    .auth-title {
+        font-size: var(--font-size-xl);
+        margin-bottom: var(--spacing-1);
+    }
+
+    .auth-subtitle {
+        font-size: var(--font-size-sm);
+    }
+}
+
+/* iOS specific fixes */
+@supports (-webkit-touch-callout: none) {
+    .auth-page {
+        min-height: -webkit-fill-available;
+    }
+
+    /* Fix for iOS Safari bottom bar */
+    .auth-button {
+        padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    }
+}
+
+/* Accessibility - ensure focus states are visible on mobile */
+@media (max-width: 768px) {
+
+    .form-input:focus,
+    .auth-button:focus,
+    .google-button:focus {
+        outline: 3px solid var(--color-primary-400);
+        outline-offset: 2px;
+    }
+
+    /* Better error message visibility on mobile */
+    .auth-error {
+        font-size: var(--font-size-sm);
+        padding: var(--spacing-3);
+        margin-bottom: var(--spacing-4);
+    }
 }

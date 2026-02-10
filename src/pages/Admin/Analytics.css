@@ -1,48 +1,57 @@
 /* Analytics.css */
 .analytics-page {
-    padding: 24px;
+    padding: 32px;
     background-color: #f8fafc;
     min-height: 100vh;
+    font-family: 'Inter', sans-serif;
 }
 
 .analytics-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 20px;
 }
 
 .analytics-title {
-    font-size: 24px;
-    font-weight: 700;
+    font-size: 28px;
+    font-weight: 800;
     color: #1e293b;
     margin: 0;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .analytics-subtitle {
     color: #64748b;
-    margin: 4px 0 0 0;
-    font-size: 14px;
+    margin: 8px 0 0 0;
+    font-size: 15px;
+    font-weight: 500;
 }
 
+/* Date Filter Pill */
 .date-filter-group {
     display: flex;
-    gap: 8px;
     background: #fff;
     padding: 4px;
-    border-radius: 8px;
+    border-radius: 12px;
     border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .date-filter-btn {
-    padding: 6px 12px;
+    padding: 8px 16px;
     border: none;
     background: transparent;
     color: #64748b;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    border-radius: 6px;
+    border-radius: 8px;
     transition: all 0.2s;
 }
 
@@ -52,151 +61,207 @@
 }
 
 .date-filter-btn.active {
-    background: #3b82f6;
+    background: #0f172a;
     color: white;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
-/* KPI Cards */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.export-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: #10b981;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);
+}
+
+.export-btn:hover {
+    background: #059669;
+    transform: translateY(-1px);
+}
+
+/* Dropdown Filter Cards */
+.filter-cards-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 32px;
+}
+
+.filter-card {
+    background: white;
+    padding: 24px;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+}
+
+.filter-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
+}
+
+.filter-card-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+}
+
+.filter-card-value {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.filter-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    z-index: 50;
+    max-height: 240px;
+    overflow-y: auto;
+    margin-top: 8px;
+    padding: 8px;
+}
+
+.filter-option {
+    padding: 8px 12px;
+    font-size: 13px;
+    color: #475569;
+    cursor: pointer;
+    border-radius: 6px;
+    text-align: left;
+}
+
+.filter-option:hover {
+    background: #f1f5f9;
+    color: #1e293b;
+}
+
+/* New KPI Cards */
 .kpi-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: 24px;
     margin-bottom: 32px;
 }
 
-.kpi-card {
-    background: white;
+.kpi-card-new {
     padding: 24px;
-    border-radius: 16px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border-radius: 24px;
+    color: white;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    justify-content: space-between;
+    min-height: 220px;
     position: relative;
-    overflow: hidden;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.kpi-icon-wrapper {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
+.kpi-card-new.blue {
+    background: #3b82f6;
+}
+
+.kpi-card-new.purple {
+    background: #8b5cf6;
+}
+
+.kpi-card-new.green {
+    background: #10b981;
+}
+
+.kpi-card-new.white {
+    background: white;
+    color: #1e293b;
+    border-left: 6px solid #fbbf24;
+}
+
+.kpi-icon-box {
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
+    font-size: 24px;
+    margin-bottom: 24px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(4px);
+}
+
+.kpi-card-new.white .kpi-icon-box {
+    background: #fffbeb;
+    color: #fbbf24;
+}
+
+.kpi-label-new {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.9;
     margin-bottom: 4px;
 }
 
-.kpi-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+.kpi-value-new {
+    font-size: 42px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 8px;
 }
 
-.kpi-value {
-    font-size: 28px;
-    font-weight: 700;
-    color: #1e293b;
-}
-
-.kpi-trend {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.kpi-trend.positive {
-    color: #10b981;
-}
-
-.kpi-trend.negative {
-    color: #ef4444;
-}
-
-.kpi-trend.neutral {
-    color: #94a3b8;
-}
-
-/* Smart KPI Card Enhancements */
-.kpi-card.smart {
-    color: white;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-    border: none !important;
-    transition: transform 0.2s, box-shadow 0.2s;
-    min-height: 160px;
-}
-
-.kpi-card.smart:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.2);
-}
-
-.kpi-card.smart .kpi-icon-wrapper {
-    background: rgba(255, 255, 255, 0.2) !important;
-    color: white !important;
-    border-radius: 12px;
-}
-
-.kpi-card.smart .kpi-label {
-    color: rgba(255, 255, 255, 0.82);
-    font-weight: 700;
-}
-
-.kpi-card.smart .kpi-value {
-    color: white;
-    font-size: 32px;
-    margin: 4px 0;
-}
-
-.kpi-card.smart .kpi-trend {
-    background: rgba(255, 255, 255, 0.2);
-    padding: 4px 10px;
-    border-radius: 20px;
-    width: fit-content;
-    color: white !important;
-}
-
-.kpi-card.smart .kpi-meta {
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.6);
-    margin-top: auto;
+.kpi-sub-new {
+    font-size: 14px;
     font-weight: 500;
+    opacity: 0.9;
 }
 
-.kpi-card.smart.green {
-    background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+.kpi-meta-new {
+    font-size: 13px;
+    opacity: 0.75;
+    margin-top: 4px;
 }
 
-.kpi-card.smart.blue {
-    background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
-}
-
-.kpi-card.smart.purple {
-    background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
-}
-
-/* Decorative wave effect (simplified) */
-.kpi-card.smart::after {
-    content: '';
-    position: absolute;
-    bottom: -30px;
-    right: -30px;
-    width: 120px;
-    height: 120px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 50%;
-    z-index: 0;
-    pointer-events: none;
-}
-
-/* Charts Section */
-.charts-grid {
+/* Charts */
+.charts-split {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: 2fr 1fr;
     gap: 24px;
     margin-bottom: 32px;
 }
@@ -204,8 +269,9 @@
 .chart-card {
     background: white;
     padding: 24px;
-    border-radius: 16px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border-radius: 24px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
 }
 
 .chart-header {
@@ -222,17 +288,59 @@
     margin: 0;
 }
 
-.chart-filters {
-    display: flex;
-    gap: 8px;
+/* Products Table */
+.table-card {
+    background: white;
+    padding: 24px;
+    border-radius: 24px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
 }
 
-.chart-filter-select {
-    padding: 6px 12px;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    font-size: 13px;
+.products-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.products-table th {
+    text-align: left;
+    padding: 16px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.products-table td {
+    padding: 16px;
+    font-size: 14px;
+    color: #334155;
+    border-bottom: 1px solid #f1f5f9;
+    font-weight: 500;
+}
+
+.products-table tr:last-child td {
+    border-bottom: none;
+}
+
+.category-pill {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #f1f5f9;
     color: #475569;
-    outline: none;
-    background: white;
+}
+
+.price-text {
+    color: #10b981;
+    font-weight: 700;
+}
+
+@media (max-width: 1200px) {
+    .charts-split {
+        grid-template-columns: 1fr;
+    }
 }

@@ -42,6 +42,7 @@ import FlashDeals from './pages/FlashDeals/FlashDeals';
 import Checkout from './pages/Checkout/Checkout';
 import Terms from './pages/Terms/Terms';
 import Privacy from './pages/Privacy/Privacy';
+import RefundPolicy from './pages/RefundPolicy/RefundPolicy';
 import CartDrawer from './components/cart/CartDrawer';
 import { CategoryProvider } from './contexts/CategoryContext';
 import { WishlistProvider } from './contexts/WishlistContext';
@@ -83,6 +84,7 @@ function App() {
                 <Route path="/contact" element={<Layout><Contact /></Layout>} />
                 <Route path="/terms" element={<Layout><Terms /></Layout>} />
                 <Route path="/privacy" element={<Layout><Privacy /></Layout>} />
+                <Route path="/refund-policy" element={<Layout><RefundPolicy /></Layout>} />
                 
                 {/* Auth Routes (Standalone) */}
                 <Route path="/login" element={<Login />} />

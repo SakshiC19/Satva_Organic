@@ -1,23 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { FiEye, FiEyeOff, FiPhone } from 'react-icons/fi';
+import { BsEnvelope, BsTelephone, BsLock } from 'react-icons/bs';
 import { FaGoogle } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
+import { logoBase64 } from '../../utils/logo';
 import './Auth.css';
 
 const Login = () => {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [inputType, setInputType] = useState('text'); // 'email' or 'phone'
   const { login, logout, loginWithGoogle, findUserByPhone } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const redirect = searchParams.get('redirect');
+
+  // Auto-detect input type (email vs phone)
+  useEffect(() => {
+    const trimmed = identifier.trim();
+    if (trimmed === '') {
+      setInputType('text');
+    } else if (/^\d+$/.test(trimmed)) {
+      setInputType('phone');
+    } else if (trimmed.includes('@') || /[a-zA-Z]/.test(trimmed)) {
+      setInputType('email');
+    }
+  }, [identifier]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -83,6 +99,7 @@ const Login = () => {
           type: 'email/phone'
         })
       };
+
       await updateDoc(userRef, loginData);
 
       if (userData?.role === 'admin') {
@@ -125,6 +142,12 @@ const Login = () => {
     <div className="auth-page">
       <div className="auth-container">
         <div className="auth-card">
+          {/* Brand Identity Section */}
+          <div className="auth-brand">
+            <img src={logoBase64} alt="Satva Organics" className="auth-brand-logo" />
+            <p className="auth-brand-tagline">Fresh & Organic - Premium Quality Products</p>
+          </div>
+
           <div className="auth-header">
             <h1 className="auth-title">Welcome Back</h1>
             <p className="auth-subtitle">Login to your account</p>
@@ -136,13 +159,16 @@ const Login = () => {
             <div className="form-group">
               <label htmlFor="identifier" className="form-label">Email or Phone Number</label>
               <div className="input-wrapper">
-                 <input
-                  type="text"
+                {inputType === 'email' ? <BsEnvelope className="input-icon" /> : inputType === 'phone' ? <BsTelephone className="input-icon" /> : <BsEnvelope className="input-icon" />}
+                {inputType === 'phone' && <span className="country-code">+91</span>}
+                <input
+                  type={inputType === 'email' ? 'email' : 'tel'}
                   id="identifier"
-                  className="form-input no-icon"
-                  placeholder="Enter email or 10-digit phone"
+                  className={inputType === 'phone' ? 'form-input phone-input' : 'form-input'}
+                  placeholder={inputType === 'phone' ? '98765 43210' : 'Enter email or phone'}
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
+                  inputMode={inputType === 'phone' ? 'numeric' : 'text'}
                   required
                 />
               </div>
@@ -151,10 +177,11 @@ const Login = () => {
             <div className="form-group">
               <label htmlFor="password" className="form-label">Password</label>
               <div className="input-wrapper">
+                <BsLock className="input-icon" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   id="password"
-                  className="form-input no-icon"
+                  className="form-input"
                   placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -170,7 +197,16 @@ const Login = () => {
               </div>
             </div>
 
-            <div className="form-footer">
+            <div className="form-footer-row">
+              <label className="remember-me-label">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="remember-me-checkbox"
+                />
+                <span>Remember me</span>
+              </label>
               <Link to="/forgot-password" className="forgot-link">
                 Forgot Password?
               </Link>
@@ -197,8 +233,8 @@ const Login = () => {
 
           <div className="auth-footer">
             <p>
-              Don't have an account?{' '}
-              <Link to="/signup" className="auth-link">Sign Up</Link>
+              New here?{' '}
+              <Link to="/signup" className="auth-link">Create your account</Link>
             </p>
           </div>
         </div>

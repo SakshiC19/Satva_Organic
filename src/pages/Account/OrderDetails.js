@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc, updateDoc, serverTimestamp, collection, addDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp, collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { downloadInvoice } from '../../utils/invoiceGenerator';
@@ -16,12 +16,72 @@ import {
   FiClock,
   FiCheckCircle,
   FiPackage,
-  FiXCircle,
-  FiCopy,
   FiInfo,
-  FiMail
+  FiMail,
+  FiChevronRight,
+  FiCopy,
+  FiXCircle
 } from 'react-icons/fi';
+import { 
+  BsBoxSeam, 
+  BsCheckCircleFill, 
+  BsTruck, 
+  BsPinMapFill,
+  BsStarFill,
+  BsChatLeftDots,
+  BsChevronLeft
+} from 'react-icons/bs';
 import './Account.css';
+
+const RecentlyViewedProducts = () => {
+  const [viewedProducts, setViewedProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchViewed = async () => {
+      try {
+        const ids = JSON.parse(localStorage.getItem('recentlyViewed') || '[]');
+        if (ids.length === 0) {
+          setLoading(false);
+          return;
+        }
+
+        // Firestore 'in' query limited to 10
+        const q = query(collection(db, 'products'), where('__name__', 'in', ids.slice(0, 10)));
+        const snap = await getDocs(q);
+        const products = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // Sort back to match localStorage order
+        const sorted = ids.map(id => products.find(p => p.id === id)).filter(Boolean);
+        setViewedProducts(sorted);
+      } catch (err) {
+        console.error("Error fetching recently viewed:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchViewed();
+  }, []);
+
+  if (loading || viewedProducts.length === 0) return null;
+
+  return (
+    <div className="recently-viewed-section">
+      <h4 className="section-title">Recently Viewed</h4>
+      <div className="horizontal-items-scroll">
+        {viewedProducts.map((p) => (
+          <div key={p.id} className="viewed-item-card" onClick={() => navigate(`/product/${p.id}`)}>
+            <div className="item-img-placeholder">
+              <img src={p.image || (p.images && p.images[0]?.url) || (p.images && p.images[0])} alt={p.name} />
+            </div>
+            <p className="item-name">{p.name}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const OrderDetails = () => {
   const { id } = useParams();
@@ -80,21 +140,74 @@ const OrderDetails = () => {
     });
   };
 
+  const getEstimatedDelivery = (timestamp) => {
+    try {
+      let date;
+      if (timestamp && timestamp.toDate) {
+        date = timestamp.toDate();
+      } else if (timestamp && timestamp.seconds) {
+        date = new Date(timestamp.seconds * 1000);
+      } else if (timestamp) {
+        date = new Date(timestamp);
+      } else {
+        date = new Date();
+      }
+      
+      if (isNaN(date.getTime())) date = new Date(); // Final safety
+      
+      date.setDate(date.getDate() + 7); 
+      return date.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+    } catch (e) {
+      return '7-10 Days';
+    }
+  };
+
+  const formatDateOnly = (timestamp) => {
+    try {
+      if (!timestamp) return '';
+      let date;
+      if (timestamp.toDate) {
+        date = timestamp.toDate();
+      } else if (timestamp.seconds) {
+        date = new Date(timestamp.seconds * 1000);
+      } else {
+        date = new Date(timestamp);
+      }
+      
+      if (isNaN(date.getTime())) return '';
+      return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+    } catch (e) {
+      return '';
+    }
+  };
+
+  const getMockDate = (timestamp, daysToAdd) => {
+    if (!timestamp) return '';
+    try {
+      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+      date.setDate(date.getDate() + daysToAdd);
+      return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+    } catch (e) {
+      return '';
+    }
+  };
+
   const getStatusSteps = () => {
     const steps = [
       { label: 'Ordered', status: 'Pending', icon: <FiClock />, description: 'Order placed successfully' },
-      { label: 'Accepted', status: 'Accepted', icon: <FiCheckCircle />, description: 'Seller has accepted your order' },
-      { label: 'Shipped', status: 'Shipped', icon: <FiTruck />, description: 'Order is on the way' },
-      { label: 'Delivered', status: 'Delivered', icon: <FiPackage />, description: 'Order delivered successfully' }
+      { label: 'Shipped', status: 'Shipped', icon: <FiPackage />, description: 'Order is on the way' },
+      { label: 'Out for Delivery', status: 'Out for Delivery', icon: <FiTruck />, description: 'Your order is out for delivery' },
+      { label: 'Delivered', status: 'Delivered', icon: <FiCheckCircle />, description: 'Order delivered successfully' }
     ];
     
     const statusMap = {
       'pending': 0,
-      'accepted': 1,
-      'confirmed': 1,
-      'processing': 1,
-      'packed': 1,
-      'shipped': 2,
+      'accepted': 0,
+      'confirmed': 0,
+      'processing': 0,
+      'packed': 0,
+      'shipped': 1,
+      'out for delivery': 2,
       'delivered': 3,
       'cancelled': -1,
       'cancellation_requested': -2
@@ -193,279 +306,412 @@ const OrderDetails = () => {
 
   return (
     <div className="order-details-page">
-      <div className="order-details-header-new">
-        <div className="header-top">
-          <button onClick={() => navigate('/account/orders')} className="btn-back-new">
-            <FiArrowLeft />
-          </button>
-          <div className="order-meta-info">
-            <div className="order-id-group">
-              <h1>Order #{order.id.substring(0, 10).toUpperCase()}</h1>
-              <button className="copy-btn" onClick={handleCopyId} title="Copy Order ID">
-                <FiCopy />
-              </button>
+      {/* Desktop View */}
+      <div className="desktop-view">
+        <div className="order-details-header-new">
+          <div className="header-top">
+            <button onClick={() => navigate('/account/orders')} className="btn-back-new">
+              <FiArrowLeft />
+            </button>
+            <div className="order-meta-info">
+              <div className="order-id-group">
+                <h1>Order #{order.id.substring(0, 10).toUpperCase()}</h1>
+                <button className="copy-btn" onClick={handleCopyId} title="Copy Order ID">
+                  <FiCopy />
+                </button>
+              </div>
+              <p className="order-date-status">
+                Placed on {formatDate(order.createdAt)} | Status: 
+                <span className="status-text-badge" style={{ color: getStatusBadgeColor(order.status) }}>
+                  {order.status === 'Cancellation_Requested' ? '🟡 Cancellation Requested' : order.status}
+                </span>
+                <span className="status-tooltip" title={steps.find(s => s.isActive)?.description || 'Order is being processed'}>
+                  <FiInfo />
+                </span>
+              </p>
             </div>
-            <p className="order-date-status">
-              Placed on {formatDate(order.createdAt)} | Status: 
-              <span className="status-text-badge" style={{ color: getStatusBadgeColor(order.status) }}>
-                {order.status === 'Cancellation_Requested' ? '🟡 Cancellation Requested' : order.status}
-              </span>
-              <span className="status-tooltip" title={steps.find(s => s.isActive)?.description || 'Order is being processed'}>
-                <FiInfo />
-              </span>
-            </p>
+          </div>
+          <div className="header-actions-new">
+            <button className="btn-outline" onClick={() => downloadInvoice(order)}>
+              <FiDownload /> Invoice
+            </button>
           </div>
         </div>
-        <div className="header-actions-new">
-          <button className="btn-outline" onClick={() => downloadInvoice(order)}>
-            <FiDownload /> Invoice
-          </button>
+
+        <div className="order-main-grid">
+          <div className="order-left-col">
+            <div className="order-card tracking-card-new">
+              <h3 className="card-title">Order Timeline</h3>
+              <div className="timeline-container">
+                {steps.map((step, index) => (
+                  <div key={index} className={`timeline-item ${step.isCompleted ? 'completed' : ''} ${step.isActive ? 'active' : ''}`}>
+                    <div className="timeline-icon">
+                      {step.isCompleted ? <FiCheckCircle /> : step.icon}
+                    </div>
+                    <div className="timeline-content">
+                      <div className="timeline-header">
+                        <span className="timeline-label">{step.label}</span>
+                        {step.timestamp && <span className="timeline-time">{formatDate(step.timestamp)}</span>}
+                      </div>
+                      <p className="timeline-desc">{step.description}</p>
+                    </div>
+                    {index < steps.length - 1 && <div className="timeline-line"></div>}
+                  </div>
+                ))}
+              </div>
+              
+              {order.status?.toLowerCase() === 'cancellation_requested' && (
+                <div className="cancellation-notice-new warning">
+                  <FiClock /> <strong>Cancellation Requested</strong>
+                  <p>Your request is under review. Reason: {order.cancellationRequest?.reason}</p>
+                </div>
+              )}
+
+              {order.status?.toLowerCase() === 'cancelled' && (
+                <div className="cancellation-notice-new danger">
+                  <FiXCircle /> <strong>Order Cancelled</strong>
+                  <p>This order was cancelled. {order.cancellationRequest?.approvedAt ? `Approved on ${formatDate(order.cancellationRequest.approvedAt)}` : ''}</p>
+                </div>
+              )}
+
+              {order.cancellationRequest?.status === 'rejected' && (
+                <div className="cancellation-notice-new danger">
+                  <FiInfo /> <strong>Cancellation Request Rejected</strong>
+                  <p>Your cancellation request was rejected. Reason: {order.cancellationRequest.rejectionReason}</p>
+                </div>
+              )}
+
+              {order.status?.toLowerCase() !== 'delivered' && order.status?.toLowerCase() !== 'cancelled' && (
+                <div className="delivery-estimate">
+                  <FiTruck /> Expected delivery: <strong>3–5 days from order date</strong>
+                </div>
+              )}
+            </div>
+
+            <div className="order-card items-card">
+              <h3 className="card-title">Items Ordered ({order.items?.length})</h3>
+              <div className="order-items-list">
+                {order.items?.map((item, index) => {
+                  const itemImage = item.image || (item.images && item.images[0] ? (item.images[0].url || item.images[0]) : '');
+                  return (
+                    <div key={index} className="order-item-row">
+                      <img src={itemImage} alt={item.name} className="item-img" />
+                      <div className="item-details">
+                        <h4>{item.name}</h4>
+                        <p>Size: {item.selectedSize || 'Standard'} | Qty: {item.quantity}</p>
+                        <span className="item-price">₹{item.price} × {item.quantity} = ₹{item.price * item.quantity}</span>
+                      </div>
+                      {order.status === 'Delivered' && (
+                        <button className="btn-rate" onClick={() => setShowReviewForm(true)}>
+                          Rate & Review
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {showReviewForm && (
+              <div className="order-card review-card">
+                <h3 className="card-title">Rate & Review Products</h3>
+                <form onSubmit={handleReviewSubmit} className="review-form">
+                  <div className="rating-input">
+                    {[1, 2, 3, 4, 5].map(num => (
+                      <FiStar 
+                        key={num} 
+                        className={num <= reviewData.rating ? 'star filled' : 'star'} 
+                        onClick={() => setReviewData({...reviewData, rating: num})}
+                      />
+                    ))}
+                  </div>
+                  <textarea 
+                    placeholder="Share your experience with this product..."
+                    value={reviewData.comment}
+                    onChange={(e) => setReviewData({...reviewData, comment: e.target.value})}
+                    required
+                  />
+                  <div className="form-actions">
+                    <button type="button" className="btn-cancel" onClick={() => setShowReviewForm(false)}>Cancel</button>
+                    <button type="submit" className="btn-submit">Submit Review</button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </div>
+
+          <div className="order-right-col">
+            <div className="order-card info-card-new">
+              <h3 className="card-title"><FiCreditCard /> Payment Details</h3>
+              <div className="payment-details-content">
+                <div className="payment-method-info">
+                  <div className="method-icon">
+                    {order.paymentMethod === 'cod' ? <FiClock /> : <FiCheckCircle className="success" />}
+                  </div>
+                  <div className="method-text">
+                    <p className="method-name">{order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Paid Online (Razorpay)'}</p>
+                    {order.paymentId && <p className="transaction-id">Transaction ID: {order.paymentId}</p>}
+                  </div>
+                </div>
+                <div className={`payment-status-badge ${order.paymentStatus?.toLowerCase()}`}>
+                  {order.paymentStatus || 'Pending'}
+                </div>
+              </div>
+            </div>
+
+            <div className="order-card info-card-new">
+              <h3 className="card-title"><FiMapPin /> Delivery Address</h3>
+              <div className="address-content-new">
+                {order.shippingAddress ? (
+                  <>
+                    <p className="customer-name">{order.shippingAddress.name}</p>
+                    <p className="address-text">
+                      {order.shippingAddress.address}, {order.shippingAddress.locality}<br />
+                      {order.shippingAddress.city}, {order.shippingAddress.state} - <strong>{order.shippingAddress.pincode}</strong>
+                    </p>
+                    <p className="phone">📞 {order.shippingAddress.phone}</p>
+                  </>
+                ) : order.address ? (
+                  <>
+                    <p className="customer-name">{order.customerName}</p>
+                    <p className="address-text">
+                      {order.address.street || order.address.address}<br />
+                      {order.address.city}, {order.address.state} - <strong>{order.address.pincode}</strong>
+                    </p>
+                    <p className="phone">📞 {order.phone || order.phoneNumber}</p>
+                  </>
+                ) : (
+                  <p className="no-address">No address information available</p>
+                )}
+              </div>
+            </div>
+
+            <div className="order-card summary-card-new">
+              <h3 className="card-title">Price Details</h3>
+              <div className="price-breakdown">
+                <div className="price-row">
+                  <span>Items Total</span>
+                  <span>₹{order.totalAmount}</span>
+                </div>
+                <div className="price-row">
+                  <span>Delivery Fee</span>
+                  <span className="success">FREE</span>
+                </div>
+                <div className="price-row">
+                  <span>Tax</span>
+                  <span>₹0</span>
+                </div>
+                <div className="price-row total-row">
+                  <span>Total Paid</span>
+                  <span>₹{order.totalAmount}</span>
+                </div>
+              </div>
+              {order.paymentStatus === 'Paid' && (
+                <div className="payment-success-note">
+                  <FiCheckCircle /> Payment Successful
+                </div>
+              )}
+            </div>
+
+            <div className="order-actions-footer">
+              {order.status?.toLowerCase() === 'pending' && (
+                <button className="btn-danger-outline full-width" onClick={() => setShowCancelModal(true)}>
+                  Request Cancellation
+                </button>
+              )}
+              {(order.status?.toLowerCase() === 'accepted' || order.status?.toLowerCase() === 'shipped') && (
+                <button className="btn-primary full-width" onClick={() => alert('Tracking feature coming soon!')}>
+                  Track Order
+                </button>
+              )}
+              {(order.status?.toLowerCase() === 'delivered' || order.status?.toLowerCase() === 'cancelled') && (
+                <button className="btn-primary-outline full-width" onClick={() => navigate('/shop')}>
+                  Reorder Items
+                </button>
+              )}
+            </div>
+
+            <div className="order-card support-card-new">
+              <h3 className="card-title">Need Help?</h3>
+              <p className="support-subtitle">Get in touch with our team for any queries</p>
+              <div className="support-grid">
+                <a href={`https://wa.me/919087659045?text=Hi, I need help with my order #${order.id}`} target="_blank" rel="noreferrer" className="support-item whatsapp">
+                  <FiMessageCircle /> WhatsApp
+                </a>
+                <a href="tel:+919087659045" className="support-item call">
+                  <FiPhone /> Call Us
+                </a>
+                <a href="mailto:support@satvaorganics.com" className="support-item email">
+                  <FiMail /> Email
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="order-main-grid">
-        <div className="order-left-col">
-          <div className="order-card tracking-card-new">
-            <h3 className="card-title">Order Timeline</h3>
-            <div className="timeline-container">
-              {steps.map((step, index) => (
-                <div key={index} className={`timeline-item ${step.isCompleted ? 'completed' : ''} ${step.isActive ? 'active' : ''}`}>
-                  <div className="timeline-icon">
-                    {step.isCompleted ? <FiCheckCircle /> : step.icon}
-                  </div>
-                  <div className="timeline-content">
-                    <div className="timeline-header">
-                      <span className="timeline-label">{step.label}</span>
-                      {step.timestamp && <span className="timeline-time">{formatDate(step.timestamp)}</span>}
-                    </div>
-                    <p className="timeline-desc">{step.description}</p>
-                  </div>
-                  {index < steps.length - 1 && <div className="timeline-line"></div>}
+      {/* Mobile View */}
+      <div className="mobile-view mobile-order-details-container">
+          <div className="mobile-details-header">
+            <div className="mobile-header-center">
+              <button 
+                onClick={() => navigate('/account/orders')} 
+                className="btn-back-details"
+                aria-label="Back to Orders"
+              >
+                <BsChevronLeft />
+              </button>
+              <h3>ORDER DETAILS</h3>
+            </div>
+            <button className="btn-help-mobile">HELP</button>
+          </div>
+
+          <div className="mobile-scroll-content">
+            {/* Main Info Card */}
+            <div className="mobile-details-single-card">
+              {/* Product Snippet */}
+              {order.items?.map((item, idx) => (
+                <div key={idx} className="inner-product-row">
+                   <div className="product-image-container">
+                      <img src={item.image || (item.images && item.images[0])} alt={item.name} />
+                   </div>
+                   <div className="product-info-container">
+                      <h4 className="p-name">{item.name}</h4>
+                      <p className="p-variant">{item.selectedSize || '300g'}</p>
+                      <p className="p-order-id">Order #{(order.id || '').toUpperCase()}</p>
+                      <p className="p-price">₹{item.price * item.quantity}</p>
+                   </div>
                 </div>
               ))}
-            </div>
-            
-            {order.status?.toLowerCase() === 'cancellation_requested' && (
-              <div className="cancellation-notice-new warning">
-                <FiClock /> <strong>Cancellation Requested</strong>
-                <p>Your request is under review. Reason: {order.cancellationRequest?.reason}</p>
-              </div>
-            )}
 
-            {order.status?.toLowerCase() === 'cancelled' && (
-              <div className="cancellation-notice-new danger">
-                <FiXCircle /> <strong>Order Cancelled</strong>
-                <p>This order was cancelled. {order.cancellationRequest?.approvedAt ? `Approved on ${formatDate(order.cancellationRequest.approvedAt)}` : ''}</p>
-              </div>
-            )}
+              <div className="card-divider"></div>
 
-            {order.cancellationRequest?.status === 'rejected' && (
-              <div className="cancellation-notice-new danger">
-                <FiInfo /> <strong>Cancellation Request Rejected</strong>
-                <p>Your cancellation request was rejected. Reason: {order.cancellationRequest.rejectionReason}</p>
-              </div>
-            )}
+              {/* Status Section */}
+              <div className="inner-status-section">
+                <div className="status-header-row">
+                   <div className="box-icon-wrapper">
+                      <BsBoxSeam className="main-box-icon" />
+                      <BsCheckCircleFill className="mini-check-badge" />
+                   </div>
+                   <div className="status-text-info">
+                      <h4 className="status-main-title">
+                        {order.status === 'Accepted' ? 'Order Placed' : order.status}
+                      </h4>
+                      <p className="delivery-subtitle">Delivery by {getEstimatedDelivery(order.createdAt)}</p>
+                   </div>
+                </div>
 
-            {order.status?.toLowerCase() !== 'delivered' && order.status?.toLowerCase() !== 'cancelled' && (
-              <div className="delivery-estimate">
-                <FiTruck /> Expected delivery: <strong>3–5 days from order date</strong>
-              </div>
-            )}
-          </div>
-
-          <div className="order-card items-card">
-            <h3 className="card-title">Items Ordered ({order.items?.length})</h3>
-            <div className="order-items-list">
-              {order.items?.map((item, index) => {
-                const itemImage = item.image || (item.images && item.images[0] ? (item.images[0].url || item.images[0]) : '');
-                return (
-                  <div key={index} className="order-item-row">
-                    <img src={itemImage} alt={item.name} className="item-img" />
-                    <div className="item-details">
-                      <h4>{item.name}</h4>
-                      <p>Size: {item.selectedSize || 'Standard'} | Qty: {item.quantity}</p>
-                      <span className="item-price">₹{item.price} × {item.quantity} = ₹{item.price * item.quantity}</span>
+                {/* Detailed Stepper */}
+                <div className="detailed-stepper-wrapper">
+                  {/* Tooltip */}
+                  {(order.status === 'Accepted' || order.status === 'Pending') && (
+                    <div className="shipping-soon-tooltip">
+                       <span className="tooltip-dot"></span>
+                       Shipping Soon!
                     </div>
-                    {order.status === 'Delivered' && (
-                      <button className="btn-rate" onClick={() => setShowReviewForm(true)}>
-                        Rate & Review
-                      </button>
+                  )}
+
+                  <div className="stepper-track-line">
+                    <div className="track-fill" style={{
+                       width: `${Math.min((getStatusSteps().findIndex(s => s.isActive) || 0) * 33.33 + (order.status?.toLowerCase() === 'delivered' ? 100 : 0), 100)}%`
+                    }}></div>
+                    {/* Moving Truck */}
+                    {order.status !== 'Delivered' && order.status !== 'Cancelled' && (
+                      <div className="moving-truck-icon" style={{
+                        left: `${Math.min((getStatusSteps().findIndex(s => s.isActive) || 0) * 33.33 + 10, 90)}%`
+                      }}>
+                        <BsTruck />
+                      </div>
                     )}
                   </div>
-                );
-              })}
-            </div>
-          </div>
 
-          {showReviewForm && (
-            <div className="order-card review-card">
-              <h3 className="card-title">Rate & Review Products</h3>
-              <form onSubmit={handleReviewSubmit} className="review-form">
-                <div className="rating-input">
-                  {[1, 2, 3, 4, 5].map(num => (
-                    <FiStar 
-                      key={num} 
-                      className={num <= reviewData.rating ? 'star filled' : 'star'} 
-                      onClick={() => setReviewData({...reviewData, rating: num})}
-                    />
-                  ))}
-                </div>
-                <textarea 
-                  placeholder="Share your experience with this product..."
-                  value={reviewData.comment}
-                  onChange={(e) => setReviewData({...reviewData, comment: e.target.value})}
-                  required
-                />
-                <div className="form-actions">
-                  <button type="button" className="btn-cancel" onClick={() => setShowReviewForm(false)}>Cancel</button>
-                  <button type="submit" className="btn-submit">Submit Review</button>
-                </div>
-              </form>
-            </div>
-          )}
-        </div>
-
-        <div className="order-right-col">
-          <div className="order-card info-card-new">
-            <h3 className="card-title"><FiCreditCard /> Payment Details</h3>
-            <div className="payment-details-content">
-              <div className="payment-method-info">
-                <div className="method-icon">
-                  {order.paymentMethod === 'cod' ? <FiClock /> : <FiCheckCircle className="success" />}
-                </div>
-                <div className="method-text">
-                  <p className="method-name">{order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Paid Online (Razorpay)'}</p>
-                  {order.paymentId && <p className="transaction-id">Transaction ID: {order.paymentId}</p>}
+                  <div className="steps-points-row">
+                    {getStatusSteps().map((step, i) => (
+                      <div key={i} className={`step-item ${step.isCompleted ? 'done' : ''} ${step.isActive ? 'active' : ''}`}>
+                         <div className="point-circle">
+                            {step.isCompleted ? <BsCheckCircleFill /> : <div className="outer-circle"><div className="inner-dot"></div></div>}
+                         </div>
+                         <div className="step-label-group">
+                            <span className="step-name">{step.label}</span>
+                            <span className="step-date">{step.isCompleted ? formatDateOnly(step.timestamp || order.createdAt) : formatDateOnly(i === 3 ? getEstimatedDelivery(order.createdAt) : null)}</span>
+                         </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-              <div className={`payment-status-badge ${order.paymentStatus?.toLowerCase()}`}>
-                {order.paymentStatus || 'Pending'}
+              <div className="card-divider"></div>
+
+              {/* Cancellation Section */}
+              <div className="inner-cancel-section-row">
+                 <p className="cancel-info-msg">Cancellation available till shipping!</p>
+                 <button 
+                   className="btn-cancel-purple" 
+                   onClick={() => setShowCancelModal(true)}
+                   disabled={['shipped', 'out for delivery', 'delivered', 'cancelled'].includes(order.status?.toLowerCase())}
+                 >
+                   Cancel Order
+                 </button>
+              </div>
+
+              <div className="card-divider"></div>
+
+              {/* Payment Info */}
+              <div className="inner-payment-footer">
+                 <span className="payment-label">Your payment mode:</span>
+                 <span className="payment-value">
+                   {order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Paid Online'} <span className="dot-sep">•</span> ₹{order.totalAmount}
+                 </span>
               </div>
             </div>
-          </div>
 
-          <div className="order-card info-card-new">
-            <h3 className="card-title"><FiMapPin /> Delivery Address</h3>
-            <div className="address-content-new">
-              {order.shippingAddress ? (
-                <>
-                  <p className="customer-name">{order.shippingAddress.name}</p>
-                  <p className="address-text">
-                    {order.shippingAddress.address}, {order.shippingAddress.locality}<br />
-                    {order.shippingAddress.city}, {order.shippingAddress.state} - <strong>{order.shippingAddress.pincode}</strong>
+            {/* Address Card */}
+            <div className="mobile-address-section-card">
+               <div className="address-header">
+                  <BsPinMapFill className="pin-icon" />
+                  <h4>Delivery Address</h4>
+               </div>
+               <div className="address-content">
+                  <p className="customer-name">{order.shippingAddress?.name || currentUser?.displayName}</p>
+                  <p className="address-line">
+                    {order.shippingAddress?.addressLine}, {order.shippingAddress?.landmark && order.shippingAddress.landmark + ','}
+                    {order.shippingAddress?.city}, {order.shippingAddress?.state}, {order.shippingAddress?.pincode}
                   </p>
-                  <p className="phone">📞 {order.shippingAddress.phone}</p>
-                </>
-              ) : order.address ? (
-                <>
-                  <p className="customer-name">{order.customerName}</p>
-                  <p className="address-text">
-                    {order.address.street || order.address.address}<br />
-                    {order.address.city}, {order.address.state} - <strong>{order.address.pincode}</strong>
-                  </p>
-                  <p className="phone">📞 {order.phone || order.phoneNumber}</p>
-                </>
-              ) : (
-                <p className="no-address">No address information available</p>
-              )}
+                  <p className="customer-phone">{order.shippingAddress?.phone || order.phone}</p>
+               </div>
             </div>
+
+            {/* Recently Viewed Section */}
+            <RecentlyViewedProducts />
           </div>
 
-          <div className="order-card summary-card-new">
-            <h3 className="card-title">Price Details</h3>
-            <div className="price-breakdown">
-              <div className="price-row">
-                <span>Items Total</span>
-                <span>₹{order.totalAmount}</span>
-              </div>
-              <div className="price-row">
-                <span>Delivery Fee</span>
-                <span className="success">FREE</span>
-              </div>
-              <div className="price-row">
-                <span>Tax</span>
-                <span>₹0</span>
-              </div>
-              <div className="price-row total-row">
-                <span>Total Paid</span>
-                <span>₹{order.totalAmount}</span>
-              </div>
-            </div>
-            {order.paymentStatus === 'Paid' && (
-              <div className="payment-success-note">
-                <FiCheckCircle /> Payment Successful
-              </div>
-            )}
-          </div>
-
-          <div className="order-actions-footer">
-            {order.status?.toLowerCase() === 'pending' && (
-              <button className="btn-danger-outline full-width" onClick={() => setShowCancelModal(true)}>
-                Request Cancellation
-              </button>
-            )}
-            {(order.status?.toLowerCase() === 'accepted' || order.status?.toLowerCase() === 'shipped') && (
-              <button className="btn-primary full-width" onClick={() => alert('Tracking feature coming soon!')}>
-                Track Order
-              </button>
-            )}
-            {(order.status?.toLowerCase() === 'delivered' || order.status?.toLowerCase() === 'cancelled') && (
-              <button className="btn-primary-outline full-width" onClick={() => navigate('/shop')}>
-                Reorder Items
-              </button>
-            )}
-          </div>
-
-          <div className="order-card support-card-new">
-            <h3 className="card-title">Need Help?</h3>
-            <p className="support-subtitle">Get in touch with our team for any queries</p>
-            <div className="support-grid">
-              <a href={`https://wa.me/919087659045?text=Hi, I need help with my order #${order.id}`} target="_blank" rel="noreferrer" className="support-item whatsapp">
-                <FiMessageCircle /> WhatsApp
-              </a>
-              <a href="tel:+919087659045" className="support-item call">
-                <FiPhone /> Call Us
-              </a>
-              <a href="mailto:support@satvaorganics.com" className="support-item email">
-                <FiMail /> Email
-              </a>
-            </div>
-          </div>
-        </div>
+           <div className="mobile-footer-space" style={{height: '50px'}}></div>
       </div>
 
       {showCancelModal && (
-        <div className="modal-overlay-new">
-          <div className="modal-content-new">
-            <div className="modal-header-new">
-              <h3>Request Cancellation</h3>
-              <button onClick={() => setShowCancelModal(false)}><FiXCircle /></button>
+        <div className="modal-overlay-new" onClick={() => setShowCancelModal(false)}>
+          <div className="modal-content-new mobile-bottom-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="sheet-handle"></div>
+            <div className="sheet-body">
+              <h3 className="main-confirm-text">Are you sure you want to cancel?</h3>
+              <p className="sub-confirm-text">Your order will be cancelled and the items will be returned to our stock.</p>
             </div>
-            <div className="modal-body-new">
-              <p>Please select a reason for cancellation:</p>
-              <select 
-                value={cancelReason} 
-                onChange={(e) => setCancelReason(e.target.value)}
-                className="reason-select"
-              >
-                <option value="">Select a reason</option>
-                {cancelReasons.map((reason, idx) => (
-                  <option key={idx} value={reason}>{reason}</option>
-                ))}
-              </select>
-              <div className="modal-info-box">
-                <FiInfo />
-                <p>Your request will be reviewed by our admin team. You will be notified once it's approved.</p>
-              </div>
-            </div>
-            <div className="modal-footer-new">
-              <button className="btn-secondary" onClick={() => setShowCancelModal(false)}>Back</button>
+            <div className="sheet-footer">
               <button 
-                className="btn-danger" 
-                onClick={handleRequestCancellation}
-                disabled={isCancelling || !cancelReason}
+                className="btn-yes" 
+                onClick={() => {
+                  if (!cancelReason) setCancelReason('Ordered by mistake');
+                  handleRequestCancellation();
+                }}
+                disabled={isCancelling}
               >
-                {isCancelling ? 'Submitting...' : 'Submit Request'}
+                {isCancelling ? 'Cancelling...' : 'Yes, Cancel Order'}
+              </button>
+              <button 
+                className="btn-no" 
+                onClick={() => setShowCancelModal(false)}
+              >
+                No, Keep Order
               </button>
             </div>
           </div>

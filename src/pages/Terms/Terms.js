@@ -82,7 +82,7 @@ const Terms = () => {
 
             <section>
               <h2>15. Contact Information</h2>
-              <p>If you have any questions about these Terms, please contact us at <strong>satvaorganics@gmail.com</strong>.</p>
+              <p>If you have any questions about these Terms, please contact us at <strong>info.satvaorganics@gmail.com</strong>.</p>
             </section>
           </div>
         </div>

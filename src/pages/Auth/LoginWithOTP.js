@@ -29,11 +29,20 @@ export default function LoginWithOTP() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [resendTimer, setResendTimer] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
   
   const searchParams = new URLSearchParams(location.search);
   const redirect = searchParams.get('redirect');
+
+  // Resend timer countdown
+  useEffect(() => {
+    if (resendTimer > 0) {
+      const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendTimer]);
 
   useEffect(() => {
     return () => {
@@ -123,6 +132,7 @@ export default function LoginWithOTP() {
       );
       window.confirmationResult = confirmation;
       setStep(2);
+      setResendTimer(30); // Start 30 second timer
       setError("");
     } catch (error) {
       console.error("SMS Error:", error);
@@ -208,7 +218,11 @@ export default function LoginWithOTP() {
             <p className="auth-subtitle">
               {step === 1 
                 ? "Enter your phone number to receive a real verification code" 
-                : `Enter the 6-digit code sent to +91 ${phone.slice(-10)}`
+                : (
+                  <>
+                    OTP sent to <strong>+91 ****{phone.slice(-4)}</strong>
+                  </>
+                )
               }
             </p>
           </div>
@@ -241,6 +255,7 @@ export default function LoginWithOTP() {
                     placeholder="98765 43210"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    inputMode="numeric"
                     required
                   />
                 </div>
@@ -266,8 +281,16 @@ export default function LoginWithOTP() {
                     placeholder="Enter 6-digit OTP"
                     value={otp}
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    onPaste={(e) => {
+                      // Support paste for mobile
+                      const pastedData = e.clipboardData.getData('text');
+                      const digits = pastedData.replace(/\D/g, '').slice(0, 6);
+                      setOtp(digits);
+                      e.preventDefault();
+                    }}
                     required
                     autoFocus
+                    inputMode="numeric"
                   />
                 </div>
               </div>
@@ -277,9 +300,18 @@ export default function LoginWithOTP() {
               </button>
               
               <div className="resend-container">
-                <button type="button" className="resend-link" onClick={sendOTP} disabled={loading}>
-                  Didn't receive code? Resend
-                </button>
+                {resendTimer > 0 ? (
+                  <span className="resend-timer">Resend OTP in {resendTimer}s</span>
+                ) : (
+                  <button 
+                    type="button" 
+                    className="resend-link" 
+                    onClick={sendOTP} 
+                    disabled={loading}
+                  >
+                    Didn't receive code? Resend
+                  </button>
+                )}
               </div>
             </form>
           )}

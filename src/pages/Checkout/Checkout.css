@@ -1856,6 +1856,93 @@
     color: #1f2d26;
 }
 
+.celebration-icon svg {
+    font-size: 32px;
+    color: white;
+}
+
+.confirmation-help-section {
+    margin: 24px 0;
+    padding: 16px;
+    background: #f0fdf4;
+    border-radius: 12px;
+    border: 1px dashed #27ae60;
+    text-align: center;
+}
+
+.confirmation-help-section h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 8px;
+}
+
+.confirmation-help-section p {
+    font-size: 14px;
+    color: #4b5563;
+    margin-bottom: 4px;
+}
+
+.help-email {
+    font-weight: 600;
+}
+
+.help-email a {
+    color: #27ae60;
+    text-decoration: none;
+}
+
+.checkout-disclaimer {
+    font-size: 11px;
+    color: #878787;
+    margin-bottom: 8px;
+    text-align: center;
+    line-height: 1.4;
+    padding: 0 8px;
+}
+
+.checkout-disclaimer a {
+    color: #27ae60;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.checkout-disclaimer.desktop {
+    margin-bottom: 12px;
+    text-align: left;
+    padding: 0;
+    font-size: 12px;
+}
+
+.mobile-only-disclaimer {
+    margin-top: 15px;
+    padding: 0 15px;
+    text-align: center;
+    font-size: 12px;
+    color: #878787;
+    margin-bottom: 20px;
+}
+
+.continue-shopping-btn {
+    background: #27ae60;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-weight: 700;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    margin-top: 10px;
+}
+
+.continue-shopping-btn:hover {
+    background: #219150;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.2);
+}
+
 .deal-text span {
     font-size: 12px;
     color: #878787;

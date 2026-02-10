@@ -44,6 +44,7 @@
     flex-wrap: wrap;
     gap: 8px;
     margin-top: 15px;
+    padding: 5px;
 }
 
 .breadcrumb a {
@@ -644,6 +645,190 @@
 .tab-btn.active {
     color: #16a34a;
     border-bottom-color: #16a34a;
+}
+
+.desktop-only-tab {
+    display: block;
+}
+
+.mobile-replacement-policy-card {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .desktop-only-tab {
+        display: none !important;
+    }
+
+    .mobile-replacement-policy-card {
+        display: block;
+        border-radius: 16px;
+        padding: 20px;
+        margin: 20px 0;
+    }
+
+    .policy-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .policy-icon {
+        color: #16a34a;
+        font-size: 1.4rem;
+    }
+
+    .policy-header h4 {
+        margin: 0;
+        font-size: 17px;
+        font-weight: 800;
+        color: #1e293b;
+        letter-spacing: 1.8px;
+    }
+
+    .policy-list-minimal {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 20px 0;
+    }
+
+    .policy-list-minimal li {
+        font-size: 14px;
+        color: #475569;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        line-height: 1.4;
+    }
+
+    .li-icon {
+        color: #16a34a;
+        font-size: 16px;
+        flex-shrink: 0;
+    }
+
+    .mobile-full-policy-link-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 16px;
+        border-top: 1px solid #E8F5EE;
+        color: #27ae60;
+        font-weight: 700;
+        font-size: 14px;
+        text-decoration: none;
+        transition: all 0.2s;
+        margin: 0 -4px;
+    }
+
+    .link-content {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .file-icon {
+        font-size: 16px;
+    }
+
+    .arrow-icon {
+        font-size: 18px;
+        transition: transform 0.2s;
+    }
+
+    .mobile-full-policy-link-row:active {
+        background: rgba(39, 174, 96, 0.05);
+        border-radius: 8px;
+    }
+
+    .mobile-full-policy-link-row:hover .arrow-icon {
+        transform: translateX(4px);
+    }
+
+    .mobile-policy-disclaimer {
+        display: block;
+        font-size: 11px;
+        color: #94a3b8;
+        text-align: center;
+        margin-top: -10px;
+        margin-bottom: 20px;
+        line-height: 1.4;
+        padding: 0 10px;
+    }
+
+    .tappable-mobile {
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .tappable-mobile:active {
+        background-color: #f1f5f9;
+        border-radius: 8px;
+    }
+}
+
+.tab-icon {
+    margin-right: 6px;
+    font-size: 1.1em;
+    vertical-align: -2px;
+}
+
+.shipping-info-content,
+.refund-info-content {
+    background: #f8fafc;
+    padding: 24px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.info-list {
+    list-style: none;
+    padding: 0;
+    margin: 16px 0;
+}
+
+.info-list li {
+    position: relative;
+    padding-left: 28px;
+    margin-bottom: 12px;
+    font-size: 14px;
+    color: #4b5563;
+    line-height: 1.6;
+}
+
+.info-list li::before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: #16a34a;
+    font-weight: bold;
+}
+
+.info-list.compact li {
+    margin-bottom: 8px;
+}
+
+.policy-link-wrapper {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px dashed #cbd5e1;
+}
+
+.read-full-policy-link {
+    color: #27ae60;
+    font-weight: 700;
+    text-decoration: none;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.read-full-policy-link:hover {
+    text-decoration: underline;
+    color: #219150;
+    transform: translateX(5px);
+    display: inline-block;
 }
 
 .tab-pane {

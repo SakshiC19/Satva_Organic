@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { doc, getDoc, addDoc, collection, serverTimestamp, updateDoc, increment, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { FiHeart, FiMinus, FiPlus, FiCheck, FiStar, FiX, FiTruck, FiRefreshCw, FiPackage } from 'react-icons/fi';
+import { BsTruck, BsArrowRepeat, BsShieldCheck, BsClockHistory, BsSearch, BsTree, BsFileText, BsArrowRight } from 'react-icons/bs';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWishlist } from '../../contexts/WishlistContext';
@@ -43,6 +44,7 @@ const ProductDetail = () => {
   // Fixed bottom footer state for mobile
   const [showFixedFooter, setShowFixedFooter] = useState(true);
   const productActionsRef = useRef(null);
+  const policyCardRef = useRef(null);
 
   const isInCart = cartItems.some(item => 
     item.id === product?.id && item.selectedSize === selectedSize
@@ -622,17 +624,47 @@ const ProductDetail = () => {
               </button>
             </div>
 
+            {/* Replacement Policy Card - Mobile Only */}
+            <div className="mobile-replacement-policy-card" ref={policyCardRef}>
+              <div className="policy-header">
+                <BsShieldCheck className="policy-icon" />
+                <h4>Easy Replacement Policy</h4>
+              </div>
+              <ul className="policy-list-minimal">
+                <li><BsClockHistory className="li-icon" /> Report damaged/spoiled items within 48 hours</li>
+                <li><BsSearch className="li-icon" /> Replacement after verification</li>
+                <li><BsTree className="li-icon" /> No return for natural taste/texture variations</li>
+              </ul>
+              <Link to="/refund-policy" className="mobile-full-policy-link-row">
+                <span className="link-content">
+                  <BsFileText className="file-icon" /> Read full refund & replacement policy
+                </span>
+                <BsArrowRight className="arrow-icon" />
+              </Link>
+            </div>
+            
+            <p className="mobile-policy-disclaimer">
+              Applicable only for damaged or spoiled products. Natural variations are not eligible for return.
+            </p>
+
             <div className="trust-signals">
               <div className="trust-signal-item">
-                <div className="trust-signal-icon"><FiTruck /></div>
+                <div className="trust-signal-icon"><BsTruck /></div>
                 <div className="trust-signal-content">
                   <span className="trust-signal-title">Free Shipping above ₹499</span>
                 </div>
               </div>
-              <div className="trust-signal-item">
-                <div className="trust-signal-icon"><FiRefreshCw /></div>
+              <div 
+                className="trust-signal-item tappable-mobile" 
+                onClick={() => {
+                  if (window.innerWidth <= 768 && policyCardRef.current) {
+                    policyCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }
+                }}
+              >
+                <div className="trust-signal-icon"><BsArrowRepeat /></div>
                 <div className="trust-signal-content">
-                  <span className="trust-signal-title">Easy 7-day Returns</span>
+                  <span className="trust-signal-title">Easy Replacement*</span>
                 </div>
               </div>
               {product.codAvailable !== false && !product.category?.toLowerCase().includes('vegetable basket') && (
@@ -714,6 +746,18 @@ const ProductDetail = () => {
             >
               Reviews ({product.reviewCount || 0})
             </button>
+            <button
+              className={`tab-btn desktop-only-tab ${activeTab === 'shipping' ? 'active' : ''}`}
+              onClick={() => setActiveTab('shipping')}
+            >
+              <BsTruck className="tab-icon" /> Shipping
+            </button>
+            <button
+              className={`tab-btn desktop-only-tab ${activeTab === 'refund' ? 'active' : ''}`}
+              onClick={() => setActiveTab('refund')}
+            >
+              <BsArrowRepeat className="tab-icon" /> Refund
+            </button>
           </div>
 
           <div className="tabs-content">
@@ -794,6 +838,39 @@ const ProductDetail = () => {
                     </tr>
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {activeTab === 'shipping' && (
+              <div className="tab-pane shipping-pane">
+                <h3 className="section-title">📦 Shipping Info</h3>
+                <div className="shipping-info-content">
+                  <p>We ensure your organic products reach you in the best condition.</p>
+                  <ul className="info-list">
+                    <li>Standard delivery: 3-5 business days.</li>
+                    <li>Free shipping on all orders above ₹499.</li>
+                    <li>Carefully packed in eco-friendly packaging.</li>
+                    <li>Tracking link provided via SMS/Email once dispatched.</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'refund' && (
+              <div className="tab-pane refund-pane">
+                <h3 className="section-title">🔁 Refund & Replacement Policy</h3>
+                <div className="refund-info-content">
+                  <ul className="info-list compact">
+                    <li>Damaged products must be reported within 2 days.</li>
+                    <li>Replacement only (no resale items).</li>
+                    <li>Natural products – no taste/texture based returns.</li>
+                  </ul>
+                  <div className="policy-link-wrapper">
+                    <Link to="/refund-policy" className="read-full-policy-link">
+                      👉 Read full policy
+                    </Link>
+                  </div>
+                </div>
               </div>
             )}
 

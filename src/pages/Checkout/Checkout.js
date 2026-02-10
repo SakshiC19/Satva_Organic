@@ -6,6 +6,7 @@ import { doc, updateDoc, arrayUnion, serverTimestamp, addDoc, collection, getDoc
 import { db } from '../../config/firebase';
 import config from '../../config';
 import { FiCheck, FiShield, FiEdit2, FiPlus, FiTruck, FiChevronLeft, FiCheckCircle, FiChevronDown, FiChevronUp, FiLock } from 'react-icons/fi';
+import { BsShieldCheck, BsTruck, BsArrowRepeat } from 'react-icons/bs';
 import './Checkout.css';
 
 const Checkout = () => {
@@ -249,6 +250,7 @@ const Checkout = () => {
       quantity: item.quantity || 1,
       selectedSize: item.selectedSize || 'Standard',
       image: item.image || (item.images && item.images[0] ? (item.images[0].url || item.images[0]) : ''),
+      category: item.category || 'General',
     }));
 
     const rawOrderData = {
@@ -395,6 +397,13 @@ const Checkout = () => {
             <h2>Order Confirmed!</h2>
             <p>Thank you for shopping with Satva Organics.</p>
             <p className="order-id-text">Your order has been placed successfully.</p>
+            
+            <div className="confirmation-help-section">
+              <h3>Need help?</h3>
+              <p>Damaged / Spoiled product reporting within 2 days</p>
+              <p className="help-email">Email: <a href="mailto:info.satvaorganics@gmail.com">info.satvaorganics@gmail.com</a></p>
+            </div>
+
             <button onClick={() => navigate('/shop')} className="continue-shopping-btn">
               CONTINUE SHOPPING
             </button>
@@ -761,14 +770,17 @@ const Checkout = () => {
                       {/* Trust Badges */}
                       <div className="trust-badges-container">
                         <div className="trust-badge">
-                          <FiLock />
+                          <BsShieldCheck />
                           <span>🔐 100% Secure Payments</span>
                         </div>
                         <div className="trust-badge">
-                          <FiShield />
+                          <BsTruck />
                           <span>📦 Fresh & Hygienic Packaging</span>
                         </div>
                       </div>
+                    </div>
+                    <div className="checkout-disclaimer mobile-only-disclaimer">
+                      By placing this order, you agree to our <Link to="/refund-policy">Refund & Return Policy</Link>
                     </div>
                   </div>
                 </div>
@@ -802,6 +814,7 @@ const Checkout = () => {
                     <span className="total-amount">₹{safeCartTotal.toLocaleString()}</span>
                     <span className="total-label">TOTAL</span>
                   </div>
+
                   <button 
                     className="mobile-place-order-btn-v2"
                     onClick={handleConfirmOrder}
@@ -1160,6 +1173,9 @@ const Checkout = () => {
                     </div>
                     {selectedPaymentMethod === 'razorpay' && (
                       <div className="payment-action-container">
+                        <div className="checkout-disclaimer desktop">
+                          By placing this order, you agree to our <Link to="/refund-policy">Refund & Return Policy</Link>
+                        </div>
                         <button 
                           className="pay-now-btn" 
                           onClick={handleConfirmOrder}
@@ -1192,6 +1208,9 @@ const Checkout = () => {
                     </div>
                     {selectedPaymentMethod === 'cod' && (
                       <div className="payment-action-container">
+                        <div className="checkout-disclaimer desktop">
+                          By placing this order, you agree to our <Link to="/refund-policy">Refund & Return Policy</Link>
+                        </div>
                         <button 
                           className="pay-now-btn" 
                           onClick={handleConfirmOrder}

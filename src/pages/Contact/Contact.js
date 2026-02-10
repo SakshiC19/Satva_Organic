@@ -47,7 +47,6 @@ const Contact = () => {
               </div>
               <h3 className="contact-info-title">Email Address</h3>
               <p className="contact-info-text">info.satvaorganics@gmail.com</p>
-              <p className="contact-info-text">satvaorganics@gmail.com</p>
             </div>
 
             {/* Phone Number */}

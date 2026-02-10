@@ -19,7 +19,8 @@ import {
   FiDroplet,
   FiLayers,
   FiDisc,
-  FiStar
+  FiStar,
+  FiClock
 } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -37,6 +38,7 @@ const Header = () => {
   const [productsOpen, setProductsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const { currentUser, logout, isAdmin } = useAuth();
   const { cartCount, openCart } = useCart();
@@ -45,6 +47,7 @@ const Header = () => {
   const location = useLocation();
   const [products, setProducts] = useState([]);
   const dropdownRef = useRef(null);
+  const searchRef = useRef(null);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -73,20 +76,28 @@ const Header = () => {
       if (activeMenu && dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setActiveMenu(null);
       }
+      
+      // Close search suggestions if clicking outside search component
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowSuggestions(false);
+        setIsSearchFocused(false);
+      }
     };
 
-    if (activeMenu) {
+    if (activeMenu || showSuggestions || isSearchFocused) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [activeMenu]);
+  }, [activeMenu, showSuggestions, isSearchFocused]);
 
   // Close dropdown when navigating
   useEffect(() => {
     setActiveMenu(null);
+    setShowSuggestions(false);
+    setIsSearchFocused(false);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -98,9 +109,14 @@ const Header = () => {
       setShowSuggestions(true);
     } else {
       setFilteredProducts([]);
-      setShowSuggestions(false);
+      // Show default suggestions if focused
+      if (isSearchFocused) {
+        setShowSuggestions(true);
+      } else {
+        setShowSuggestions(false);
+      }
     }
-  }, [searchQuery, products]);
+  }, [searchQuery, products, isSearchFocused]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -194,60 +210,114 @@ const Header = () => {
           </form>
           {/* Search Bar (Desktop) */}
           <form onSubmit={handleSearch} className="header-search">
-            <div className="search-wrapper">
+            <div className={`search-wrapper ${showSuggestions ? 'active' : ''}`} ref={searchRef}>
               <button type="submit" className="search-icon-btn">
                 <FiSearch />
               </button>
               <input
                 type="text"
-                placeholder="Search for Products, Brands and More"
+                placeholder="Search for Millets, Oils, Seeds..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => searchQuery && setShowSuggestions(true)}
+                onFocus={() => setIsSearchFocused(true)}
                 className="search-input"
               />
 
-              {showSuggestions && (searchQuery.length > 0) && (
-                <div className="search-suggestions-dropdown">
-                  <div className="suggestions-section">
-                    <div className="suggestions-left">
-                      <h4>Suggestions</h4>
-                      <ul className="suggestions-list">
-                        {filteredProducts.map(p => (
-                          <li key={p.id} onClick={() => {
-                            setSearchQuery(p.name);
-                            setShowSuggestions(false);
-                            navigate(`/product/${p.id}`);
-                          }}>
-                            {p.name}
-                          </li>
-                        ))}
-                        {filteredProducts.length === 0 && <li>No suggestions found</li>}
-                      </ul>
-                    </div>
-                    <div className="suggestions-right">
-                      <h4>Products</h4>
-                      <div className="suggested-products">
-                        {filteredProducts.map(p => (
-                          <div key={p.id} className="suggested-product-item" onClick={() => {
-                            setShowSuggestions(false);
-                            navigate(`/product/${p.id}`);
-                          }}>
-                            <img src={p.image} alt={p.name} />
-                            <div className="suggested-product-info">
-                              <span className="name">{p.name}</span>
-                              <span className="price">₹{p.price}</span>
-                            </div>
+              {showSuggestions && (
+                <div className="search-suggestions-dropdown" onMouseDown={(e) => e.preventDefault()}> {/* Prevent blur on click */}
+                  {searchQuery.trim().length > 0 ? (
+                    /* Existing Search Results Logic */
+                    <>
+                      <div className="suggestions-section">
+                        <div className="suggestions-left">
+                          <h4>Suggestions</h4>
+                          <ul className="suggestions-list">
+                            {filteredProducts.map(p => (
+                              <li key={p.id} onClick={() => {
+                                setSearchQuery(p.name);
+                                setShowSuggestions(false);
+                                navigate(`/product/${p.id}`);
+                              }}>
+                                {p.name}
+                              </li>
+                            ))}
+                            {filteredProducts.length === 0 && <li>No suggestions found</li>}
+                          </ul>
+                        </div>
+                        <div className="suggestions-right">
+                          <h4>Products</h4>
+                          <div className="suggested-products">
+                            {filteredProducts.map(p => (
+                              <div key={p.id} className="suggested-product-item" onClick={() => {
+                                setShowSuggestions(false);
+                                navigate(`/product/${p.id}`);
+                              }}>
+                                <img src={p.image} alt={p.name} />
+                                <div className="suggested-product-info">
+                                  <span className="name">{p.name}</span>
+                                  <span className="price">₹{p.price}</span>
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        </div>
+                      </div>
+                      <div className="suggestions-footer">
+                        <Link to={`/shop?search=${searchQuery}`} onClick={() => setShowSuggestions(false)}>
+                          View all results
+                        </Link>
+                      </div>
+                    </>
+                  ) : (
+                    /* New Default Suggestions (Popular & Recent) */
+                    <div className="default-suggestions">
+                      <div className="suggestions-group">
+                        <div className="group-header">
+                          <FiStar className="group-icon" />
+                          <h4>Popular Searches</h4>
+                        </div>
+                        <div className="chips-container">
+                          {['A2 Cow Ghee', 'Cold Pressed Oils', 'Millets', 'Honey', 'Organic Rice'].map((term, index) => (
+                            <button
+                              key={index}
+                              type="button"
+                              className="search-chip"
+                              onClick={() => {
+                                setSearchQuery(term);
+                                navigate(`/shop?search=${encodeURIComponent(term)}`);
+                                setShowSuggestions(false);
+                              }}
+                            >
+                              {term}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="suggestions-group">
+                        <div className="group-header">
+                          <FiClock className="group-icon" />
+                          <h4>Recent Searches</h4>
+                        </div>
+                         <div className="chips-container">
+                          {['Mustard Oil', 'Jaggery Powder', 'Turmeric'].map((term, index) => (
+                            <button
+                              key={index}
+                              type="button"
+                              className="search-chip recent"
+                              onClick={() => {
+                                setSearchQuery(term);
+                                navigate(`/shop?search=${encodeURIComponent(term)}`);
+                                setShowSuggestions(false);
+                              }}
+                            >
+                              {term}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="suggestions-footer">
-                    <Link to={`/shop?search=${searchQuery}`} onClick={() => setShowSuggestions(false)}>
-                      View all results
-                    </Link>
-                  </div>
+                  )}
                 </div>
               )}
             </div>
