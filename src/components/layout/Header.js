@@ -22,6 +22,16 @@ import {
   FiStar,
   FiClock
 } from 'react-icons/fi';
+import {
+  BsHouse,
+  BsBoxSeam,
+  BsHeart,
+  BsShieldCheck,
+  BsChatDots,
+  BsTruck,
+  BsGrid,
+  BsPerson
+} from 'react-icons/bs';
 import { useAuth } from '../../contexts/AuthContext';
 
 import { useCart } from '../../contexts/CartContext';
@@ -445,7 +455,7 @@ const Header = () => {
                 <div className="user-profile-summary" onClick={() => setMobileMenuOpen(false)}>
                   <Link to="/account/profile" className="user-avatar-link">
                     <div className="user-avatar">
-                      <FiUser />
+                      <BsPerson />
                     </div>
                   </Link>
                   <div className="user-details">
@@ -455,18 +465,37 @@ const Header = () => {
                     </Link>
                   </div>
                 </div>
-                <div className="mobile-user-links">
-                  <Link to="/account/orders" className="user-link-item" onClick={() => setMobileMenuOpen(false)}>
-                    My Orders
-                  </Link>
-                  <Link to="/account/wishlist" className="user-link-item" onClick={() => setMobileMenuOpen(false)}>
-                    My Wishlist
-                  </Link>
-                  {isAdmin && (
-                    <Link to="/admin/dashboard" className="user-link-item" onClick={() => setMobileMenuOpen(false)}>
-                      Admin Dashboard
+                
+                <div className="mobile-menu-section">
+                  <h4 className="mobile-section-title">MY ACCOUNT</h4>
+                  <div className="mobile-user-links">
+                    <Link 
+                      to="/account/orders" 
+                      className={`user-link-item ${location.pathname === '/account/orders' ? 'active' : ''}`}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <BsBoxSeam className="menu-icon" />
+                      <span>My Orders</span>
                     </Link>
-                  )}
+                    <Link 
+                      to="/account/wishlist" 
+                      className={`user-link-item ${location.pathname === '/account/wishlist' ? 'active' : ''}`}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <BsHeart className="menu-icon" />
+                      <span>My Wishlist</span>
+                    </Link>
+                    {isAdmin && (
+                      <Link 
+                        to="/admin/dashboard" 
+                        className={`user-link-item ${location.pathname === '/admin/dashboard' ? 'active' : ''}`}
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <BsShieldCheck className="menu-icon" />
+                        <span>Admin Dashboard</span>
+                      </Link>
+                    )}
+                  </div>
                 </div>
               </div>
             ) : (
@@ -477,74 +506,127 @@ const Header = () => {
             )}
           </div>
 
-          <div className="mobile-nav-divider"></div>
-
-          {/* Menu Items */}
-          <div className="mobile-menu-items">
-            <Link
-              to="/"
-              className="mobile-menu-item home-item"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <span className="menu-item-content">
-                Home
-              </span>
-            </Link>
-
-            {/* Products Dropdown */}
-            <div className="mobile-products-section">
-              <div className={`mobile-menu-item products-toggle ${productsOpen ? 'active' : ''}`}>
-                <div
-                  className="menu-item-content"
-                  onClick={() => {
-                    navigate('/shop');
-                    setMobileMenuOpen(false);
-                  }}
-                  style={{ cursor: 'pointer', flex: 1 }}
-                >
-                  Products
-                </div>
-                <span
-                  className="mobile-toggle-icon"
-                  onClick={() => setProductsOpen(!productsOpen)}
-                  style={{ cursor: 'pointer', padding: '10px' }}
-                >
-                  <FiChevronDown className={`products-chevron ${productsOpen ? 'rotate' : ''}`} />
+          {/* SHOP Section */}
+          <div className="mobile-menu-section">
+            <h4 className="mobile-section-title">SHOP</h4>
+            <div className="mobile-menu-items">
+              <Link
+                to="/"
+                className={`mobile-menu-item home-item ${location.pathname === '/' ? 'active' : ''}`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <span className="menu-item-content">
+                  <BsHouse className="menu-icon" />
+                  <span>Home</span>
                 </span>
-              </div>
+              </Link>
 
-              <div className={`mobile-products-list ${productsOpen ? 'open' : ''}`}>
-                {navItems.map((item, index) => (
-                  <div key={index} className="mobile-category-item">
+              {/* Products Dropdown */}
+              <div className="mobile-products-section">
+                <div className={`mobile-menu-item products-toggle ${location.pathname.startsWith('/shop') ? 'active' : ''} ${productsOpen ? 'expanded' : ''}`}>
+                  <div
+                    className="menu-item-content"
+                    onClick={() => {
+                      navigate('/shop');
+                      setMobileMenuOpen(false);
+                    }}
+                    style={{ cursor: 'pointer', flex: 1 }}
+                  >
+                    <BsGrid className="menu-icon" />
+                    <span>Products</span>
+                  </div>
+                  <span
+                    className="mobile-toggle-icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setProductsOpen(!productsOpen);
+                    }}
+                    style={{ cursor: 'pointer', padding: '10px' }}
+                  >
+                    <FiChevronDown className={`products-chevron ${productsOpen ? 'rotate' : ''}`} />
+                  </span>
+                </div>
+
+                <div className={`mobile-products-list ${productsOpen ? 'open' : ''}`}>
+                  {/* All Products Link */}
+                  <div className="mobile-category-item">
                     <div className="mobile-category-header">
                       <div
-                        className="category-label"
+                        className={`category-label ${location.pathname === '/shop' && !location.search ? 'active' : ''}`}
                         onClick={() => {
-                          navigate(item.path);
+                          navigate('/shop');
                           setMobileMenuOpen(false);
                         }}
                         style={{ cursor: 'pointer', flex: 1 }}
                       >
-                        <span className="category-text">{item.name}</span>
+                        <span className="category-text">All Products</span>
                       </div>
                     </div>
                   </div>
-                ))}
+
+                  {/* Dynamic Categories */}
+                  {navItems.map((item, index) => {
+                    const isActiveCategory = location.pathname === '/shop' && location.search.includes(item.path.split('?')[1]);
+                    return (
+                      <div key={index} className="mobile-category-item">
+                        <div className="mobile-category-header">
+                          <div
+                            className={`category-label ${isActiveCategory ? 'active' : ''}`}
+                            onClick={() => {
+                              navigate(item.path);
+                              setMobileMenuOpen(false);
+                            }}
+                            style={{ cursor: 'pointer', flex: 1 }}
+                          >
+                            <span className="category-text">{item.name}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Offers Link */}
+                  <div className="mobile-category-item">
+                    <div className="mobile-category-header">
+                      <div
+                        className={`category-label ${location.pathname === '/flash-deals' ? 'active' : ''}`}
+                        onClick={() => {
+                          navigate('/flash-deals');
+                          setMobileMenuOpen(false);
+                        }}
+                        style={{ cursor: 'pointer', flex: 1 }}
+                      >
+                        <span className="category-text">Offers</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
+          </div>
 
-            <div className="mobile-nav-divider"></div>
-
-            {/* Utility Menu */}
-            <div className="mobile-utility-menu">
-              <Link to="/contact" className="mobile-menu-item" onClick={() => setMobileMenuOpen(false)}>
+          {/* SUPPORT Section */}
+          <div className="mobile-menu-section">
+            <h4 className="mobile-section-title">SUPPORT</h4>
+            <div className="mobile-menu-items">
+              <Link 
+                to="/contact" 
+                className={`mobile-menu-item ${location.pathname === '/contact' ? 'active' : ''}`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 <span className="menu-item-content">
-                  Contact Us
+                  <BsChatDots className="menu-icon" />
+                  <span>Contact Us</span>
                 </span>
               </Link>
-              <Link to="/track-order" className="mobile-menu-item" onClick={() => setMobileMenuOpen(false)}>
+              <Link 
+                to="/account/orders?status=Accepted" 
+                className={`mobile-menu-item ${location.pathname === '/account/orders' && location.search.includes('status=Accepted') ? 'active' : ''}`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 <span className="menu-item-content">
-                  Track Order
+                  <BsTruck className="menu-icon" />
+                  <span>Track Order</span>
                 </span>
               </Link>
             </div>

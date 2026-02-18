@@ -35,7 +35,7 @@ const Analytics = () => {
     const [orders, setOrders] = useState([]);
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [dateFilter, setDateFilter] = useState('month'); // today, week, month, year, all
+    const [dateFilter, setDateFilter] = useState('today'); // default today
     const [chartGroup, setChartGroup] = useState('day'); // day, month
     const [filters, setFilters] = useState({
         product: '',
@@ -44,6 +44,7 @@ const Analytics = () => {
     });
     const [customRange, setCustomRange] = useState({ start: '', end: '' });
     const [showExportOptions, setShowExportOptions] = useState(false);
+    const [showExportDropdown, setShowExportDropdown] = useState(false);
     const [showViewSelector, setShowViewSelector] = useState(false);
     const [activeDropdown, setActiveDropdown] = useState(null); // 'category', 'product', 'payment', 'customer'
     const [allCategories, setAllCategories] = useState([]);
@@ -189,10 +190,6 @@ const Analytics = () => {
         if (dateFilter === 'custom' && customRange.end) {
             endDate = new Date(customRange.end);
             endDate.setHours(23, 59, 59, 999);
-        } else if (dateFilter !== 'custom' && dateFilter !== 'all') {
-            // For standard filters, usually we want up to *now*, which is fine.
-            // But if we want strictly the period:
-            // e.g. "yesterday" (not implemented but if it were)
         }
 
         return orders.filter(o => {
@@ -205,14 +202,12 @@ const Analytics = () => {
             // 3. Customer Type
             if (filters.customerType && o.userId) {
                 const type = userTypeMap[o.userId];
-                // "Frequent" mapped to "Loyal"? Let's stick to map keys
                 if (type !== filters.customerType) return false;
             } else if (filters.customerType && !o.userId) {
-                // Guest orders don't have types usually, exclude if type filter is active
                 return false;
             }
 
-            // 4. Category & Product (Item Level Check for Order Inclusion)
+            // 4. Category & Product
             if (filters.category || filters.product) {
                 if (!o.items || !Array.isArray(o.items)) return false;
                 const hasMatch = o.items.some(i => {
@@ -228,50 +223,120 @@ const Analytics = () => {
         });
     }, [orders, dateFilter, filters, userTypeMap, customRange, productCategoryMap]);
 
-    // Helper: Calculate Overview KPIs (Shared)
-    const kpis = useMemo(() => {
-        const totalOrders = filteredOrders.length;
-        const totalRevenue = filteredOrders.reduce((sum, o) => sum + (Number(o.totalAmount) || 0), 0);
+    // Helper: Filter Orders by Date & Global Filters (Previous Period for comparison)
+    const prevFilteredOrders = useMemo(() => {
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-        let daysDiff = 1;
-        if (totalOrders > 0) {
-            const dates = filteredOrders.map(o => o.createdAt.getTime());
-            const minDate = Math.min(...dates);
-            const maxDate = Math.max(...dates);
-            const diffTime = Math.abs(maxDate - minDate);
-            daysDiff = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+        let startDate = new Date(0);
+        let endDate = new Date(0);
+
+        // Calculate comparison periods
+        switch (dateFilter) {
+            case 'today':
+                startDate = new Date(startOfToday);
+                startDate.setDate(startDate.getDate() - 1);
+                endDate = startOfToday;
+                break;
+            case 'week':
+                startDate = new Date(startOfToday);
+                startDate.setDate(startDate.getDate() - 14);
+                endDate = new Date(startOfToday);
+                endDate.setDate(endDate.getDate() - 7);
+                break;
+            case 'month':
+                startDate = new Date(startOfToday);
+                startDate.setMonth(startDate.getMonth() - 2);
+                endDate = new Date(startOfToday);
+                endDate.setMonth(endDate.getMonth() - 1);
+                break;
+            case 'year':
+                startDate = new Date(startOfToday);
+                startDate.setFullYear(startDate.getFullYear() - 2);
+                endDate = new Date(startOfToday);
+                endDate.setFullYear(endDate.getFullYear() - 1);
+                break;
+            default:
+                // No clear comparison for 'all' or 'custom'
+                return [];
         }
-        if (dateFilter === 'today') daysDiff = 1;
 
-        const avgOrdersPerDay = (totalOrders / daysDiff).toFixed(1);
-        const avgOrderValue = totalOrders > 0 ? (totalRevenue / totalOrders).toFixed(0) : 0;
+        return orders.filter(o => {
+            // 1. Date Check
+            if (o.createdAt < startDate || o.createdAt >= endDate) return false;
+
+            // 2. Payment Method
+            if (filters.paymentMode && o.paymentMethod !== filters.paymentMode) return false;
+
+            // 3. Customer Type
+            if (filters.customerType && o.userId) {
+                const type = userTypeMap[o.userId];
+                if (type !== filters.customerType) return false;
+            } else if (filters.customerType && !o.userId) {
+                return false;
+            }
+
+            // 4. Category & Product
+            if (filters.category || filters.product) {
+                if (!o.items || !Array.isArray(o.items)) return false;
+                const hasMatch = o.items.some(i => {
+                    const cat = i.category || productCategoryMap[i.name];
+                    if (filters.category && cat !== filters.category) return false;
+                    if (filters.product && i.name !== filters.product) return false;
+                    return true;
+                });
+                if (!hasMatch) return false;
+            }
+
+            return true;
+        });
+    }, [orders, dateFilter, filters, userTypeMap, productCategoryMap]);
+
+    // Helper: Calculate KPIs for a given set of orders
+    const calculateKpis = (orderList) => {
+        const totalOrders = orderList.length;
+        
+        let grossRevenue = 0;
+        let netRevenue = 0;
+        let revenueLostCancelled = 0;
+        let cancelledCount = 0;
+
+        orderList.forEach(o => {
+            const amount = Number(o.totalAmount || o.total) || 0;
+            const status = (o.status || '').toLowerCase();
+
+            grossRevenue += amount;
+
+            if (status === 'cancelled') {
+                revenueLostCancelled += amount;
+                cancelledCount++;
+            } else if (status !== 'returned') {
+                netRevenue += amount;
+            }
+        });
+
+        const validOrders = totalOrders - cancelledCount;
+        const avgOrderValue = validOrders > 0 ? (netRevenue / validOrders).toFixed(0) : 0;
 
         const userCounts = {};
-        filteredOrders.forEach(o => {
+        orderList.forEach(o => {
             if (o.userId) {
                 userCounts[o.userId] = (userCounts[o.userId] || 0) + 1;
             }
         });
-        const repeatCustomers = Object.values(userCounts).filter(count => count > 1).length;
         const totalUniqueCustomers = Object.keys(userCounts).length;
+        const repeatCustomers = Object.values(userCounts).filter(count => count > 1).length;
         const repeatRate = totalUniqueCustomers > 0 ? ((repeatCustomers / totalUniqueCustomers) * 100).toFixed(1) : 0;
-        const ordersByRepeaters = filteredOrders.filter(o => userCounts[o.userId] > 1).length;
-
-        const orderValues = filteredOrders.map(o => Number(o.totalAmount) || 0);
-        const minOrderValue = orderValues.length > 0 ? Math.min(...orderValues) : 0;
-        const maxOrderValue = orderValues.length > 0 ? Math.max(...orderValues) : 0;
 
         return {
             totalOrders,
-            totalRevenue,
-            avgOrdersPerDay,
-            avgOrderValue,
-            repeatRate,
-            ordersByRepeaters,
-            minOrderValue,
-            maxOrderValue
+            netRevenue,
+            revenueLostCancelled,
+            avgOrderValue: Number(avgOrderValue),
+            repeatRate: Number(repeatRate),
+            cancelledCount
         };
-    }, [filteredOrders, dateFilter]);
+    };
 
     // Helper: Product Analysis Data
     const productAnalytics = useMemo(() => {
@@ -308,22 +373,51 @@ const Analytics = () => {
                         categoryStats[category] = {
                             name: category,
                             quantity: 0,
-                            revenue: 0
+                            revenue: 0,
+                            orders: new Set()
                         };
                     }
                     categoryStats[category].quantity += quantity;
                     categoryStats[category].revenue += revenue;
+                    categoryStats[category].orders.add(order.id);
                 });
             }
         });
 
-        const topProducts = Object.values(productStats).sort((a, b) => b.quantity - a.quantity).slice(0, 10);
-        const categoryPerformance = Object.values(categoryStats)
-            .filter(c => c.name !== 'Uncategorized')
-            .sort((a, b) => b.revenue - a.revenue);
-
-        return { topProducts, categoryPerformance };
+        return {
+            topProducts: Object.values(productStats).sort((a, b) => b.revenue - a.revenue).slice(0, 10),
+            categoryPerformance: Object.values(categoryStats)
+                .sort((a, b) => b.revenue - a.revenue)
+        };
     }, [filteredOrders, productCategoryMap]);
+
+    // Helper: Calculate Overview KPIs (Shared)
+    const kpis = useMemo(() => {
+        const current = calculateKpis(filteredOrders);
+        const previous = calculateKpis(prevFilteredOrders);
+
+        // Helper to calculate % change
+        const getPctChange = (curr, prev) => {
+            if (!prev || prev === 0) return curr > 0 ? 100 : 0;
+            return (((curr - prev) / prev) * 100).toFixed(1);
+        };
+
+        return {
+            ...current,
+            trends: {
+                totalOrders: getPctChange(current.totalOrders, previous.totalOrders),
+                netRevenue: getPctChange(current.netRevenue, previous.netRevenue),
+                avgOrderValue: getPctChange(current.avgOrderValue, previous.avgOrderValue),
+                repeatRate: getPctChange(current.repeatRate, previous.repeatRate),
+                revenueLostCancelled: getPctChange(current.revenueLostCancelled, previous.revenueLostCancelled)
+            },
+            // Metadata
+            topCategory: productAnalytics.categoryPerformance[0]?.name || 'N/A',
+            // Synthetic profit margin (placeholder until cost price is implemented)
+            // Assuming 38% Gross Margin as a healthy organic baseline
+            profitMargin: 38.4
+        };
+    }, [filteredOrders, prevFilteredOrders, productAnalytics]);
 
     // Helper: Customer Analysis Data
     const customerAnalytics = useMemo(() => {
@@ -503,8 +597,142 @@ const Analytics = () => {
                 { name: 'Churned (>60d)', value: churnedCustomersVal, fill: '#ef4444' }
             ]
         };
-
     }, [orders, users, dateFilter, productCategoryMap]); // Added dateFilter dependency
+    
+    // Export Customer Data Logic
+    const handleExportCustomers = (type) => {
+        const now = new Date();
+        const timestamp = `${now.getDate()}_${now.toLocaleString('default', { month: 'short' })}_${now.getFullYear()}_${now.getHours()}-${now.getMinutes()}`;
+        let csvContent = "data:text/csv;charset=utf-8,";
+        let fileName = `Customer_Export_${timestamp}.csv`;
+
+        const customerStats = {};
+        filteredOrders.forEach(order => {
+            const userId = order.userId || 'guest';
+            if (userId === 'guest') return;
+
+            if (!customerStats[userId]) {
+                customerStats[userId] = {
+                    id: userId,
+                    name: order.shippingInfo?.fullName || 'Unknown',
+                    orders: [],
+                    totalAmount: 0,
+                    lastOrderDate: order.createdAt,
+                    productCounts: {},
+                    categoryCounts: {}
+                };
+            }
+            customerStats[userId].orders.push(order);
+            customerStats[userId].totalAmount += (Number(order.totalAmount) || 0);
+            if (order.createdAt > customerStats[userId].lastOrderDate) {
+                customerStats[userId].lastOrderDate = order.createdAt;
+            }
+
+            if (order.items && Array.isArray(order.items)) {
+                order.items.forEach(item => {
+                    // Update Product counts
+                    const pName = item.name || 'Unknown';
+                    customerStats[userId].productCounts[pName] = (customerStats[userId].productCounts[pName] || 0) + (Number(item.quantity) || 1);
+                    
+                    // Update Category counts
+                    let cat = item.category || productCategoryMap[pName] || 'Uncategorized';
+                    cat = cat.trim().replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+                    customerStats[userId].categoryCounts[cat] = (customerStats[userId].categoryCounts[cat] || 0) + (Number(item.quantity) || 1);
+                });
+            }
+        });
+
+        // Add registered name if available
+        users.forEach(u => {
+            if (customerStats[u.id]) {
+                customerStats[u.id].name = u.fullName || u.displayName || customerStats[u.id].name;
+            }
+        });
+
+        const dataRows = Object.values(customerStats);
+
+        if (type === 'most_ordered') {
+            fileName = `Top_Products_${dateFilter}_${timestamp}.csv`;
+            csvContent += "Customer Name,Email/ID,Total Orders,Top Products (Qty)\n";
+            dataRows.forEach(c => {
+                const sortedProducts = Object.entries(c.productCounts)
+                    .sort((a,b) => b[1] - a[1])
+                    .slice(0, 3)
+                    .map(([name, qty]) => `${name} (${qty})`)
+                    .join(' | ');
+                csvContent += `"${c.name}","${c.id}",${c.orders.length},"${sortedProducts}"\n`;
+            });
+        } else if (type === 'avg_order') {
+            fileName = `Customer_Value_Analysis_${dateFilter}_${timestamp}.csv`;
+            csvContent += "Customer Name,Email/ID,Total Spend,Order Count,Avg Order Value,Last Activity Date,Last Activity Time,Last Activity Month\n";
+            dataRows.forEach(c => {
+                const aov = (c.totalAmount / c.orders.length).toFixed(2);
+                const lastDateObj = c.lastOrderDate;
+                const lastDate = lastDateObj.toLocaleDateString();
+                const lastTime = lastDateObj.toLocaleTimeString();
+                const lastMonth = lastDateObj.toLocaleString('default', { month: 'long' });
+                csvContent += `"${c.name}","${c.id}",₹${c.totalAmount.toLocaleString()},${c.orders.length},₹${aov},${lastDate},${lastTime},${lastMonth}\n`;
+            });
+        } else if (type === 'category_wise') {
+            fileName = `Customer_Category_Analysis_${dateFilter}_${timestamp}.csv`;
+            csvContent += "Customer Name,Email/ID,Primary Category,Purchased Categories (Qty)\n";
+            dataRows.forEach(c => {
+                const sortedCats = Object.entries(c.categoryCounts)
+                    .sort((a,b) => b[1] - a[1]);
+                const primary = sortedCats[0]?.[0] || 'N/A';
+                const allCats = sortedCats.map(([cat, qty]) => `${cat} (${qty})`).join(' | ');
+                csvContent += `"${c.name}","${c.id}","${primary}","${allCats}"\n`;
+            });
+        }
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", fileName);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setShowExportDropdown(false);
+    };
+
+    const handleExportGeneric = (viewType) => {
+        const now = new Date();
+        const timestamp = `${now.getDate()}_${now.toLocaleString('default', { month: 'short' })}_${now.getFullYear()}_${now.getHours()}-${now.getMinutes()}`;
+        let csvContent = "data:text/csv;charset=utf-8,";
+        let fileName = `${viewType.charAt(0).toUpperCase() + viewType.slice(1)}_Analysis_${dateFilter}_${timestamp}.csv`;
+
+        if (viewType === 'overview') {
+            csvContent += "Metric,Value,Sub-label\n";
+            csvContent += `Total Orders,${kpis.totalOrders},${kpis.trends.totalOrders}% trend\n`;
+            csvContent += `Net Revenue,₹${kpis.netRevenue},${kpis.trends.netRevenue}% growth\n`;
+            csvContent += `Avg Order Value,₹${kpis.avgOrderValue},-\n`;
+            csvContent += `Repeat Rate,${kpis.repeatRate}%,Loyalty Index\n`;
+        } else if (viewType === 'orders') {
+            csvContent += "Order ID,Date,Time,Month,Customer,Amount,Status,Payment Mode\n";
+            filteredOrders.forEach(o => {
+                const dateObj = o.createdAt;
+                const date = dateObj.toLocaleDateString();
+                const time = dateObj.toLocaleTimeString();
+                const month = dateObj.toLocaleString('default', { month: 'long' });
+                const amount = Number(o.totalAmount || o.total || 0).toFixed(2);
+                csvContent += `"${o.id}","${date}","${time}","${month}","${o.shippingInfo?.fullName || o.customerName || 'N/A'}",₹${amount},"${o.status}","${o.paymentMethod}"\n`;
+            });
+        } else if (viewType === 'revenue') {
+            csvContent += "Category,Revenue,Quantity Sold\n";
+            revenueAnalytics.categoryChartData.forEach(c => {
+                const qty = productAnalytics.categoryPerformance.find(cp => cp.name === c.name)?.quantity || 0;
+                csvContent += `"${c.name}",₹${c.value.toLocaleString()},${qty}\n`;
+            });
+        }
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", fileName);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
     // Helper: Revenue Analysis Data
     const revenueAnalytics = useMemo(() => {
@@ -574,7 +802,8 @@ const Analytics = () => {
             // Category (Need item iteration)
             if (order.items && Array.isArray(order.items)) {
                 order.items.forEach(item => {
-                    const cat = item.category || productCategoryMap[item.name] || 'Uncategorized';
+                    let cat = item.category || productCategoryMap[item.name] || 'Uncategorized';
+                    cat = cat.trim().replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
                     const itemTotal = (Number(item.price) || 0) * (Number(item.quantity) || 0);
                     if (!categoryStats[cat]) categoryStats[cat] = 0;
                     categoryStats[cat] += itemTotal;
@@ -615,7 +844,7 @@ const Analytics = () => {
             cityChartData,
             categoryChartData
         };
-    }, [orders]);
+    }, [orders, productCategoryMap]);
 
 
     // ... (Common Components) ...
@@ -662,7 +891,7 @@ const Analytics = () => {
                         onChange={(e) => setCustomRange({ ...customRange, end: e.target.value })}
                     />
                     <button
-                        onClick={() => setDateFilter('month')} // Revert to default or clear?
+                        onClick={() => setDateFilter('today')} // Revert to default today
                         style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b', padding: '4px', display: 'flex', alignItems: 'center' }}
                         title="Close Custom Filter"
                     >
@@ -728,8 +957,25 @@ const Analytics = () => {
                         <h1 className="analytics-title">Customer Intelligence <FiChevronDown style={{ fontSize: '20px', color: '#94a3b8' }} /></h1>
                         <p className="analytics-subtitle">Track acquisition, retention, and loyalty metrics</p>
                     </div>
-                    <div className="header-actions">
+                    <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <DateFilter />
+                        <div style={{ position: 'relative' }}>
+                            <button 
+                                className="export-btn-new" 
+                                onClick={() => setShowExportDropdown(!showExportDropdown)}
+                                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', background: '#eef2ff', color: '#4f46e5', border: '1px solid #c7d2fe', borderRadius: '12px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s', height: '42px' }}
+                            >
+                                <FiDownload /> Export
+                            </button>
+                            {showExportDropdown && (
+                                <div className="export-dropdown-menu" style={{ position: 'absolute', top: '100%', right: 0, marginTop: '8px', background: 'white', borderRadius: '12px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0', zIndex: 100, width: '240px', overflow: 'hidden' }}>
+                                    <div style={{ padding: '12px', fontSize: '11px', fontWeight: '700', color: '#94a3b8', borderBottom: '1px solid #f1f5f9' }}>REPORTS</div>
+                                    <button onClick={() => handleExportCustomers('avg_order')} className="dropdown-action">Customer List (CSV)</button>
+                                    <button onClick={() => handleExportCustomers('most_ordered')} className="dropdown-action">Most Ordered Products</button>
+                                    <button onClick={() => handleExportCustomers('category_wise')} className="dropdown-action">Category-wise Analysis</button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -838,71 +1084,7 @@ const Analytics = () => {
                     </div>
                 </div>
 
-                <div className="charts-split">
-                    {/* Customer Retention Status */}
-                    <div className="chart-card">
-                        <div className="chart-header">
-                            <h3 className="chart-title">Customer Retention Status</h3>
-                        </div>
-                        <div style={{ width: '100%', height: 350 }}>
-                            <ResponsiveContainer>
-                                <PieChart>
-                                    <Pie
-                                        data={customerAnalytics.retentionStats}
-                                        dataKey="value"
-                                        nameKey="name"
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={80}
-                                        outerRadius={110}
-                                        paddingAngle={5}
-                                    >
-                                        <Cell fill="#10b981" /> {/* New */}
-                                        <Cell fill="#3b82f6" /> {/* Returning */}
-                                        <Cell fill="#ef4444" /> {/* Churned */}
-                                    </Pie>
-                                    <Tooltip />
-                                    <Legend
-                                        layout="horizontal"
-                                        align="center"
-                                        verticalAlign="bottom"
-                                        iconType="circle"
-                                        wrapperStyle={{ fontSize: '13px', paddingTop: '20px' }}
-                                    />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
 
-                    {/* Buying Frequency (LTV) */}
-                    <div className="chart-card">
-                        <div className="chart-header">
-                            <h3 className="chart-title">Buying Frequency (LTV)</h3>
-                        </div>
-                        <div style={{ width: '100%', height: 350 }}>
-                            <ResponsiveContainer>
-                                <BarChart
-                                    layout="vertical"
-                                    data={customerAnalytics.segments}
-                                    margin={{ top: 20, right: 30, left: 40, bottom: 5 }}
-                                >
-                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                                    <XAxis type="number" hide />
-                                    <YAxis dataKey="name" type="category" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} width={100} />
-                                    <Tooltip
-                                        cursor={{ fill: '#f8fafc' }}
-                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                                    />
-                                    <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={32}>
-                                        {customerAnalytics.segments.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-                </div>
 
                 {/* Top Loyalty Customers Table */}
                 <div className="table-card">
@@ -917,7 +1099,7 @@ const Analytics = () => {
                                     <th>ORDERS</th>
                                     <th>TOTAL SPEND</th>
                                     <th>LAST ACTIVITY</th>
-                                    <th>SEGMENT</th>
+
                                 </tr>
                             </thead>
                             <tbody>
@@ -930,12 +1112,7 @@ const Analytics = () => {
                                         <td style={{ fontWeight: '600' }}>{c.orderCount}</td>
                                         <td className="price-text">₹{c.totalSpend.toLocaleString()}</td>
                                         <td style={{ color: '#64748b', fontSize: '13px' }}>{new Date(c.lastOrderDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</td>
-                                        <td>
-                                            {c.badge === 'Loyal' && <span className="category-pill" style={{ background: '#ecfdf5', color: '#10b981' }}>Loyal</span>}
-                                            {c.badge === 'Regular' && <span className="category-pill" style={{ background: '#eff6ff', color: '#3b82f6' }}>Regular</span>}
-                                            {c.badge === 'At-risk' && <span className="category-pill" style={{ background: '#fef2f2', color: '#ef4444' }}>At-Risk</span>}
-                                            {c.badge === 'New' && <span className="category-pill" style={{ background: '#f1f5f9', color: '#64748b' }}>New</span>}
-                                        </td>
+
                                     </tr>
                                 ))}
                             </tbody>
@@ -994,8 +1171,15 @@ const Analytics = () => {
                         <h1 className="analytics-title">Orders Analysis <FiChevronDown style={{ fontSize: '20px', color: '#94a3b8' }} /></h1>
                         <p className="analytics-subtitle">Detailed breakdown of transaction volume and status distribution</p>
                     </div>
-                    <div className="header-actions">
+                    <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <DateFilter />
+                        <button 
+                            className="export-btn-new" 
+                            onClick={() => handleExportGeneric('orders')}
+                            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', background: '#eef2ff', color: '#4f46e5', border: '1px solid #c7d2fe', borderRadius: '12px', fontWeight: '600', cursor: 'pointer', height: '42px' }}
+                        >
+                            <FiDownload /> Export CSV
+                        </button>
                     </div>
                 </div>
 
@@ -1203,8 +1387,15 @@ const Analytics = () => {
                         <h1 className="analytics-title">Financial Performance <FiChevronDown style={{ fontSize: '20px', color: '#94a3b8' }} /></h1>
                         <p className="analytics-subtitle">Deep dive into revenue, losses, and payment dynamics</p>
                     </div>
-                    <div className="header-actions">
+                    <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <DateFilter />
+                        <button 
+                            className="export-btn-new" 
+                            onClick={() => handleExportGeneric('revenue')}
+                            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', background: '#eef2ff', color: '#4f46e5', border: '1px solid #c7d2fe', borderRadius: '12px', fontWeight: '600', cursor: 'pointer', height: '42px' }}
+                        >
+                            <FiDownload /> Export CSV
+                        </button>
                     </div>
                 </div>
 
@@ -1377,38 +1568,7 @@ const Analytics = () => {
                 </div>
 
                 {/* Revenue by Region (Cities) - New Table Style */}
-                <div className="table-card">
-                    <div className="chart-header">
-                        <h3 className="chart-title">Revenue by Region (Cities)</h3>
-                    </div>
-                    <div className="products-table-container">
-                        <table className="products-table">
-                            <thead>
-                                <tr>
-                                    <th>CITY</th>
-                                    <th>TOTAL REVENUE</th>
-                                    <th>CONTRIBUTION %</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {revenueAnalytics.cityChartData.map((city, i) => (
-                                    <tr key={i} className="product-row">
-                                        <td style={{ fontWeight: '600', color: '#1e293b' }}>{city.name}</td>
-                                        <td className="price-text">₹{city.value.toLocaleString()}</td>
-                                        <td style={{ width: '40%' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                <div style={{ flex: 1, height: '6px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
-                                                    <div style={{ width: `${(city.value / revenueAnalytics.totalRevenue * 100).toFixed(1)}%`, height: '100%', background: '#3b82f6', borderRadius: '4px' }}></div>
-                                                </div>
-                                                <span style={{ fontSize: '12px', color: '#64748b', minWidth: '40px' }}>{(city.value / revenueAnalytics.totalRevenue * 100).toFixed(1)}%</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+
             </div>
         );
     }
@@ -1446,8 +1606,15 @@ const Analytics = () => {
                     <h1 className="analytics-title">Data Analysis Overview <FiChevronDown style={{ fontSize: '20px', color: '#94a3b8' }} /></h1>
                     <p className="analytics-subtitle">Monitor logins, orders, and category-wise performance</p>
                 </div>
-                <div className="header-actions">
+                <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <DateFilter />
+                    <button 
+                        className="export-btn-new" 
+                        onClick={() => handleExportGeneric('overview')}
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', background: '#eef2ff', color: '#4f46e5', border: '1px solid #c7d2fe', borderRadius: '12px', fontWeight: '600', cursor: 'pointer', height: '42px' }}
+                    >
+                        <FiDownload /> Export CSV
+                    </button>
                 </div>
             </div>
 
@@ -1518,46 +1685,143 @@ const Analytics = () => {
             </div>
 
             <div className="kpi-grid">
-                {/* Total Logins (Blue) */}
-                <div className="kpi-card-new blue">
-                    <div>
-                        <div className="kpi-icon-box"><FiLogIn /></div>
-                        <div className="kpi-label-new">TOTAL LOGINS</div>
-                        <div className="kpi-value-new">{customerAnalytics.totalRegisteredUsers}</div>
-                        <div className="kpi-sub-new">Total customer registrations</div>
-                    </div>
-                    <div className="kpi-meta-new">Number of unique accounts</div>
-                </div>
-
-                {/* Total Orders (Purple) */}
-                <div className="kpi-card-new purple">
-                    <div>
-                        <div className="kpi-icon-box"><FiShoppingBag /></div>
+                {/* Row 1: Core Business Health */}
+                
+                {/* Total Orders (Blue) */}
+                <div className="kpi-card-new blue clickable" onClick={() => navigate('/admin/analytics/orders')}>
+                    <div className="kpi-card-inner">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                            <div className="kpi-icon-box"><FiShoppingBag /></div>
+                            {kpis.trends.totalOrders !== 0 && (
+                                <div className={`trend-tag ${Number(kpis.trends.totalOrders) >= 0 ? 'up' : 'down'}`}>
+                                    {Number(kpis.trends.totalOrders) >= 0 ? <FiArrowUp /> : <FiArrowDown />}
+                                    {Math.abs(kpis.trends.totalOrders)}%
+                                </div>
+                            )}
+                        </div>
                         <div className="kpi-label-new">TOTAL ORDERS</div>
                         <div className="kpi-value-new">{kpis.totalOrders}</div>
-                        <div className="kpi-sub-new">Orders in period</div>
+                        <div className="kpi-footer-row">
+                            <div className="kpi-sub-new">Vs last period</div>
+                            {kpis.topCategory && <div className="category-tag">Top: {kpis.topCategory}</div>}
+                        </div>
                     </div>
-                    <div className="kpi-meta-new">Avg ₹{kpis.avgOrderValue} / order</div>
                 </div>
 
-                {/* Repeat Orders (Green) */}
-                <div className="kpi-card-new green">
-                    <div>
-                        <div className="kpi-icon-box"><FiRepeat /></div>
-                        <div className="kpi-label-new">REPEAT ORDERS</div>
-                        <div className="kpi-value-new">{kpis.ordersByRepeaters}</div>
-                        <div className="kpi-sub-new">{kpis.repeatRate}% Repeat Rate</div>
+                {/* Net Revenue (Green) */}
+                <div className="kpi-card-new green clickable" onClick={() => navigate('/admin/analytics/revenue')}>
+                    <div className="kpi-card-inner">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                            <div className="kpi-icon-box"><FiDollarSign /></div>
+                            {kpis.trends.netRevenue !== 0 && (
+                                <div className={`trend-tag ${Number(kpis.trends.netRevenue) >= 0 ? 'up' : 'down'}`}>
+                                    {Number(kpis.trends.netRevenue) >= 0 ? <FiArrowUp /> : <FiArrowDown />}
+                                    {Math.abs(kpis.trends.netRevenue)}%
+                                </div>
+                            )}
+                        </div>
+                        <div className="kpi-label-new">NET REVENUE</div>
+                        <div className="kpi-value-new">₹{kpis.netRevenue.toLocaleString()}</div>
+                        <div className="kpi-footer-row">
+                            <div className="kpi-sub-new">Margin: {kpis.profitMargin}%</div>
+                            <div className="category-tag">Growth: {kpis.trends.netRevenue}%</div>
+                        </div>
                     </div>
-                    <div className="kpi-meta-new">Loyal customer orders</div>
                 </div>
 
-                {/* Categories (White) */}
-                <div className="kpi-card-new white">
-                    <div>
-                        <div className="kpi-icon-box"><FiPackage /></div>
-                        <div className="kpi-label-new" style={{ color: '#f59e0b' }}>CATEGORIES</div>
-                        <div className="kpi-value-new" style={{ color: '#1e293b' }}>{allCategories.length}</div>
-                        <div className="kpi-sub-new" style={{ color: '#64748b' }}>Active product categories</div>
+                {/* AOV (Purple) */}
+                <div className="kpi-card-new purple">
+                    <div className="kpi-card-inner">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                            <div className="kpi-icon-box"><FiBarChart2 /></div>
+                            {kpis.trends.avgOrderValue !== 0 && (
+                                <div className={`trend-tag ${Number(kpis.trends.avgOrderValue) >= 0 ? 'up' : 'down'}`}>
+                                    {Number(kpis.trends.avgOrderValue) >= 0 ? <FiArrowUp /> : <FiArrowDown />}
+                                    {Math.abs(kpis.trends.avgOrderValue)}%
+                                </div>
+                            )}
+                        </div>
+                        <div className="kpi-label-new">AVG ORDER VALUE</div>
+                        <div className="kpi-value-new">₹{kpis.avgOrderValue}</div>
+                        <div className="kpi-sub-new">Vs last period</div>
+                    </div>
+                </div>
+
+                {/* Conversion Rate (White/Orange) */}
+                <div className="kpi-card-new white clickable" style={{ borderLeft: '6px solid #f97316' }} onClick={() => navigate('/admin/analytics/customers')}>
+                    <div className="kpi-card-inner">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                            <div className="kpi-icon-box" style={{ background: '#ffedd5', color: '#f97316' }}><FiTrendingUp /></div>
+                            <div className={`trend-tag ${Number(customerAnalytics.conversionRate) > 2 ? 'up' : 'down'}`} style={{ background: '#f8fafc', color: '#64748b' }}>
+                                Target: 3.5%
+                            </div>
+                        </div>
+                        <div className="kpi-label-new" style={{ color: '#64748b' }}>CONVERSION RATE</div>
+                        <div className="kpi-value-new" style={{ color: '#1e293b' }}>{customerAnalytics.conversionRate}%</div>
+                        <div className="kpi-sub-new" style={{ color: '#64748b' }}>Visitor to Buyer</div>
+                    </div>
+                </div>
+
+                {/* Row 2: Customer + Risk */}
+
+                {/* Total Customers (White/Blue) */}
+                <div className="kpi-card-new white clickable" style={{ borderLeft: '6px solid #3b82f6' }} onClick={() => navigate('/admin/analytics/customers')}>
+                    <div className="kpi-card-inner">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                            <div className="kpi-icon-box" style={{ background: '#eff6ff', color: '#3b82f6' }}><FiUsers /></div>
+                            <div className="trend-tag up" style={{ background: '#eff6ff', color: '#3b82f6' }}>
+                                + {customerAnalytics.totalRegisteredUsers - customerAnalytics.usersWithOrdersCount} Pending
+                            </div>
+                        </div>
+                        <div className="kpi-label-new" style={{ color: '#64748b' }}>TOTAL CUSTOMERS</div>
+                        <div className="kpi-value-new" style={{ color: '#1e293b' }}>{customerAnalytics.totalRegisteredUsers}</div>
+                        <div className="kpi-sub-new" style={{ color: '#64748b' }}>All time registration</div>
+                    </div>
+                </div>
+
+                {/* Active Buyers (White/Green) */}
+                <div className="kpi-card-new white" style={{ borderLeft: '6px solid #10b981' }}>
+                    <div className="kpi-card-inner">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                            <div className="kpi-icon-box" style={{ background: '#ecfdf5', color: '#10b981' }}><FiUserCheck /></div>
+                        </div>
+                        <div className="kpi-label-new" style={{ color: '#64748b' }}>ACTIVE BUYERS</div>
+                        <div className="kpi-value-new" style={{ color: '#1e293b' }}>{customerAnalytics.usersWithOrdersCount}</div>
+                        <div className="kpi-sub-new" style={{ color: '#64748b' }}>With at least 1 order</div>
+                    </div>
+                </div>
+
+                {/* Repeat Rate (White/Purple) */}
+                <div className="kpi-card-new white" style={{ borderLeft: '6px solid #8b5cf6' }}>
+                    <div className="kpi-card-inner">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                            <div className="kpi-icon-box" style={{ background: '#f5f3ff', color: '#8b5cf6' }}><FiRepeat /></div>
+                            {kpis.trends.repeatRate !== 0 && (
+                                <div className={`trend-tag ${Number(kpis.trends.repeatRate) >= 0 ? 'up' : 'down'}`} style={{ background: '#f5f3ff', color: '#8b5cf6' }}>
+                                    {Number(kpis.trends.repeatRate) >= 0 ? '↑' : '↓'} {Math.abs(kpis.trends.repeatRate)}%
+                                </div>
+                            )}
+                        </div>
+                        <div className="kpi-label-new" style={{ color: '#64748b' }}>REPEAT RATE</div>
+                        <div className="kpi-value-new" style={{ color: '#1e293b' }}>{kpis.repeatRate}%</div>
+                        <div className="kpi-sub-new" style={{ color: '#64748b' }}>Loyalty index</div>
+                    </div>
+                </div>
+
+                {/* Revenue Lost (White/Red) */}
+                <div className="kpi-card-new white" style={{ borderLeft: '6px solid #ef4444' }}>
+                    <div className="kpi-card-inner">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                            <div className="kpi-icon-box" style={{ background: '#fef2f2', color: '#ef4444' }}><FiMinusCircle /></div>
+                            {kpis.trends.revenueLostCancelled !== 0 && (
+                                <div className={`trend-tag ${Number(kpis.trends.revenueLostCancelled) <= 0 ? 'up' : 'down'}`} style={{ background: '#fef2f2', color: '#ef4444' }}>
+                                    {Number(kpis.trends.revenueLostCancelled) <= 0 ? '↑' : '↓'} {Math.abs(kpis.trends.revenueLostCancelled)}%
+                                </div>
+                            )}
+                        </div>
+                        <div className="kpi-label-new" style={{ color: '#64748b' }}>REVENUE LOST</div>
+                        <div className="kpi-value-new" style={{ color: '#1e293b' }}>₹{kpis.revenueLostCancelled.toLocaleString()}</div>
+                        <div className="kpi-sub-new" style={{ color: '#64748b' }}>Cancelled orders value</div>
                     </div>
                 </div>
             </div>

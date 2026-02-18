@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { collection, query, where, orderBy, doc, updateDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -32,6 +32,19 @@ const Orders = () => {
   // Mobile Filter State
   const [showFilter, setShowFilter] = useState(false);
   const [tempStatusFilter, setTempStatusFilter] = useState('All');
+  const location = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const status = params.get('status');
+    if (status) {
+      setStatusFilter(status);
+      setTempStatusFilter(status);
+    } else {
+      setStatusFilter('All');
+      setTempStatusFilter('All');
+    }
+  }, [location.search]);
 
   useEffect(() => {
     if (!currentUser) return;

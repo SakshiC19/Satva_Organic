@@ -59,7 +59,7 @@ export const generateInvoice = (order) => {
   doc.setFont('helvetica', 'bold');
   doc.text('GSTIN:', textLeftX, startY + 32);
   doc.setFont('helvetica', 'normal');
-  doc.text('27XXXXX1234X1ZX', textLeftX + 15, startY + 32);
+  doc.text('27FKXPP7525P1ZS', textLeftX + 15, startY + 32);
 
   // Email
   doc.setFont('helvetica', 'bold');
@@ -312,6 +312,11 @@ export const generateInvoice = (order) => {
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.text('Authorized Signatory', startX + fullWidth - 25, footerY + footerHeight - 5, { align: 'center' });
+
+  // E & OE
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.text('E & OE', startX + 2, footerY + footerHeight - 5);
 
   return doc;
 };
