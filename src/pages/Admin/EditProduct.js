@@ -18,6 +18,7 @@ const EditProduct = () => {
   const [existingImages, setExistingImages] = useState([]);
   const [imagesToDelete, setImagesToDelete] = useState([]);
   const [existingSizeConfig, setExistingSizeConfig] = useState(null);
+  const [activeTab, setActiveTab] = useState('basic');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -37,6 +38,11 @@ const EditProduct = () => {
     productType: 'organic',
     codAvailable: false,
     refundPolicyAvailable: false,
+    
+    // SEO
+    metaTitle: '',
+    metaDescription: '',
+    metaKeywords: ''
   });
 
   const { categories: contextCategories } = useCategories();
@@ -69,12 +75,17 @@ const EditProduct = () => {
           productType: data.productType || (data.organic ? 'organic' : 'inorganic'),
           codAvailable: data.codAvailable || false,
           refundPolicyAvailable: data.refundPolicyAvailable || false,
+          
+          metaTitle: data.metaTitle || '',
+          metaDescription: data.metaDescription || '',
+          metaKeywords: data.metaKeywords || ''
         });
         
         // Store existing size config to merge after auto-generation
         setExistingSizeConfig({
             packingSizes: data.packingSizes || [],
-            sizePrices: data.sizePrices || {}
+            sizePrices: data.sizePrices || {},
+            sizeStocks: data.sizeStocks || {}
         });
         
         setExistingImages(data.images || []);
@@ -135,6 +146,7 @@ const EditProduct = () => {
           size: def.size,
           autoPrice: Math.round(autoPrice),
           customPrice: '',
+          stock: '',
           enabled: true
         };
       });
@@ -150,8 +162,11 @@ const EditProduct = () => {
           // Map defaults to saved config
           const mergedDefaults = newSizes.map(s => {
               const isEnabled = existingSizeConfig.packingSizes.includes(s.size);
-              const customPrice = existingSizeConfig.sizePrices[s.size] || '';
-              return { ...s, enabled: isEnabled, customPrice };
+              const customPrice = existingSizeConfig.sizePrices[s.size] !== undefined ? String(existingSizeConfig.sizePrices[s.size]) : '';
+              const stock = existingSizeConfig.sizeStocks && existingSizeConfig.sizeStocks[s.size] !== undefined 
+                ? String(existingSizeConfig.sizeStocks[s.size]) 
+                : '';
+              return { ...s, enabled: isEnabled, customPrice, stock };
           });
           
           // Add any custom sizes that were saved but not in defaults
@@ -169,17 +184,18 @@ const EditProduct = () => {
                     if (unit === 'kg' || unit === 'l') multiplier = (val * 1000) / 100;
                     autoPrice = Math.round(multiplier * basePrice);
                  }
-                 return {
-                     size,
-                     autoPrice: autoPrice || 0,
-                     customPrice: existingSizeConfig.sizePrices[size] || '',
-                     enabled: true
-                 };
+                  return {
+                      size,
+                      autoPrice: autoPrice || 0,
+                      customPrice: existingSizeConfig.sizePrices[size] !== undefined ? String(existingSizeConfig.sizePrices[size]) : '',
+                      stock: existingSizeConfig.sizeStocks && existingSizeConfig.sizeStocks[size] !== undefined 
+                        ? String(existingSizeConfig.sizeStocks[size]) 
+                        : '',
+                      enabled: true
+                  };
             });
             
           currentSizes = [...mergedDefaults, ...savedCustomSizes];
-          // Clear config so we don't re-merge
-          setExistingSizeConfig(null);
           return { ...prev, generatedSizes: currentSizes };
       }
       
@@ -199,8 +215,12 @@ const EditProduct = () => {
          return { ...s, autoPrice: autoPrice || s.autoPrice };
       });
 
-      return { ...prev, generatedSizes: updatedSizes };
+       return { ...prev, generatedSizes: updatedSizes };
     });
+
+    if (existingSizeConfig) {
+        setExistingSizeConfig(null);
+    }
 
   }, [formData.basePrice, formData.productForm, existingSizeConfig]);
 
@@ -208,6 +228,7 @@ const EditProduct = () => {
     const size = prompt("Enter custom size (e.g., 750g):");
     if (!size) return;
     
+    // Simple validation/calculation
     const match = size.match(/(\d+(?:\.\d+)?)\s*([a-zA-Z]+)/);
     let autoPrice = 0;
     if (match && formData.basePrice) {
@@ -223,7 +244,7 @@ const EditProduct = () => {
       ...prev,
       generatedSizes: [
         ...prev.generatedSizes,
-        { size, autoPrice, customPrice: '', enabled: true }
+        { size, autoPrice, customPrice: '', stock: '', enabled: true }
       ]
     }));
   };
@@ -234,6 +255,10 @@ const EditProduct = () => {
       newSizes[index] = { ...newSizes[index], [field]: value };
       return { ...prev, generatedSizes: newSizes };
     });
+  };
+
+  const toggleSizeField = (index) => {
+    updateSizeField(index, 'enabled', !formData.generatedSizes[index].enabled);
   };
 
   const handleImagesSelected = (files) => {
@@ -320,15 +345,21 @@ const EditProduct = () => {
         price: parseFloat(formData.basePrice),
         category: formData.category,
         subcategory: formData.subcategory || null,
-        stock: parseInt(formData.stock) || 0,
+        stock: activeSizes.reduce((sum, item) => sum + (parseInt(item.stock) || 0), 0),
         unit: formData.productForm === 'liquid' ? 'ml' : (formData.productForm === 'powder' ? 'g' : 'piece'),
         productForm: formData.productForm,
         packingSizes: activeSizes.map(s => s.size),
         sizePrices: sizePrices,
+        sizeStocks: activeSizes.reduce((acc, s) => ({ ...acc, [s.size]: parseInt(s.stock) || 0 }), {}),
         productType: formData.productType,
         organic: formData.productType === 'organic',
         codAvailable: formData.codAvailable,
         refundPolicyAvailable: formData.refundPolicyAvailable,
+        
+        metaTitle: formData.metaTitle,
+        metaDescription: formData.metaDescription,
+        metaKeywords: formData.metaKeywords,
+        
         images: allImages,
         updatedAt: serverTimestamp()
       };
@@ -370,232 +401,336 @@ const EditProduct = () => {
           <FiArrowLeft /> Back to Products
         </button>
       </div>
+      <div className="form-tabs">
+        <button 
+          type="button" 
+          className={`tab-btn ${activeTab === 'basic' ? 'active' : ''}`}
+          onClick={() => setActiveTab('basic')}
+        >
+          Basic Info
+        </button>
+        <button 
+          type="button" 
+          className={`tab-btn ${activeTab === 'pricing' ? 'active' : ''}`}
+          onClick={() => setActiveTab('pricing')}
+        >
+          Pricing & Inventory
+        </button>
+        <button 
+          type="button" 
+          className={`tab-btn ${activeTab === 'images' ? 'active' : ''}`}
+          onClick={() => setActiveTab('images')}
+        >
+          Images
+        </button>
+        <button 
+          type="button" 
+          className={`tab-btn ${activeTab === 'seo' ? 'active' : ''}`}
+          onClick={() => setActiveTab('seo')}
+        >
+          SEO
+        </button>
+      </div>
 
       <form onSubmit={handleSubmit} className="product-form">
         <div className="form-grid">
           {/* Basic Information */}
-          <div className="form-section">
-            <h3 className="form-section-title">Basic Information</h3>
+          {activeTab === 'basic' && (
+            <div className="form-section">
+              <div className="basic-info-grid">
+                {/* Left Column */}
+                <div className="info-left-col">
+                  <div className="form-group">
+                    <label htmlFor="name">Product Name *</label>
+                    <input
+                      type="text"
+                      id="name"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      required
+                      placeholder="Enter product name"
+                    />
+                  </div>
 
-            <div className="form-group">
-              <label htmlFor="name">Product Name *</label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                required
-                placeholder="Enter product name"
-              />
-            </div>
+                  <div className="form-group">
+                    <label htmlFor="category">Category *</label>
+                    <select
+                      id="category"
+                      name="category"
+                      value={formData.category}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      <option value="">Select category</option>
+                      {categories.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
 
-            <div className="form-group">
-              <label htmlFor="description">Description</label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                rows="4"
-                className="description-textarea"
-                placeholder="Enter product description"
-              />
-            </div>
+                  <div className="form-group">
+                    <label htmlFor="subcategory">Subcategory</label>
+                    <input
+                      type="text"
+                      id="subcategory"
+                      name="subcategory"
+                      value={formData.subcategory}
+                      onChange={handleInputChange}
+                      placeholder="Enter subcategory"
+                    />
+                  </div>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="category">Category *</label>
-                <select
-                  id="category"
-                  name="category"
-                  value={formData.category}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="">Select category</option>
-                  {categories.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-              </div>
+                  <div className="form-group">
+                    <label>Product Form *</label>
+                    <select
+                      name="productForm"
+                      value={formData.productForm}
+                      onChange={handleInputChange}
+                      className="form-select"
+                    >
+                      <option value="powder">Powder (Weight)</option>
+                      <option value="liquid">Liquid (Volume)</option>
+                      <option value="pack">Pack / Piece</option>
+                    </select>
+                  </div>
+                </div>
 
-              <div className="form-group">
-                <label htmlFor="subcategory">Subcategory</label>
-                <input
-                  type="text"
-                  id="subcategory"
-                  name="subcategory"
-                  value={formData.subcategory}
-                  onChange={handleInputChange}
-                  placeholder="Enter subcategory"
-                />
-              </div>
-            </div>
+                {/* Right Column */}
+                <div className="info-right-col">
+                  <div className="form-group">
+                    <label>Base Price (₹ per {formData.productForm === 'pack' ? 'piece' : '100g/ml'}) *</label>
+                    <input
+                      type="number"
+                      name="basePrice"
+                      value={formData.basePrice}
+                      onChange={handleInputChange}
+                      required
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                    />
+                  </div>
 
-            <div className="form-group">
-              <label>Product Form *</label>
-              <select
-                name="productForm"
-                value={formData.productForm}
-                onChange={handleInputChange}
-                className="form-select"
-              >
-                <option value="powder">Powder (Weight)</option>
-                <option value="liquid">Liquid (Volume)</option>
-                <option value="pack">Pack / Piece</option>
-              </select>
-            </div>
-
-
-
-            {/* Existing Images */}
-            {existingImages.length > 0 && (
-              <div className="form-group" style={{ marginTop: '30px', paddingTop: '20px', borderTop: '1px solid #f1f5f9' }}>
-                <h3 className="form-section-title" style={{ fontSize: '1.1rem', borderBottom: 'none', marginBottom: '15px', paddingBottom: 0 }}>Current Images</h3>
-                <div className="existing-images-grid">
-                  {existingImages.map((image, index) => (
-                    <div key={index} className="existing-image-item">
-                      <img src={image.url || image} alt={`Product ${index + 1}`} />
-                      <button
-                        type="button"
-                        className="remove-existing-image-btn"
-                        onClick={() => handleRemoveExistingImage(index)}
-                        title="Remove image"
-                      >
-                        <FiTrash2 />
-                      </button>
-                    </div>
-                  ))}
+                  <div className="form-group">
+                    <label htmlFor="description">Short Description</label>
+                    <textarea
+                      id="description"
+                      name="description"
+                      value={formData.description}
+                      onChange={handleInputChange}
+                      rows="3"
+                      className="description-textarea compact-textarea"
+                      placeholder="Enter brief product description..."
+                    />
+                  </div>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Add New Images */}
-            <div className="form-group" style={{ marginTop: '30px', paddingTop: '20px', borderTop: '1px solid #f1f5f9' }}>
-              <h3 className="form-section-title" style={{ fontSize: '1.1rem', borderBottom: 'none', marginBottom: '15px', paddingBottom: 0 }}>Add New Images</h3>
-              <ImageUpload
-                onImagesSelected={handleImagesSelected}
-                maxImages={5 - existingImages.length}
-                label="Upload Additional Images"
-              />
-              {Object.keys(uploadProgress).length > 0 && (
-                <div className="upload-progress-container">
-                  {Object.entries(uploadProgress).map(([index, progress]) => (
-                    <div key={index} className="upload-progress-item">
-                      <span>Image {parseInt(index) + 1}</span>
-                      <div className="progress-bar">
-                        <div className="progress-fill" style={{ width: `${progress}%` }} />
+          {/* Pricing & Inventory */}
+          {activeTab === 'pricing' && (
+            <div className="form-section">
+              <div className="inventory-header">
+                  <h3 className="form-section-title">Pricing & Inventory</h3>
+                  <div className="total-stock-badge">
+                      Total Stock: <span>{formData.generatedSizes.filter(s => s.enabled).reduce((sum, item) => sum + (parseInt(item.stock) || 0), 0)}</span>
+                  </div>
+              </div>
+              
+              {!formData.basePrice && (
+                  <div className="no-base-price-warning">
+                      Please set a Base Price in the <strong>Basic Info</strong> tab first.
+                  </div>
+              )}
+
+              {/* Package Sizes Table */}
+              {formData.basePrice && (
+                <div className="form-group">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <label>Package Sizes & Pricing</label>
+                    <button type="button" onClick={addCustomSize} className="btn-text">
+                      + Add Custom Size
+                    </button>
+                  </div>
+                  
+                  <div className="pricing-table-container compact-table">
+                    <table className="admin-table">
+                      <thead className="sticky-header">
+                        <tr>
+                          <th style={{ width: '60px' }}>Enable</th>
+                          <th>Size</th>
+                          <th className="text-right">Auto (₹)</th>
+                          <th className="text-right">Custom (₹)</th>
+                          <th className="text-right">Stock</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {formData.generatedSizes.map((item, index) => (
+                          <tr key={index} className={item.enabled ? 'row-enabled' : 'row-disabled'}>
+                            <td style={{ textAlign: 'center' }}>
+                                <label className="toggle-switch">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={item.enabled} 
+                                        onChange={() => toggleSizeField(index)}
+                                    />
+                                    <span className="slider round"></span>
+                                </label>
+                            </td>
+                            <td>{item.size}</td>
+                            <td className="text-right disabled-text">{item.autoPrice}</td>
+                            <td className="text-right">
+                              <input
+                                type="number"
+                                value={item.customPrice}
+                                onChange={(e) => updateSizeField(index, 'customPrice', e.target.value)}
+                                placeholder={item.autoPrice}
+                                className="size-price-input compact-input"
+                                disabled={!item.enabled}
+                              />
+                            </td>
+                            <td className="text-right">
+                              <input
+                                type="number"
+                                value={item.stock}
+                                onChange={(e) => updateSizeField(index, 'stock', e.target.value)}
+                                placeholder="0"
+                                className="size-price-input compact-input"
+                                min="0"
+                                disabled={!item.enabled}
+                              />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              <div className="form-checkboxes compact-checkboxes">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    name="codAvailable"
+                    checked={formData.codAvailable}
+                    onChange={handleInputChange}
+                  />
+                  <span>Cash on Delivery Available</span>
+                </label>
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    name="refundPolicyAvailable"
+                    checked={formData.refundPolicyAvailable}
+                    onChange={handleInputChange}
+                  />
+                  <span>Refund Policy Available</span>
+                </label>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'images' && (
+            <div className="form-section">
+              <h3 className="form-section-title">Product Images</h3>
+              
+              {/* Add New Images - Moved to Top */}
+              <div className="form-group clean-upload-section">
+                <ImageUpload
+                  onImagesSelected={handleImagesSelected}
+                  maxImages={5 - existingImages.length}
+                  label="Upload Images"
+                />
+                {Object.keys(uploadProgress).length > 0 && (
+                  <div className="upload-progress-container">
+                    {Object.entries(uploadProgress).map(([index, progress]) => (
+                      <div key={index} className="upload-progress-item">
+                        <span>Image {parseInt(index) + 1}</span>
+                        <div className="progress-bar">
+                          <div className="progress-fill" style={{ width: `${progress}%` }} />
+                        </div>
+                        <span>{Math.round(progress)}%</span>
                       </div>
-                      <span>{Math.round(progress)}%</span>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Current Images - Grid Layout */}
+              {existingImages.length > 0 && (
+                <div className="form-group">
+                  <label>Current Images ({existingImages.length})</label>
+                  <div className="images-grid-3-col">
+                    {existingImages.map((image, index) => (
+                      <div key={index} className="image-card">
+                        <img src={image.url || image} alt={`Product ${index + 1}`} />
+                        <div className="image-overlay">
+                            <button
+                            type="button"
+                            className="delete-image-btn"
+                            onClick={() => handleRemoveExistingImage(index)}
+                            title="Remove image"
+                            >
+                                <FiTrash2 />
+                            </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
-          </div>
+          )}
 
-          {/* Pricing & Inventory */}
-          <div className="form-section">
-            <h3 className="form-section-title">Pricing & Inventory</h3>
-
-            <div className="form-row">
+          {activeTab === 'seo' && (
+            <div className="form-section">
+              <h3 className="form-section-title">Search Engine Optimization (SEO)</h3>
+              
               <div className="form-group">
-                <label>Base Price (₹ per {formData.productForm === 'pack' ? 'piece' : '100g/ml'}) *</label>
+                <label htmlFor="metaTitle">Meta Title</label>
                 <input
-                  type="number"
-                  name="basePrice"
-                  value={formData.basePrice}
+                  type="text"
+                  id="metaTitle"
+                  name="metaTitle"
+                  value={formData.metaTitle}
                   onChange={handleInputChange}
-                  required
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
+                  placeholder="Enter meta title (max 60 chars)"
+                  maxLength={60}
                 />
+                <small style={{ color: '#94a3b8', fontSize: '0.8rem' }}>Recommended length: 50-60 characters</small>
               </div>
+
               <div className="form-group">
-                <label>Total Stock Quantity</label>
-                <input
-                  type="number"
-                  name="stock"
-                  value={formData.stock}
+                <label htmlFor="metaDescription">Meta Description</label>
+                <textarea
+                  id="metaDescription"
+                  name="metaDescription"
+                  value={formData.metaDescription}
                   onChange={handleInputChange}
-                  min="0"
-                  placeholder="0"
+                  rows="3"
+                  className="description-textarea compact-textarea"
+                  placeholder="Enter meta description (max 160 chars)"
+                  maxLength={160}
+                />
+                <small style={{ color: '#94a3b8', fontSize: '0.8rem' }}>Recommended length: 150-160 characters</small>
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="metaKeywords">Keywords (comma separated)</label>
+                <input
+                  type="text"
+                  id="metaKeywords"
+                  name="metaKeywords"
+                  value={formData.metaKeywords}
+                  onChange={handleInputChange}
+                  placeholder="e.g. organic, turmeric, health, wellness"
                 />
               </div>
             </div>
-
-            {/* Package Sizes Table */}
-            {formData.basePrice && (
-              <div className="form-group">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <label>Package Sizes & Pricing</label>
-                  <button type="button" onClick={addCustomSize} className="btn-text" style={{ fontSize: '13px', color: '#2563eb' }}>
-                    + Add Custom Size
-                  </button>
-                </div>
-                
-                <div className="pricing-table-container" style={{ overflowX: 'auto' }}>
-                  <table className="admin-table" style={{ fontSize: '13px' }}>
-                    <thead>
-                      <tr>
-                        <th>Enable</th>
-                        <th>Size</th>
-                        <th>Auto Price (₹)</th>
-                        <th>Custom Price (₹)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {formData.generatedSizes.map((item, index) => (
-                        <tr key={index}>
-                          <td style={{ textAlign: 'center' }}>
-                            <input
-                              type="checkbox"
-                              checked={item.enabled}
-                              onChange={(e) => updateSizeField(index, 'enabled', e.target.checked)}
-                            />
-                          </td>
-                          <td>{item.size}</td>
-                          <td style={{ color: '#6b7280' }}>{item.autoPrice}</td>
-                          <td>
-                            <input
-                              type="number"
-                              value={item.customPrice}
-                              onChange={(e) => updateSizeField(index, 'customPrice', e.target.value)}
-                              placeholder=""
-                              className="size-price-input"
-                            />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            <div className="form-checkboxes" style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #f1f5f9' }}>
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  name="codAvailable"
-                  checked={formData.codAvailable}
-                  onChange={handleInputChange}
-                />
-                <span>Cash on Delivery Available</span>
-              </label>
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  name="refundPolicyAvailable"
-                  checked={formData.refundPolicyAvailable}
-                  onChange={handleInputChange}
-                />
-                <span>Refund Policy Available</span>
-              </label>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Form Actions */}

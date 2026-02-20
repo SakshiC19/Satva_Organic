@@ -263,9 +263,9 @@
     display: flex;
     gap: 1rem;
     justify-content: flex-end;
-    margin-top: 2rem;
-    padding-top: 2rem;
-    border-top: 2px solid #f1f5f9;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 0px solid #f1f5f9;
 }
 
 .btn-test,

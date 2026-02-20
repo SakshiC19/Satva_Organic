@@ -74,12 +74,13 @@ const AddProduct = () => {
     setFormData(prev => {
       const newSizes = defaults.map(def => {
         const autoPrice = (def.val / 100) * basePrice;
-        // Check if this size already exists to preserve custom price
+        // Check if this size already exists to preserve custom price and stock
         const existing = prev.generatedSizes.find(s => s.size === def.size);
         return {
           size: def.size,
           autoPrice: Math.round(autoPrice),
           customPrice: existing ? existing.customPrice : '',
+          stock: existing ? existing.stock : '',
           enabled: existing ? existing.enabled : true
         };
       });
@@ -143,7 +144,7 @@ const AddProduct = () => {
       ...prev,
       generatedSizes: [
         ...prev.generatedSizes,
-        { size, autoPrice, customPrice: '', enabled: true }
+        { size, autoPrice, customPrice: '', stock: '', enabled: true }
       ]
     }));
   };
@@ -211,10 +212,12 @@ const AddProduct = () => {
         price: parseFloat(formData.basePrice), // Base price per 100g/ml
         unit: formData.productForm === 'liquid' ? 'ml' : (formData.productForm === 'powder' ? 'g' : 'piece'),
         productForm: formData.productForm,
-        stock: parseInt(formData.stock) || 0,
+        productForm: formData.productForm,
+        stock: activeSizes.reduce((sum, item) => sum + (parseInt(item.stock) || 0), 0),
         
         packingSizes: activeSizes.map(s => s.size), // Array of strings
         sizePrices: sizePrices, // Explicit overrides
+        sizeStocks: activeSizes.reduce((acc, s) => ({ ...acc, [s.size]: parseInt(s.stock) || 0 }), {}),
         
         // Slabs - Removed
         slabPricing: [],
@@ -379,17 +382,7 @@ const AddProduct = () => {
                   placeholder="0.00"
                 />
               </div>
-              <div className="form-group">
-                <label>Total Stock Quantity</label>
-                <input
-                  type="number"
-                  name="stock"
-                  value={formData.stock}
-                  onChange={handleInputChange}
-                  min="0"
-                  placeholder="0"
-                />
-              </div>
+
             </div>
 
             {/* Step 3: Package Sizes Table */}
@@ -410,6 +403,7 @@ const AddProduct = () => {
                         <th>Size</th>
                         <th>Auto Price (₹)</th>
                         <th>Custom Price (₹)</th>
+                        <th>Stock</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -431,6 +425,16 @@ const AddProduct = () => {
                               onChange={(e) => updateSizeField(index, 'customPrice', e.target.value)}
                               placeholder=""
                               className="size-price-input"
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="number"
+                              value={item.stock}
+                              onChange={(e) => updateSizeField(index, 'stock', e.target.value)}
+                              placeholder="0"
+                              className="size-price-input"
+                              min="0"
                             />
                           </td>
                         </tr>

@@ -252,6 +252,16 @@ const ProductDetail = () => {
     return Math.round(finalPrice);
   };
 
+  const getCurrentStock = () => {
+    if (!product) return 0;
+    if (product.sizeStocks && selectedSize) {
+        return parseInt(product.sizeStocks[selectedSize] || 0);
+    }
+    return product.stock || 0;
+  };
+  
+  const currentStock = getCurrentStock();
+
   const currentPrice = product ? calculateDynamicPrice(product, selectedSize) : 0;
 
   const handleAddToCart = () => {
@@ -285,7 +295,8 @@ const ProductDetail = () => {
       selectedBrand,
       selectedSize,
       quantity,
-      basePrice: product.price
+      basePrice: product.price,
+      maxStock: currentStock // Pass max stock to cart for validation
     });
   };
 
@@ -463,9 +474,9 @@ const ProductDetail = () => {
                   {product.rating ? product.rating.toFixed(1) : '4.0'}
                 </span>
                 <span className="stock-status-inline" style={{ marginLeft: '12px' }}>
-                  {product.stock > 0 ? (
-                    product.stock <= 5 ? (
-                      <span className="low-stock">🔴 Only {product.stock} left</span>
+                  {currentStock > 0 ? (
+                    currentStock <= 5 ? (
+                      <span className="low-stock">🔴 Only {currentStock} left</span>
                     ) : (
                       <span className="in-stock">🟢 In Stock</span>
                     )
@@ -561,7 +572,7 @@ const ProductDetail = () => {
                     <button 
                       className="qty-btn" 
                       onClick={() => handleQuantityChange(1)}
-                      disabled={quantity >= (product.stock || 999)}
+                      disabled={quantity >= (currentStock || 999)}
                     >
                       <FiPlus />
                     </button>
@@ -591,7 +602,7 @@ const ProductDetail = () => {
                     <button 
                       className="qty-btn" 
                       onClick={() => handleQuantityChange(1)}
-                      disabled={quantity >= (product.stock || 999)}
+                      disabled={quantity >= (currentStock || 999)}
                     >
                       <FiPlus />
                     </button>
@@ -604,14 +615,14 @@ const ProductDetail = () => {
               <button 
                 className={`btn-add-to-cart ${isInCart ? 'in-cart' : ''}`}
                 onClick={handleAddToCart}
-                disabled={product.stock <= 0}
+                disabled={currentStock <= 0}
               >
                 {isInCart ? 'View Basket' : 'Add to Basket'}
               </button>
               <button 
                 className="btn-buy-now"
                 onClick={handleBuyNow}
-                disabled={product.stock <= 0}
+                disabled={currentStock <= 0}
               >
                 Buy Now
               </button>

@@ -1,0 +1,185 @@
+.abandoned-cart-reminder {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    max-width: 400px;
+    z-index: 2000;
+    background: white;
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
+    border-radius: 20px;
+    padding: 24px 20px;
+    transform: translateY(150%);
+    transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    font-family: 'Inter', -apple-system, sans-serif;
+}
+
+@media (max-width: 768px) {
+    .abandoned-cart-reminder {
+        bottom: 0px;
+        left: 0;
+        right: 0;
+        max-width: 100%;
+        border-radius: 24px 24px 0 0;
+        padding: 24px 20px 32px;
+        transform: translateY(100%);
+        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.1);
+        border: none;
+    }
+}
+
+.abandoned-cart-reminder.visible {
+    transform: translateY(0);
+}
+
+.reminder-close-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: #f5f5f5;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #666;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.reminder-close-btn:hover {
+    background: #eeeeee;
+    color: #333;
+}
+
+.reminder-content {
+    max-width: 100%;
+}
+
+.reminder-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.reminder-icon-container {
+    width: 40px;
+    height: 40px;
+    background: #f0f7f4;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.reminder-icon-svg {
+    font-size: 20px;
+    color: #27ae60;
+}
+
+.reminder-title {
+    font-size: 19px;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+.reminder-message {
+    font-size: 15px;
+    color: #4a4a4a;
+    line-height: 1.5;
+    margin-bottom: 24px;
+}
+
+.product-highlight {
+    color: #27ae60;
+}
+
+/* Premium Action Button (Swiggy Style) */
+.premium-cart-action {
+    width: 100%;
+    background: #27ae60;
+    border: none;
+    border-radius: 14px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: white;
+}
+
+.premium-cart-action:hover {
+    background: #219150;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(39, 174, 96, 0.3);
+}
+
+.action-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.action-icon-box {
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+
+.action-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.item-count {
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 0.9;
+}
+
+.cart-price {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.action-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.view-text {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.view-arrow {
+    font-size: 20px;
+}
+
+@media (max-width: 768px) {
+    .reminder-title {
+        font-size: 18px;
+    }
+
+    .reminder-message {
+        font-size: 14px;
+        margin-bottom: 20px;
+    }
+
+    .premium-cart-action {
+        padding: 10px 14px;
+    }
+}

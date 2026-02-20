@@ -44,6 +44,7 @@ import Terms from './pages/Terms/Terms';
 import Privacy from './pages/Privacy/Privacy';
 import RefundPolicy from './pages/RefundPolicy/RefundPolicy';
 import CartDrawer from './components/cart/CartDrawer';
+import AbandonedCartReminder from './components/cart/AbandonedCartReminder';
 import { CategoryProvider } from './contexts/CategoryContext';
 import { WishlistProvider } from './contexts/WishlistContext';
 import ScrollToTop from './components/common/ScrollToTop';
@@ -75,6 +76,7 @@ function App() {
               <ScrollToTop />
             <div className="app">
               <CartDrawer />
+              <AbandonedCartReminder />
               <Routes>
                 {/* Public Routes with Layout */}
                 <Route path="/" element={<Layout><Home /></Layout>} />

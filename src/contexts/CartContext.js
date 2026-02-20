@@ -17,9 +17,28 @@ export const CartProvider = ({ children }) => {
     }
   });
 
-  // Save cart to local storage whenever it changes
+  const [lastCartUpdatedAt, setLastCartUpdatedAt] = useState(() => {
+    return localStorage.getItem('last_cart_updated_at') || null;
+  });
+
+  // Save cart and timestamp to local storage whenever it changes
   useEffect(() => {
+    const savedCartStr = localStorage.getItem('cart');
+    const hasCartChanged = savedCartStr !== JSON.stringify(cartItems);
+    
     localStorage.setItem('cart', JSON.stringify(cartItems));
+    
+    if (cartItems.length > 0) {
+      // Only update timestamp if cart actually changed or if it doesn't exist
+      if (hasCartChanged || !localStorage.getItem('last_cart_updated_at')) {
+        const now = new Date().toISOString();
+        localStorage.setItem('last_cart_updated_at', now);
+        setLastCartUpdatedAt(now);
+      }
+    } else {
+      localStorage.removeItem('last_cart_updated_at');
+      setLastCartUpdatedAt(null);
+    }
   }, [cartItems]);
 
   const addToCart = (product) => {
@@ -79,6 +98,7 @@ export const CartProvider = ({ children }) => {
     clearCart,
     cartCount,
     cartTotal,
+    lastCartUpdatedAt,
     isCartOpen,
     openCart,
     closeCart,
