@@ -6,21 +6,29 @@
 }
 
 .dashboard-header {
-    margin-bottom: 32px;
+    margin-bottom: 40px;
 }
 
-.dashboard-header h1 {
-    font-size: 2rem;
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.header-text h1 {
+    font-size: 2.25rem;
     font-weight: 800;
     color: #0f172a;
     margin: 0;
-    letter-spacing: -0.025em;
+    letter-spacing: -0.04em;
+    line-height: 1.1;
 }
 
-.dashboard-header p {
+.header-text p {
     color: #64748b;
-    margin-top: 4px;
-    font-size: 1rem;
+    margin-top: 10px;
+    font-size: 1.1rem;
+    font-weight: 500;
 }
 
 /* Stats Grid */
@@ -232,7 +240,9 @@
     border-radius: 20px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     border: 1px solid #f1f5f9;
+    height: 660px;
 }
+
 
 .list-header {
     display: flex;
@@ -252,6 +262,19 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+    height: 570px;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+
+.products-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.products-list::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 10px;
 }
 
 .product-item {
@@ -305,6 +328,21 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     border: 1px solid #f1f5f9;
     overflow: hidden;
+    height: 660px;
+}
+
+.admin-table-wrapper {
+    height: 570px;
+    overflow-y: auto;
+}
+
+.admin-table-wrapper::-webkit-scrollbar {
+    width: 6px;
+}
+
+.admin-table-wrapper::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 10px;
 }
 
 .admin-table {
@@ -363,4 +401,57 @@
 .status-cancelled {
     background: #fee2e2;
     color: #991b1b;
+}
+
+.status-accepted {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.status-received {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+/* New Table Styles */
+.order-product-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.product-name-table {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.items-count {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-style: italic;
+}
+
+.customer-cell {
+    display: flex;
+    flex-direction: column;
+}
+
+.customer-name {
+    font-weight: 600;
+}
+
+.filter-wrapper select:focus {
+    outline: none;
+    background: #f1f5f9;
+}
+
+.badge-out-of-stock {
+    background: #fee2e2;
+    color: #ef4444;
+    font-size: 0.625rem;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+    border: 1px solid rgba(239, 68, 68, 0.2);
 }

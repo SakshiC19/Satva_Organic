@@ -413,7 +413,7 @@
 
 /* Dashboard Content */
 .admin-content {
-    padding: 20px;
+    padding: 10px;
     width: 100%;
     max-width: 1400px;
     margin: 0 auto;
@@ -530,7 +530,6 @@
     border-radius: 16px;
     box-shadow: var(--admin-shadow);
     overflow: hidden;
-    margin-top: 20px;
 }
 
 .admin-table {

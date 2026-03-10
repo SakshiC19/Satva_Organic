@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { FiTrendingUp, FiTrendingDown, FiDollarSign, FiShoppingBag, FiBox, FiUsers, FiFilter } from 'react-icons/fi';
 import './Dashboard.css';
@@ -16,53 +16,78 @@ const Dashboard = () => {
   const [topProducts, setTopProducts] = useState([]);
   const [recentOrders, setRecentOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [orderFilter, setOrderFilter] = useState('All');
 
   useEffect(() => {
-    fetchDashboardData();
+    const ordersRef = collection(db, 'orders');
+    const productsRef = collection(db, 'products');
+
+    const unsubscribeOrders = onSnapshot(query(ordersRef, orderBy('createdAt', 'desc'), limit(100)), (snapshot) => {
+      const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setRecentOrders(orders);
+      
+      // Calculate revenue and customers
+      const revenue = orders.reduce((sum, order) => sum + (order.total || order.totalAmount || 0), 0);
+      setStats(prev => ({
+        ...prev,
+        totalRevenue: revenue,
+        totalOrders: snapshot.size,
+        activeCustomers: new Set(orders.map(o => o.userId)).size
+      }));
+    });
+
+    const unsubscribeProducts = onSnapshot(productsRef, (snapshot) => {
+      const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setStats(prev => ({ ...prev, totalProducts: products.length }));
+      
+      // We'll update the top products list whenever either products or orders change
+      // Handled in a separate useEffect or by recalculating here
+      setLoading(false);
+    });
+
+    return () => {
+      unsubscribeOrders();
+      unsubscribeProducts();
+    };
   }, []);
 
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      
-      // Fetch orders
-      const ordersRef = collection(db, 'orders');
-      const ordersQuery = query(ordersRef, orderBy('createdAt', 'desc'), limit(5));
-      const ordersSnapshot = await getDocs(ordersQuery);
-      const ordersData = ordersSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+  // Recalculate top products when orders or products change
+  useEffect(() => {
+    if (recentOrders.length === 0 || !stats.totalProducts) return;
 
-      // Fetch products
-      const productsRef = collection(db, 'products');
-      const productsSnapshot = await getDocs(productsRef);
+    const productSales = {};
+    recentOrders.forEach(order => {
+      if (order.items) {
+        order.items.forEach(item => {
+          // Normalize names for better matching
+          const productName = item.name?.trim().toLowerCase();
+          if (productName) {
+            const quantity = item.quantity || 1;
+            productSales[productName] = (productSales[productName] || 0) + quantity;
+          }
+        });
+      }
+    });
+
+    // Fetch products again to ensure we have the latest stock
+    const productsRef = collection(db, 'products');
+    getDocs(productsRef).then(productsSnapshot => {
       const productsData = productsSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
 
-      // Calculate stats
-      const totalRevenue = ordersData.reduce((sum, order) => sum + (order.total || 0), 0);
-      const totalOrders = ordersData.length;
-      const totalProducts = productsData.length;
+      const sortedBySales = productsData.map(product => {
+        const normalizedName = product.name?.trim().toLowerCase();
+        return {
+          ...product,
+          salesCount: productSales[normalizedName] || 0
+        };
+      }).sort((a, b) => (a.stock || 0) - (b.stock || 0)); // Least stock first
 
-      setStats({
-        totalRevenue,
-        totalOrders,
-        totalProducts,
-        activeCustomers: ordersData.length // Simplified - count unique customers
-      });
-
-      setRecentOrders(ordersData.slice(0, 3));
-      setTopProducts(productsData.slice(0, 3));
-      
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+      setTopProducts(sortedBySales);
+    });
+  }, [recentOrders, stats.totalProducts]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
@@ -71,6 +96,31 @@ const Dashboard = () => {
       maximumFractionDigits: 0
     }).format(amount || 0);
   };
+
+  const formatDate = (date) => {
+    if (!date) return 'Just now'; // Handle serverTimestamp latency
+    
+    let d;
+    if (date.seconds) {
+      d = new Date(date.seconds * 1000);
+    } else if (date instanceof Date) {
+      d = date;
+    } else {
+      d = new Date(date);
+    }
+
+    if (isNaN(d.getTime())) return 'Recently';
+    
+    return d.toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  const filteredOrders = orderFilter === 'All' 
+    ? recentOrders 
+    : recentOrders.filter(order => order.status?.toLowerCase() === orderFilter.toLowerCase());
 
   const statsCards = [
     { 
@@ -182,10 +232,6 @@ const Dashboard = () => {
         <div className="chart-card">
           <div className="chart-header">
             <h3>Sales By Category</h3>
-            <select className="chart-select">
-              <option>Weekly</option>
-              <option>Monthly</option>
-            </select>
           </div>
           <div className="chart-placeholder">
             <div style={{ position: 'absolute', left: '20px', top: '20px', textAlign: 'left' }}>
@@ -225,9 +271,6 @@ const Dashboard = () => {
         <div className="chart-card">
           <div className="chart-header">
             <h3>Sales By Category</h3>
-            <select className="chart-select">
-              <option>Monthly</option>
-            </select>
           </div>
           <div className="chart-placeholder">
             <svg width="180" height="180" viewBox="0 0 100 100">
@@ -253,9 +296,6 @@ const Dashboard = () => {
         <div className="list-card">
           <div className="list-header">
             <h3>Top Products</h3>
-            <select className="chart-select">
-              <option>All Time</option>
-            </select>
           </div>
           <div className="products-list">
             {topProducts.length > 0 ? topProducts.map((product, index) => {
@@ -267,8 +307,12 @@ const Dashboard = () => {
                 <div key={index} className="product-item">
                   <img src={productImage} alt={product.name} className="product-thumb" />
                   <div className="product-details">
-                    <span className="product-name">{product.name}</span>
-                    <span className="product-sales">{product.stock || 0} in stock</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span className="product-name">{product.name}</span>
+                    </div>
+                    <span className="product-sales">
+                      {product.stock > 0 ? `${product.stock} in stock` : 'Out of Stock'}
+                    </span>
                   </div>
                   <span className="product-price">{formatCurrency(product.price)}</span>
                 </div>
@@ -280,53 +324,74 @@ const Dashboard = () => {
         <div className="admin-table-container">
           <div className="list-header" style={{ padding: '24px 24px 0 24px' }}>
             <h3>Recent Order</h3>
-            <button className="btn-help" style={{ width: 'auto', padding: '6px 16px' }}>
-              <FiFilter size={14} /> Filter
-            </button>
+            <div className="filter-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <FiFilter size={14} color="#64748b" />
+              <select 
+                className="chart-select" 
+                value={orderFilter}
+                onChange={(e) => setOrderFilter(e.target.value)}
+                style={{ border: 'none', background: '#f8fafc', fontWeight: 'bold' }}
+              >
+                <option value="All">All Orders</option>
+                <option value="Pending">Pending</option>
+                <option value="Accepted">Accepted</option>
+                <option value="Processing">Processing</option>
+                <option value="Shipped">Shipped</option>
+                <option value="Delivered">Delivered</option>
+                <option value="Cancelled">Cancelled</option>
+              </select>
+            </div>
           </div>
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Order ID</th>
-                <th>Product</th>
-                <th>Date</th>
-                <th>Status</th>
-                <th>Price</th>
-                <th>Customer</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentOrders.length > 0 ? recentOrders.map((order) => {
-                const firstItem = order.items && order.items.length > 0 ? order.items[0] : null;
-                const orderDate = order.createdAt ? new Date(order.createdAt.seconds * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A';
-                
-                return (
-                  <tr key={order.id}>
-                    <td>{order.id.substring(0, 8)}...</td>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        {firstItem ? firstItem.name : 'N/A'}
-                      </div>
-                    </td>
-                    <td>{orderDate}</td>
-                    <td>
-                      <span className={`status-badge status-${order.status?.toLowerCase() || 'pending'}`}>
-                        {order.status || 'Pending'}
-                      </span>
-                    </td>
-                    <td>{formatCurrency(order.total)}</td>
-                    <td>{order.customerName || 'Guest'}</td>
-                  </tr>
-                );
-              }) : (
+          <div className="admin-table-wrapper">
+            <table className="admin-table">
+              <thead>
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
-                    No orders yet.
-                  </td>
+                  <th>Order ID</th>
+                  <th>Product</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th>Price</th>
+                  <th>Customer</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredOrders.length > 0 ? filteredOrders.map((order) => {
+                  const firstItem = order.items && order.items.length > 0 ? order.items[0] : null;
+                  const orderDate = formatDate(order.createdAt);
+                  
+                  return (
+                    <tr key={order.id}>
+                      <td>#{order.id.substring(0, 8)}...</td>
+                      <td>
+                        <div className="order-product-info">
+                          <span className="product-name-table">{firstItem ? firstItem.name : 'N/A'}</span>
+                          {order.items?.length > 1 && <span className="items-count">+{order.items.length - 1} more</span>}
+                        </div>
+                      </td>
+                      <td>{orderDate}</td>
+                      <td>
+                        <span className={`status-badge status-${order.status?.toLowerCase().replace(/\s+/g, '-') || 'pending'}`}>
+                          {order.status || 'Pending'}
+                        </span>
+                      </td>
+                      <td>{formatCurrency(order.total || order.totalAmount || order.grandTotal)}</td>
+                      <td>
+                        <div className="customer-cell">
+                          <span className="customer-name">{order.customerName || order.userName || 'Guest'}</span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                }) : (
+                  <tr>
+                    <td colSpan="6" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                      No orders yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

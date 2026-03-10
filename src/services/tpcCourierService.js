@@ -1,67 +1,40 @@
 /**
  * TPC (The Professional Couriers) Web API Integration Service
  * 
- * This service handles all TPC API interactions including:
+ * This service handles all TPC API interactions through a secure backend handler.
+ * Features:
  * - PIN code service check
+ * - Create Pickup Request (Main Booking)
+ * - Tracking API Integration
+ * - Cancel Booking API
  * - Area/City search (auto-suggest)
- * - Consignment Note (AWB) request
  * 
- * All API calls are logged for monitoring and debugging
+ * All API calls are logged for monitoring and debugging.
  */
 
-import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import config from '../config';
 
+// Regional transit time mapping (from User Data)
+const TRANSIT_TIME_MAPPING = {
+  '415110': '1 Day', '415111': '1 Day', '415115': '1 Day', '415002': '1 Day',
+  '415001': '1 Day', '415004': '1 Day', '416001': '1 Day', '416002': '1 Day',
+  '416003': '1 Day', '416004': '1 Day', '416005': '1 Day', '416007': '1 Day',
+  '416008': '1 Day', '416010': '1 Day', '416012': '1 Day', '416013': '1 Day',
+  '416101': '1 Day', '416102': '1 Day', '413001': '1 Day', '413003': '1 Day',
+  '413004': '1 Day', '413005': '1 Day', '413007': '1 Day', '416112': '1 Day',
+  '416113': '1 Day', '416114': '1 Day', '416115': '1 Day', '416117': '1 Day',
+  '416416': '1 Day', '416410': '1 Day', '413304': '1 Day', '413401': '1 Day'
+};
+
 class TPCCourierService {
   constructor() {
-    this.baseURL = null;
-    this.username = null;
-    this.password = null;
-    this.initialized = false;
+    this.handlerURL = config.TPC_HANDLER_URL;
   }
 
   /**
-   * Initialize service with credentials from Firebase
-   */
-  async initialize() {
-    try {
-      const settingsRef = collection(db, 'courier_settings');
-      const q = query(settingsRef, where('courier_name', '==', 'TPC'), limit(1));
-      const snapshot = await getDocs(q);
-      
-      if (!snapshot.empty) {
-        const settings = snapshot.docs[0].data();
-        this.baseURL = settings.api_base_url || 'https://www.tpcglobe.com';
-        this.username = settings.username;
-        this.password = this.decryptPassword(settings.password);
-        this.initialized = true;
-        return true;
-      } else {
-        console.error('TPC courier settings not found in database');
-        return false;
-      }
-    } catch (error) {
-      console.error('Error initializing TPC service:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Simple password decryption (implement proper encryption in production)
-   */
-  decryptPassword(encryptedPassword) {
-    // TODO: Implement proper decryption
-    // For now, assuming base64 encoding
-    try {
-      return atob(encryptedPassword);
-    } catch {
-      return encryptedPassword;
-    }
-  }
-
-  /**
-   * Log API request and response
+   * Log API request and response to Firebase
    */
   async logAPICall(apiName, requestPayload, responsePayload, status) {
     try {
@@ -78,302 +51,220 @@ class TPCCourierService {
   }
 
   /**
-   * Safe JSON parser that handles common API response issues
-   * specifically "Bad control character" errors caused by unescaped newlines
+   * Universal fetch wrapper for TPC Handler
    */
-  async safeJsonParse(response) {
-    const text = await response.text();
+  async callHandler(action, data = {}) {
     try {
-      return JSON.parse(text);
-    } catch (error) {
-      console.warn('Standard JSON parse failed, attempting sanitization:', error);
+      const response = await fetch(this.handlerURL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action,
+          ...data
+        })
+      });
+
+      let result;
+      const responseText = await response.text();
       
-      // Check if it's HTML
-      if (text.trim().startsWith('<')) {
-        throw new Error('Received HTML response instead of JSON');
+      try {
+        result = JSON.parse(responseText);
+      } catch (e) {
+        result = { 
+          success: false, 
+          error: 'Invalid response from server',
+          raw: responseText.substring(0, 200)
+        };
       }
 
-      // Fix "Bad control character" (newlines in strings)
-      // We replace newlines with spaces. This preserves JSON structure (newlines are whitespace)
-      // and fixes invalid strings.
-      const sanitized = text.replace(/[\n\r]/g, ' ');
-      try {
-        return JSON.parse(sanitized);
-      } catch (e2) {
-        console.error('Sanitized JSON parse failed:', e2);
-        console.log('Original Text:', text);
-        throw new Error(`Failed to parse API response: ${error.message}`);
+      if (!response.ok) {
+        const errorMsg = result.error || `HTTP error! status: ${response.status}`;
+        throw new Error(errorMsg);
       }
+
+      // Log failure if the result indicates one (but still a 200 OK from handler)
+      if (result.success === false || result.ERROR || result.error) {
+        await this.logAPICall(action, data, result, 'failed');
+      } else {
+        await this.logAPICall(action, data, result, 'success');
+      }
+
+      return result;
+    } catch (error) {
+      console.error(`❌ TPC ${action} error:`, error);
+      await this.logAPICall(action, data, { error: error.message }, 'failed');
+      return {
+        success: false,
+        error: error.message
+      };
     }
   }
 
   /**
    * 1. PIN Code Service Check
    * Checks if delivery and COD are available for a given PIN code
-   * 
-   * API: http://www.tpcglobe.com/tpcwebservice/PINcodeService.ashx?pincode=563130
-   * Method: POST
-   * Content-Type: application/json
-   * 
-   * @param {string} pincode - 6-digit PIN code
-   * @returns {Object} - Service availability details
    */
   async checkPinCodeService(pincode) {
-    if (!this.initialized) {
-      await this.initialize();
-    }
-
-    const apiName = 'PINcodeService';
-    const requestPayload = { pincode };
+    console.log('🔍 Checking PIN code:', pincode);
+    const data = await this.callHandler('pincode_check', { pincode });
     
-    try {
-      // As per TPC official documentation
-      const url = `${this.baseURL}/tpcwebservice/PINcodeService.ashx?pincode=${pincode}`;
-      const proxyUrl = `${config.TPC_PROXY_URL}?url=${encodeURIComponent(url)}`;
-      
-      console.log('🔍 Checking PIN code:', pincode);
-      console.log('📡 API URL:', url);
-      
-      const response = await fetch(proxyUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await this.safeJsonParse(response);
-      console.log('📥 TPC Response:', data);
-      console.log('📊 Response Type:', typeof data);
-      console.log('📋 Response Keys:', Object.keys(data));
-      
-      // Log successful API call
-      await this.logAPICall(apiName, requestPayload, data, 'success');
-
-      // Check if TPC returned an error message
-      if (data.error || data.ERROR || data.message || data.MESSAGE) {
-        const errorMsg = data.error || data.ERROR || data.message || data.MESSAGE;
-        console.warn('⚠️ TPC returned error:', errorMsg);
-        return {
-          success: false,
-          error: errorMsg,
-          parcelDelivery: false,
-          codAvailable: false,
-          rawResponse: data
-        };
-      }
-
-      // Handle Array Response (Multiple areas for one PIN) vs Single Object
-      let pinData = null;
-      
-      if (Array.isArray(data)) {
-        console.log(`📊 Received array with ${data.length} entries. Searching for serviceable area...`);
-        // Find first entry with Parcel Delivery available
-        pinData = data.find(item => item.PARCEL_DELIVERY === 'YES' || item.parcel_delivery === 'YES');
-        
-        // If no serviceable area found, just take the first one to show details
-        if (!pinData && data.length > 0) {
-          pinData = data[0];
-        }
-      } else {
-        pinData = data;
-      }
-
-      if (!pinData) {
-        throw new Error('Empty response from TPC API');
-      }
-
-      // Parse response based on TPC documentation
-      const result = {
-        success: true,
-        pincode: pinData.PINCODE || pincode,
-        areaName: pinData.AREANAME || '',
-        stationCode: pinData.STATION_CODE || '',
-        subBranchCode: pinData.SUB_BRANCH_CODE || '',
-        docDelivery: pinData.DOC_DELIVERY === 'YES',
-        parcelDelivery: pinData.PARCEL_DELIVERY === 'YES',
-        proPremiumDelivery: pinData.PROPREMIUM_DELIVERY === 'YES',
-        docDeliverySchedule: pinData.DOC_DELIVERY_SCHEDULE || '',
-        parcelDeliverySchedule: pinData.PARCEL_DELIVERY_SCHEDULE || '',
-        proPremiumSchedule: pinData.PROPREMIUMSCHEDULE || '',
-        codAvailable: pinData.COD_DELIVERY === 'YES',
-        rawResponse: data
-      };
-
-      console.log('✅ Parsed Result:', {
-        parcelDelivery: result.parcelDelivery,
-        codAvailable: result.codAvailable,
-        areaName: result.areaName
-      });
-
-      return result;
-
-    } catch (error) {
-      console.error('❌ PIN code service error:', error);
-      
-      // Log failed API call
-      await this.logAPICall(apiName, requestPayload, { error: error.message }, 'failed');
-      
+    if (!data || data.error) {
       return {
         success: false,
-        error: error.message,
+        error: data?.error || 'Unknown error',
         parcelDelivery: false,
         codAvailable: false
       };
     }
+
+    // Handle Array Response vs Single Object
+    let pinData = Array.isArray(data) ? data[0] : data;
+    
+    if (!pinData) {
+      return { success: false, error: 'No data returned for this PIN code' };
+    }
+
+    return {
+      success: true,
+      pincode: pinData.PINCODE || pincode,
+      areaName: pinData.AREANAME || '',
+      parcelDelivery: pinData.PARCEL_DELIVERY === 'YES',
+      codAvailable: pinData.COD_DELIVERY === 'YES',
+      transitTime: TRANSIT_TIME_MAPPING[pincode] || (TRANSIT_TIME_MAPPING[pinData.PINCODE] || '2-5 Days'),
+      rawResponse: data
+    };
   }
 
   /**
-   * 2. Area/City Search (Auto-Suggest)
-   * Returns list of areas matching the search term
-   * 
-   * API: https://www.tpcglobe.com/TPCWebservice/PINcodeCitysearch.ashx?AreaName=coimbatore
-   * Method: POST
-   * Content-Type: application/json
-   * 
-   * @param {string} areaName - Search term for area/city
-   * @returns {Array} - List of matching areas with PIN codes
+   * 2. Create Pickup Request (Main Booking API)
+   * Automatically switches to COD API if payment mode is COD
    */
-  async searchAreaCity(areaName) {
-    if (!this.initialized) {
-      await this.initialize();
-    }
-
-    const apiName = 'PINcodeCitysearch';
-    const requestPayload = { areaName };
-    
+  async createPickupRequest(bookingData) {
     try {
-      // As per TPC official documentation
-      const url = `${this.baseURL}/TPCWebservice/PINcodeCitysearch.ashx?AreaName=${encodeURIComponent(areaName)}`;
-      const proxyUrl = `${config.TPC_PROXY_URL}?url=${encodeURIComponent(url)}`;
+      console.log('📦 Creating Booking for:', bookingData.REF_NO);
       
-      console.log('🔍 Searching area:', areaName);
-      console.log('📡 API URL:', url);
-      
-      const response = await fetch(proxyUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
+      // Validation
+      const mandatoryFields = [
+        'REF_NO', 'BDATE', 'SENDER', 'SENDER_ADDRESS', 'SENDER_CITY', 
+        'SENDER_PINCODE', 'SENDER_MOB', 'RECIPIENT', 'RECIPIENT_ADDRESS', 
+        'RECIPIENT_CITY', 'RECIPIENT_PINCODE', 'RECIPIENT_MOB', 'WEIGHT', 
+        'PIECES', 'DESCRIPTION', 'PAYMENT_MODE', 'TYPE', 'MODE', 'SERVICE'
+      ];
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      for (const field of mandatoryFields) {
+        if (!bookingData[field]) {
+          throw new Error(`Missing mandatory field: ${field}`);
+        }
       }
 
-      const data = await this.safeJsonParse(response);
-      console.log('📥 TPC Response:', data);
+      // Choose action based on payment mode
+      const isCOD = bookingData.PAYMENT_MODE === 'COD' || bookingData.PAYMENT_MODE === 'CASH';
+      const action = isCOD ? 'create_cod_booking' : 'create_pickup';
       
-      // Log successful API call
-      await this.logAPICall(apiName, requestPayload, data, 'success');
-
-      // Parse response based on TPC documentation
-      // Response format: [{"AREANAME":"COIMBATORE","PINCODE":"641037","STATION_CODE":"CJB",...}]
-      const results = Array.isArray(data) ? data.map(item => ({
-        areaName: item.AREANAME || '',
-        pincode: item.PINCODE || '',
-        stationCode: item.STATION_CODE || '',
-        subBranchCode: item.SUB_BRANCH_CODE || '',
-        docDelivery: item.DOC_DELIVERY === 'YES',
-        parcelDelivery: item.PARCEL_DELIVERY === 'YES',
-        proPremiumDelivery: item.PROPREMIUM_DELIVERY === 'YES',
-        docDeliverySchedule: item.DOC_DELIVERY_SCHEDULE || '',
-        parcelDeliverySchedule: item.PARCEL_DELIVERY_SCHEDULE || '',
-        proPremiumSchedule: item.PROPREMIUMSCHEDULE || '',
-        codDelivery: item.COD_DELIVERY === 'YES'
-      })) : [];
-
-      return {
-        success: true,
-        results: results
-      };
-
-    } catch (error) {
-      console.error('❌ Area search error:', error);
-      
-      // Log failed API call
-      await this.logAPICall(apiName, requestPayload, { error: error.message }, 'failed');
-      
-      return {
-        success: false,
-        error: error.message,
-        results: []
-      };
-    }
-  }
-
-  /**
-   * 3. Consignment Note (AWB) Request
-   * Requests consignment numbers from TPC
-   * 
-   * @param {number} quantity - Number of consignment notes required
-   * @returns {Object} - Consignment numbers or error
-   */
-  async requestConsignmentNote(quantity = 1) {
-    if (!this.initialized) {
-      await this.initialize();
-    }
-
-    const apiName = 'CNoteRequest';
-    const requestPayload = { 
-      client: this.username, 
-      quantity 
-    };
-    
-    try {
-      // Updated URL as per document: https://www.tpcglobe.com/TPCWebService/CnoteRequest.ashx?client=blraveryden&tpcpwd=xxx&Qty=100
-      // Note: Using lowercase 'client' and 'tpcpwd' as per document
-      const url = `${this.baseURL}/TPCWebService/CnoteRequest.ashx?client=${this.username}&tpcpwd=${this.password}&Qty=${quantity}`;
-      const proxyUrl = `${config.TPC_PROXY_URL}?url=${encodeURIComponent(url)}`;
-      
-      const response = await fetch(proxyUrl, {
-        method: 'POST', // As per document: Method Type: Post
-        headers: {
-          'Content-Type': 'application/json',
+      // TPC COD API requirements: PAYMENT_MODE must be 'CASH' and needs COD_AMOUNT
+      if (isCOD) {
+        bookingData.PAYMENT_MODE = 'CASH';
+        if (!bookingData.COD_AMOUNT) {
+          console.warn('⚠️ COD booking without COD_AMOUNT. TPC API might reject this.');
         }
-      });
+      }
 
-      const data = await this.safeJsonParse(response);
+      const resultRaw = await this.callHandler(action, { data: bookingData });
       
-      // Log successful API call
-      await this.logAPICall(apiName, requestPayload, data, 'success');
+      // TPC often returns an array [ { STATUS: '...', ... } ]
+      const result = Array.isArray(resultRaw) ? resultRaw[0] : resultRaw;
+      
+      console.log('📦 TPC Booking Response:', result);
 
-      // Check if CN stock is available
-      if (data.STATUS === 'SUCCESS' || data.status === 'success') {
+      if (result && (result.STATUS === 'SUCCESS' || result.success === true || result.POD_NO || result.pod_no)) {
         return {
           success: true,
-          consignmentNumbers: data.CN_NUMBERS || data.consignment_numbers || [],
-          message: data.MESSAGE || 'Consignment notes generated successfully'
-        };
-      } else {
-        // CN stock not available
-        return {
-          success: false,
-          error: data.MESSAGE || 'Consignment note stock not available',
-          notifyAdmin: true
+          pod_no: result.POD_NO || result.pod_no,
+          message: result.MESSAGE || result.message || 'Booking successful',
+          rawResponse: result
         };
       }
 
-    } catch (error) {
-      console.error('Consignment note request error:', error);
-      
-      // Log failed API call
-      await this.logAPICall(apiName, requestPayload, { error: error.message }, 'failed');
-      
       return {
         success: false,
-        error: error.message,
-        notifyAdmin: true
+        error: result?.MESSAGE || result?.error || result?.message || 'Booking failed',
+        rawResponse: result
+      };
+    } catch (error) {
+      console.error('❌ TPC Booking Setup Error:', error);
+      return {
+        success: false,
+        error: error.message
       };
     }
   }
 
   /**
-   * Get API logs for monitoring
-   * @param {number} limitCount - Number of logs to fetch
+   * Stock Management APIs
+   */
+  async checkCnoteStock() {
+    return await this.callHandler('stock_check');
+  }
+
+  async getStockDetails() {
+    return await this.callHandler('stock_details');
+  }
+
+  async requestNewCnotes(data) {
+    // data: { QUANTITY, TYPE }
+    return await this.callHandler('request_cnotes', { data });
+  }
+
+  /**
+   * 3. Tracking API Integration
+   */
+  async trackOrder(podNo) {
+    if (!podNo) throw new Error('POD Number is required for tracking');
+    console.log('📡 Tracking order:', podNo);
+    
+    const result = await this.callHandler('track_trace', { podno: podNo });
+    return result;
+  }
+
+  /**
+   * 4. Cancel Booking API
+   */
+  async cancelBooking(podNo) {
+    if (!podNo) throw new Error('POD Number is required for cancellation');
+    console.log('🚫 Cancelling booking:', podNo);
+    
+    const result = await this.callHandler('cancel_booking', { podno: podNo });
+    return result;
+  }
+
+  /**
+   * Area/City Search (Auto-Suggest)
+   */
+  async searchAreaCity(areaName) {
+    if (!areaName || areaName.length < 3) return { success: true, results: [] };
+    
+    // We can reuse the pincode_city_search if we add it to the handler
+    // For now, let's keep it consistent and add it to handler
+    const result = await this.callHandler('area_search', { areaName });
+    
+    if (Array.isArray(result)) {
+      return {
+        success: true,
+        results: result.map(item => ({
+          areaName: item.AREANAME || '',
+          pincode: item.PINCODE || '',
+          city: item.CITY || item.AREANAME
+        }))
+      };
+    }
+    
+    return { success: false, results: [], error: result.error };
+  }
+
+  /**
+   * Get API logs from Firestore
    */
   async getAPILogs(limitCount = 50) {
     try {
@@ -390,22 +281,7 @@ class TPCCourierService {
       return [];
     }
   }
-
-  /**
-   * Check consignment note stock availability
-   */
-  async checkCNStock() {
-    // This would call a specific API endpoint if available
-    // For now, we'll try requesting 0 quantity to check status
-    try {
-      const result = await this.requestConsignmentNote(0);
-      return result.success;
-    } catch {
-      return false;
-    }
-  }
 }
 
-// Export singleton instance
 const tpcService = new TPCCourierService();
 export default tpcService;

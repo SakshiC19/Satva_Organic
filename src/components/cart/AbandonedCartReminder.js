@@ -11,8 +11,8 @@ const AbandonedCartReminder = () => {
 
   useEffect(() => {
     const checkReminder = () => {
-      // Don't show if tab is hidden
-      if (document.hidden) return;
+      // Don't show if tab is hidden or on desktop
+      if (document.hidden || window.innerWidth > 768) return;
 
       if (cartItems.length === 0 || !lastCartUpdatedAt) {
         setIsVisible(false);

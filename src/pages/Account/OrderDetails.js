@@ -20,8 +20,10 @@ import {
   FiMail,
   FiChevronRight,
   FiCopy,
-  FiXCircle
+  FiXCircle,
+  FiActivity
 } from 'react-icons/fi';
+import tpcService from '../../services/tpcCourierService';
 import { 
   BsBoxSeam, 
   BsCheckCircleFill, 
@@ -94,6 +96,8 @@ const OrderDetails = () => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [isCancelling, setIsCancelling] = useState(false);
+  const [trackingLoading, setTrackingLoading] = useState(false);
+  const [trackingData, setTrackingData] = useState(null);
 
   const cancelReasons = [
     "Ordered by mistake",
@@ -121,6 +125,25 @@ const OrderDetails = () => {
 
     fetchOrder();
   }, [id, navigate]);
+
+  useEffect(() => {
+    if (order && order.courierName === 'TPC' && order.trackingNumber) {
+      fetchTrackingInfo(order.trackingNumber);
+    }
+  }, [order]);
+
+  const fetchTrackingInfo = async (podNo) => {
+    try {
+      setTrackingLoading(true);
+      const result = await tpcService.trackOrder(podNo);
+      console.log('📡 TPC Tracking Result:', result);
+      setTrackingData(result);
+    } catch (error) {
+      console.error('Error fetching TPC tracking:', error);
+    } finally {
+      setTrackingLoading(false);
+    }
+  };
 
   const formatDate = (timestamp) => {
     if (!timestamp) return 'N/A';
@@ -384,6 +407,35 @@ const OrderDetails = () => {
               {order.status?.toLowerCase() !== 'delivered' && order.status?.toLowerCase() !== 'cancelled' && (
                 <div className="delivery-estimate">
                   <FiTruck /> Expected delivery: <strong>3–5 days from order date</strong>
+                </div>
+              )}
+
+              {/* TPC Real-time Tracking Info */}
+              {order.courierName === 'TPC' && order.trackingNumber && (
+                <div className="tpc-tracking-section">
+                  <h4 className="tracking-subtitle"><FiActivity /> Real-time Tracking (TPC)</h4>
+                  {trackingLoading ? (
+                    <div className="tracking-loader"><FiClock className="spinner" /> Fetching latest status...</div>
+                  ) : trackingData ? (
+                    <div className="tracking-info-grid">
+                      <div className="tracking-item">
+                        <span className="label">POD Number:</span>
+                        <span className="value">{order.trackingNumber}</span>
+                      </div>
+                      <div className="tracking-item">
+                        <span className="label">Latest Status:</span>
+                        <span className="value status-highlight">{trackingData.STATUS || trackingData.status || 'Processed'}</span>
+                      </div>
+                      {trackingData.LATEST_LOCATION && (
+                        <div className="tracking-item">
+                          <span className="label">Location:</span>
+                          <span className="value">{trackingData.LATEST_LOCATION}</span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="no-tracking-data">Tracking information currently unavailable.</p>
+                  )}
                 </div>
               )}
             </div>

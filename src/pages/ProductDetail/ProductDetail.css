@@ -389,6 +389,24 @@
     font-weight: 600;
 }
 
+.transit-time-badge {
+    margin-top: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #f0fdf4;
+    color: #16a34a;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid #dcfce7;
+}
+
+.transit-time-badge svg {
+    font-size: 14px;
+}
+
 /* Options */
 .product-option {
     margin-bottom: 15px;

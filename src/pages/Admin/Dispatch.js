@@ -25,7 +25,14 @@ const Dispatch = () => {
     mobileNumber: '',
     parcelType: 'Parcel',
     paymentMode: 'Prepaid',
-    courier: 'TPC'
+    courier: 'TPC',
+    // TPC mandatory extras
+    weight: '0.5',
+    pieces: '1',
+    description: 'Organic Products',
+    service: 'STD',
+    mode: 'S',
+    manualPodNo: ''
   });
 
   // Service check state
@@ -33,11 +40,32 @@ const Dispatch = () => {
   const [checkingPincode, setCheckingPincode] = useState(false);
   const [areaSuggestions, setAreaSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [cnoteStock, setCnoteStock] = useState(null);
 
   // Fetch orders that have completed inspection
   useEffect(() => {
     fetchInspectedOrders();
+    checkStock();
   }, []);
+
+  const checkStock = async () => {
+    try {
+      const result = await tpcService.checkCnoteStock();
+      console.log('📦 TPC Stock Result:', result);
+      
+      // Handle array or object response
+      const data = Array.isArray(result) ? result[0] : result;
+      
+      if (data && data.status === 'failed') {
+        console.warn('⚠️ TPC Stock check failed:', data.description);
+        setCnoteStock({ STOCK_AVAILABLE: '0', error: data.description });
+      } else if (data && data.STOCK_AVAILABLE !== undefined) {
+        setCnoteStock(data);
+      }
+    } catch (error) {
+      console.error('Error checking TPC stock:', error);
+    }
+  };
 
   const fetchInspectedOrders = async () => {
     try {
@@ -68,8 +96,9 @@ const Dispatch = () => {
     // Extract address data with fallbacks
     const addr = order.shippingAddress || order.address || {};
     
-    // Pre-fill form with order data
-    setFormData({
+    // Pre-fill form with order data, but keep existing defaults for other fields
+    setFormData(prev => ({
+      ...prev,
       companyName: order.companyName || '',
       customerName: order.customerName || addr.name || order.userName || '',
       addressLine1: addr.addressLine1 || addr.address || addr.street || '',
@@ -81,7 +110,7 @@ const Dispatch = () => {
       parcelType: 'Parcel',
       paymentMode: order.paymentMethod === 'cod' ? 'COD' : 'Prepaid',
       courier: 'TPC'
-    });
+    }));
 
     // Auto-check pincode if available
     if (addr.pincode || addr.postalCode) {
@@ -100,28 +129,34 @@ const Dispatch = () => {
     try {
       const result = await tpcService.checkPinCodeService(pincode);
       console.log('🔍 PIN Code Check Result:', result);
+      
+      if (!result.success) {
+        setPincodeStatus({
+          success: false,
+          error: result.error || 'Service check failed'
+        });
+        // We show the error in the UI instead of an alert for a better UX
+        return;
+      }
+
       setPincodeStatus(result);
       
       // Show detailed information about service availability
-      if (!result.success) {
-        alert(`❌ Error: ${result.error}`);
-      } else if (!result.parcelDelivery && !result.docDelivery && !result.proPremiumDelivery) {
-        alert(`⚠️ No TPC services available for PIN ${pincode}\n\nArea: ${result.areaName || 'Unknown'}\nStation: ${result.stationCode || 'N/A'}\n\nPlease contact TPC support or try a different courier.`);
+      if (!result.parcelDelivery && !result.docDelivery && !result.proPremiumDelivery) {
+        alert(`⚠️ No TPC services available for PIN ${pincode}\n\nArea: ${result.areaName || 'Unknown'}\n\nPlease contact TPC support or try a different courier.`);
       } else if (!result.parcelDelivery) {
-        // Some services available but not parcel delivery
         const availableServices = [];
         if (result.docDelivery) availableServices.push('Document Delivery');
         if (result.proPremiumDelivery) availableServices.push('Pro Premium');
         
-        alert(`⚠️ Parcel delivery not available for PIN ${pincode}\n\nAvailable services: ${availableServices.join(', ')}\n\nPlease contact TPC support.`);
+        alert(`⚠️ Parcel delivery not available for PIN ${pincode}\n\nAvailable services: ${availableServices.join(', ')}`);
       }
     } catch (error) {
       console.error('Error checking pincode:', error);
       setPincodeStatus({
         success: false,
-        error: 'Failed to check PIN code service'
+        error: error.message || 'Failed to check PIN code service'
       });
-      alert(`❌ Error checking PIN code: ${error.message}`);
     } finally {
       setCheckingPincode(false);
     }
@@ -199,29 +234,60 @@ const Dispatch = () => {
     setLoading(true);
     
     try {
-      // Step 1: Request Consignment Note (AWB)
-      const cnResult = await tpcService.requestConsignmentNote(1);
+      // Step 1: Prepare TPC Booking Data
+      const today = new Date();
+      const bDate = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`; // YYYY-MM-DD
       
-      if (!cnResult.success) {
-        // CN stock not available - notify admin
-        alert('❌ Consignment Note stock not available. Admin has been notified.');
-        
-        // Create admin notification
-        await addDoc(collection(db, 'admin_notifications'), {
-          type: 'cn_stock_unavailable',
-          message: 'TPC Consignment Note stock is unavailable',
-          orderId: selectedOrder.id,
-          created_at: serverTimestamp(),
-          read: false
-        });
-        
+      const bookingData = {
+        REF_NO: (selectedOrder.id.substring(0, 10) + Date.now().toString().slice(-5)), 
+        BDATE: bDate, 
+        SENDER: 'Satva Organics',
+        SENDER_CODE: 'JSPSAT',
+        SENDER_ADDRESS: 'Satva Organics Farm, Coimbatore',
+        SENDER_CITY: 'Coimbatore',
+        SENDER_PINCODE: '641001',
+        SENDER_MOB: '9876543210',
+        SENDER_EMAIL: "info@satvaorganics.com",
+        GSTIN: "",
+        RECIPIENT: formData.customerName.trim(),
+        RECIPIENT_COMPANY: formData.companyName || "",
+        RECIPIENT_ADDRESS: `${formData.addressLine1} ${formData.addressLine2}`.trim().substring(0, 100),
+        RECIPIENT_CITY: formData.city,
+        RECIPIENT_PINCODE: formData.pincode,
+        RECIPIENT_MOB: formData.mobileNumber,
+        RECIPIENT_EMAIL: formData.email || "",
+        WEIGHT: (parseFloat(formData.weight) || 0.5).toString(),
+        PIECES: (parseInt(formData.pieces) || 1).toString(),
+        DESCRIPTION: formData.description || 'Organic Products',
+        REMARKS: "Fresh organic products from Satva Organics",
+        PAYMENT_MODE: formData.paymentMode === 'COD' ? 'CASH' : 'PREPAID',
+        COD_AMOUNT: (formData.paymentMode === 'COD' ? (parseFloat(selectedOrder.totalAmount || selectedOrder.total) || 0).toFixed(2) : ""),
+        TYPE: 'PICKUP',
+        MODE: formData.mode,
+        SERVICE: formData.service,
+        VOL_LENGTH: "10",
+        VOL_WIDTH: "10",
+        VOL_HEIGHT: "10",
+        RECIPIENT_GSTIN: "",
+        FLYER_NO: "",
+        CUST_INVOICE: selectedOrder.id.substring(0, 15),
+        CUST_INVOICEAMT: (parseFloat(selectedOrder.totalAmount || selectedOrder.total) || 0).toFixed(2),
+        ORDER_STATUS: "HOLD",
+        POD_NO: formData.manualPodNo || ""
+      };
+
+      // Step 2: Call TPC Pickup Request API
+      const bookingResult = await tpcService.createPickupRequest(bookingData);
+      
+      if (!bookingResult.success) {
+        alert(`❌ TPC Booking Failed: ${bookingResult.error}`);
         setLoading(false);
         return;
       }
 
-      const consignmentNo = cnResult.consignmentNumbers[0];
+      const consignmentNo = bookingResult.pod_no;
 
-      // Step 2: Save dispatch order to database
+      // Step 3: Save dispatch order to database
       const dispatchData = {
         job_id: selectedOrder.id,
         order_id: selectedOrder.id,
@@ -244,6 +310,8 @@ const Dispatch = () => {
         // Parcel details
         parcel_type: formData.parcelType,
         payment_mode: formData.paymentMode,
+        weight: formData.weight,
+        pieces: formData.pieces,
         
         // Service status
         service_available: pincodeStatus.parcelDelivery,
@@ -257,7 +325,7 @@ const Dispatch = () => {
 
       await addDoc(collection(db, 'dispatch_orders'), dispatchData);
 
-      // Step 3: Update original order status
+      // Step 4: Update original order status
       await updateDoc(doc(db, 'orders', selectedOrder.id), {
         status: 'Shipped',
         dispatchStatus: 'DISPATCHED',
@@ -267,7 +335,7 @@ const Dispatch = () => {
         dispatchedAt: serverTimestamp()
       });
 
-      alert(`✅ Order dispatched successfully!\nTracking Number: ${consignmentNo}`);
+      alert(`✅ Order dispatched successfully!\nTPC Consignment Number (POD): ${consignmentNo}`);
       
       // Reset form
       setSelectedOrder(null);
@@ -291,7 +359,7 @@ const Dispatch = () => {
 
     } catch (error) {
       console.error('Error dispatching order:', error);
-      alert('Failed to dispatch order. Please try again.');
+      alert(`Failed to dispatch order: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -303,7 +371,15 @@ const Dispatch = () => {
         <h1 className="dispatch-title">
           <FiTruck /> Dispatch Management
         </h1>
-        <p className="dispatch-subtitle">TPC Courier Integration - Ship orders with tracking</p>
+        <div className="header-meta">
+          <p className="dispatch-subtitle">TPC Courier Integration - Ship orders with tracking</p>
+          {cnoteStock && (
+            <div className={`stock-badge ${parseInt(cnoteStock.STOCK_AVAILABLE || 0) < 10 ? 'low' : ''}`}>
+              <FiPackage /> TPC Stock: {cnoteStock.STOCK_AVAILABLE || 'None'}
+              {cnoteStock.error && <span className="stock-error">!</span>}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="dispatch-content">
@@ -521,6 +597,11 @@ const Dispatch = () => {
                             <><FiAlertCircle /> COD Not Available</>
                           )}
                         </div>
+                        {pincodeStatus.transitTime && (
+                          <div className="status-item transit-time" style={{ marginTop: '4px', borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: '4px' }}>
+                            <FiTruck style={{ color: '#4f46e5' }} /> Est. Delivery: <strong>{pincodeStatus.transitTime}</strong>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -556,6 +637,71 @@ const Dispatch = () => {
                       <option value="COD">COD (Cash on Delivery)</option>
                     </select>
                   </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group required">
+                    <label>Weight (kg) *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      name="weight"
+                      value={formData.weight}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  <div className="form-group required">
+                    <label>Pieces *</label>
+                    <input
+                      type="number"
+                      name="pieces"
+                      value={formData.pieces}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group required">
+                    <label>Service *</label>
+                    <select
+                      name="service"
+                      value={formData.service}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      <option value="STD">Standard (STD)</option>
+                      <option value="PRO">Professional (PRO)</option>
+                      <option value="PRC">PRC</option>
+                      <option value="OTP">OTP</option>
+                    </select>
+                  </div>
+                  <div className="form-group required">
+                    <label>Mode *</label>
+                    <select
+                      name="mode"
+                      value={formData.mode}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      <option value="S">Surface (S)</option>
+                      <option value="A">Air (A)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>Manual POD Number (Optional)</label>
+                  <input
+                    type="text"
+                    name="manualPodNo"
+                    value={formData.manualPodNo}
+                    onChange={handleInputChange}
+                    placeholder="Enter POD number if manual"
+                  />
+                  <small className="help-text">Leave blank to let TPC assign automatically from stock</small>
                 </div>
 
                 <div className="form-group">

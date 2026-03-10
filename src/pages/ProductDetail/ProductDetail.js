@@ -8,6 +8,7 @@ import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWishlist } from '../../contexts/WishlistContext';
 import Recommendations from '../../components/product/Recommendations';
+import tpcService from '../../services/tpcCourierService';
 import './ProductDetail.css';
 
 const ProductDetail = () => {
@@ -183,14 +184,14 @@ const ProductDetail = () => {
     setPincodeStatus(null);
     setPincodeError('');
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      let available = false;
-      if (product.availablePincodes && product.availablePincodes.length > 0) {
-        available = product.availablePincodes.includes(code);
+      const result = await tpcService.checkPinCodeService(code);
+      if (result.success && result.parcelDelivery) {
+        setPincodeStatus('available');
+        // Store the result to show transit time
+        setPincodeStatus(prev => ({ ...prev, type: 'available', transitTime: result.transitTime }));
       } else {
-        available = code.startsWith('4') || code.startsWith('1');
+        setPincodeStatus('unavailable');
       }
-      setPincodeStatus(available ? 'available' : 'unavailable');
     } catch (error) {
       console.error("Error checking pincode:", error);
     } finally {
@@ -277,7 +278,7 @@ const ProductDetail = () => {
         return;
       }
 
-      if (pincodeStatus !== 'available') {
+      if (pincodeStatus !== 'available' && pincodeStatus?.type !== 'available') {
         pincodeRef.current?.scrollIntoView({ behavior: 'smooth' });
         pincodeRef.current?.focus();
         return;
@@ -313,7 +314,7 @@ const ProductDetail = () => {
         return;
       }
 
-      if (pincodeStatus !== 'available') {
+      if (pincodeStatus !== 'available' && pincodeStatus?.type !== 'available') {
         pincodeRef.current?.scrollIntoView({ behavior: 'smooth' });
         pincodeRef.current?.focus();
         return;
@@ -332,21 +333,22 @@ const ProductDetail = () => {
 
     setIsCheckingPincode(true);
     setPincodeError('');
+    setPincodeStatus(null);
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const result = await tpcService.checkPinCodeService(pincode);
       
-      if (product.availablePincodes && product.availablePincodes.length > 0) {
-        if (product.availablePincodes.includes(pincode)) {
-          setPincodeStatus('available');
-        } else {
-          setPincodeStatus('unavailable');
-        }
+      if (result.success && result.parcelDelivery) {
+        setPincodeStatus({
+          type: 'available',
+          transitTime: result.transitTime
+        });
       } else {
-        if (pincode.startsWith('4') || pincode.startsWith('1')) {
-          setPincodeStatus('available');
-        } else {
-          setPincodeStatus('unavailable');
+        setPincodeStatus({ type: 'unavailable' });
+        if (result.error && result.error.includes('not available')) {
+          // Keep generic unavailable message
+        } else if (result.error) {
+           setPincodeError(result.error);
         }
       }
     } catch (error) {
@@ -711,7 +713,7 @@ const ProductDetail = () => {
                       setPincode(val);
                       if (pincodeStatus) setPincodeStatus(null);
                     }}
-                    className={`pincode-input ${pincodeStatus}`}
+                    className={`pincode-input ${pincodeStatus?.type || pincodeStatus}`}
                   />
                   <button 
                     className="btn-check-pincode"
@@ -722,12 +724,19 @@ const ProductDetail = () => {
                   </button>
                 </div>
                 {pincodeError && <p className="pincode-error">{pincodeError}</p>}
-                {pincodeStatus === 'available' && (
-                  <p className="pincode-success">
-                    <FiCheck /> Delivery available to {pincode}
-                  </p>
+                {(pincodeStatus === 'available' || pincodeStatus?.type === 'available') && (
+                  <div className="pincode-result-available">
+                    <p className="pincode-success">
+                      <FiCheck /> Delivery available to {pincode}
+                    </p>
+                    {pincodeStatus?.transitTime && (
+                       <div className="transit-time-badge">
+                         <FiPackage /> Estimated Delivery: {pincodeStatus.transitTime}
+                       </div>
+                    )}
+                  </div>
                 )}
-                {pincodeStatus === 'unavailable' && (
+                {(pincodeStatus === 'unavailable' || pincodeStatus?.type === 'unavailable') && (
                   <p className="pincode-error">
                     <FiX /> This product is currently not available in your location
                   </p>

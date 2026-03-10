@@ -82,9 +82,10 @@ const APILogs = () => {
     total: logs.length,
     success: logs.filter(l => l.status === 'success').length,
     failed: logs.filter(l => l.status === 'failed').length,
-    pincode: logs.filter(l => l.api_name === 'PINcodeService').length,
-    citySearch: logs.filter(l => l.api_name === 'PINcodeCitysearch').length,
-    cnRequest: logs.filter(l => l.api_name === 'CNoteRequest').length
+    pincode: logs.filter(l => l.api_name === 'PINcodeService' || l.api_name === 'pincode_check').length,
+    citySearch: logs.filter(l => l.api_name === 'PINcodeCitysearch' || l.api_name === 'area_search').length,
+    booking: logs.filter(l => l.api_name === 'create_pickup').length,
+    tracking: logs.filter(l => l.api_name === 'track_trace').length
   };
 
   return (
@@ -156,8 +157,15 @@ const APILogs = () => {
 
         <div className="stat-card">
           <div className="stat-content">
-            <p className="stat-label">CN Requests</p>
-            <h3 className="stat-value">{stats.cnRequest}</h3>
+            <p className="stat-label">Bookings</p>
+            <h3 className="stat-value">{stats.booking}</h3>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-content">
+            <p className="stat-label">Tracking Calls</p>
+            <h3 className="stat-value">{stats.tracking}</h3>
           </div>
         </div>
       </div>
@@ -178,9 +186,11 @@ const APILogs = () => {
           <label>API:</label>
           <select value={filterAPI} onChange={(e) => setFilterAPI(e.target.value)}>
             <option value="all">All APIs</option>
-            <option value="PINcodeService">PIN Code Service</option>
-            <option value="PINcodeCitysearch">City Search</option>
-            <option value="CNoteRequest">CN Request</option>
+            <option value="pincode_check">PIN Code Service</option>
+            <option value="area_search">City Search</option>
+            <option value="create_pickup">Create Pickup</option>
+            <option value="track_trace">Track & Trace</option>
+            <option value="cancel_booking">Cancel Booking</option>
           </select>
         </div>
 
