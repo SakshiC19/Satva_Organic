@@ -1,67 +1,76 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiX, FiShoppingCart } from 'react-icons/fi';
 import { useCart } from '../../contexts/CartContext';
+import { useAuth } from '../../contexts/AuthContext';
 import './AbandonedCartReminder.css';
 
 const AbandonedCartReminder = () => {
   const [isVisible, setIsVisible] = useState(false);
-  const { cartItems, cartCount, cartTotal, lastCartUpdatedAt, openCart } = useCart();
-  const navigate = useNavigate();
+  const { cartItems, cartCount, cartTotal, openCart } = useCart();
+  const { currentUser } = useAuth();
+  const lastShownRef = useRef(0);
+  const prevUserRef = useRef(currentUser);
 
+  const checkReminder = React.useCallback((isManualTrigger = false) => {
+    // Strictly mobile view constraint (768px or less)
+    const isMobile = window.innerWidth <= 768;
+    if (!isMobile || document.hidden || cartItems.length === 0) {
+      setIsVisible(false);
+      return;
+    }
+
+    const now = Date.now();
+    const oneHour = 60 * 60 * 1000;
+    
+    // Trigger if manual (login) or if 1 hour has elapsed since last display
+    if (isManualTrigger || (now - lastShownRef.current) >= oneHour) {
+      // Small delay so it doesn't pop up instantly on page transition
+      setTimeout(() => {
+        if (!document.hidden && window.innerWidth <= 768 && cartItems.length > 0) {
+          setIsVisible(true);
+          lastShownRef.current = Date.now();
+        }
+      }, 3000); 
+    }
+  }, [cartItems.length]);
+
+  // Handle Login Trigger
   useEffect(() => {
-    const checkReminder = () => {
-      // Don't show if tab is hidden or on desktop
-      if (document.hidden || window.innerWidth > 768) return;
+    // Detect transitions from logged-out to logged-in
+    if (!prevUserRef.current && currentUser && cartItems.length > 0) {
+      checkReminder(true);
+    }
+    prevUserRef.current = currentUser;
+  }, [currentUser, cartItems.length, checkReminder]);
 
-      if (cartItems.length === 0 || !lastCartUpdatedAt) {
-        setIsVisible(false);
-        return;
-      }
+  // Lifecycle for background checks
+  useEffect(() => {
+    // Initial check shortly after load
+    const initialCheck = setTimeout(() => checkReminder(), 5000);
+    
+    // Set up 1-hour recurring interval
+    const interval = setInterval(() => checkReminder(), 60 * 60 * 1000);
 
-      const lastUpdated = new Date(lastCartUpdatedAt).getTime();
-      const lastReminderShownAt = localStorage.getItem('last_reminder_shown_at');
-      const now = Date.now();
-
-      const twelveHours = 12 * 60 * 60 * 1000;
-
-      const isCartOldEnough = (now - lastUpdated) > twelveHours;
-      const isReminderOldEnough = !lastReminderShownAt || (now - new Date(lastReminderShownAt).getTime()) > twelveHours;
-
-      if (isCartOldEnough && isReminderOldEnough) {
-        // Add a slight delay after activity/load to be less jarring
-        setTimeout(() => {
-          if (!document.hidden) {
-            setIsVisible(true);
-          }
-        }, 3000); 
-      }
+    const handleVisibility = () => {
+      if (!document.hidden) checkReminder();
     };
-
-    // Check on mount (with a small delay for "active" feel)
-    const initialCheck = setTimeout(checkReminder, 2000);
     
-    // Check every hour
-    const interval = setInterval(checkReminder, 60 * 60 * 1000);
-    
-    // Check when user comes back to the tab
-    document.addEventListener('visibilitychange', checkReminder);
+    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
       clearTimeout(initialCheck);
       clearInterval(interval);
-      document.removeEventListener('visibilitychange', checkReminder);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [cartItems.length, lastCartUpdatedAt]);
+  }, [checkReminder]);
 
   const handleDismiss = () => {
     setIsVisible(false);
-    localStorage.setItem('last_reminder_shown_at', new Date().toISOString());
   };
 
   const handleViewCart = () => {
     setIsVisible(false);
-    localStorage.setItem('last_reminder_shown_at', new Date().toISOString());
     openCart();
   };
 
@@ -82,7 +91,7 @@ const AbandonedCartReminder = () => {
           <span className="reminder-title">You left items in your cart!</span>
         </div>
         <p className="reminder-message">
-          It's been a while since you added <strong className="product-highlight">{firstItem.name}</strong> to your cart.
+          Don't forget your <strong className="product-highlight">{firstItem.name}</strong>. Complete your purchase now!
         </p>
         
         <button className="premium-cart-action" onClick={handleViewCart}>
@@ -96,7 +105,7 @@ const AbandonedCartReminder = () => {
             </div>
           </div>
           <div className="action-right">
-            <span className="view-text">View Basket</span>
+            <span className="view-text">Check Out</span>
             <span className="view-arrow">›</span>
           </div>
         </button>

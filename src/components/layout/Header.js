@@ -522,83 +522,18 @@ const Header = () => {
               </Link>
 
               {/* Products Dropdown */}
-              <div className="mobile-products-section">
-                <div className={`mobile-menu-item products-toggle ${location.pathname.startsWith('/shop') ? 'active' : ''} ${productsOpen ? 'expanded' : ''}`}>
-                  <div
-                    className="menu-item-content"
-                    onClick={() => {
-                      navigate('/shop');
-                      setMobileMenuOpen(false);
-                    }}
-                    style={{ cursor: 'pointer', flex: 1 }}
-                  >
+                  <div className="mobile-products-section">
+                <div 
+                  className={`mobile-menu-item ${location.pathname === '/shop' ? 'active' : ''}`}
+                  onClick={() => {
+                    navigate('/shop');
+                    setMobileMenuOpen(false);
+                  }}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div className="menu-item-content">
                     <BsGrid className="menu-icon" />
                     <span>Products</span>
-                  </div>
-                  <span
-                    className="mobile-toggle-icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setProductsOpen(!productsOpen);
-                    }}
-                    style={{ cursor: 'pointer', padding: '10px' }}
-                  >
-                    <FiChevronDown className={`products-chevron ${productsOpen ? 'rotate' : ''}`} />
-                  </span>
-                </div>
-
-                <div className={`mobile-products-list ${productsOpen ? 'open' : ''}`}>
-                  {/* All Products Link */}
-                  <div className="mobile-category-item">
-                    <div className="mobile-category-header">
-                      <div
-                        className={`category-label ${location.pathname === '/shop' && !location.search ? 'active' : ''}`}
-                        onClick={() => {
-                          navigate('/shop');
-                          setMobileMenuOpen(false);
-                        }}
-                        style={{ cursor: 'pointer', flex: 1 }}
-                      >
-                        <span className="category-text">All Products</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Dynamic Categories */}
-                  {navItems.map((item, index) => {
-                    const isActiveCategory = location.pathname === '/shop' && location.search.includes(item.path.split('?')[1]);
-                    return (
-                      <div key={index} className="mobile-category-item">
-                        <div className="mobile-category-header">
-                          <div
-                            className={`category-label ${isActiveCategory ? 'active' : ''}`}
-                            onClick={() => {
-                              navigate(item.path);
-                              setMobileMenuOpen(false);
-                            }}
-                            style={{ cursor: 'pointer', flex: 1 }}
-                          >
-                            <span className="category-text">{item.name}</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  {/* Offers Link */}
-                  <div className="mobile-category-item">
-                    <div className="mobile-category-header">
-                      <div
-                        className={`category-label ${location.pathname === '/flash-deals' ? 'active' : ''}`}
-                        onClick={() => {
-                          navigate('/flash-deals');
-                          setMobileMenuOpen(false);
-                        }}
-                        style={{ cursor: 'pointer', flex: 1 }}
-                      >
-                        <span className="category-text">Offers</span>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
