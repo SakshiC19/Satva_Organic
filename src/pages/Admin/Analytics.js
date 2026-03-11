@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { collection, query, getDocs, orderBy, where, Timestamp } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import {
     FiTrendingUp, FiShoppingBag, FiDollarSign, FiUsers, FiRepeat,
     FiCalendar, FiBarChart2, FiPieChart, FiMinusCircle, FiArrowUp, FiArrowDown, FiPackage,
-    FiUserCheck, FiUserPlus, FiLogIn, FiDownload, FiChevronDown, FiX
+    FiUserCheck, FiUserPlus, FiLogIn, FiDownload, FiChevronDown, FiX, FiMoreVertical
 } from 'react-icons/fi';
 import {
     LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -15,6 +15,8 @@ import './Analytics.css';
 
 const Analytics = () => {
     const location = useLocation();
+    const [searchParams] = useSearchParams();
+    const searchTerm = searchParams.get('q') || '';
     const pathParts = location.pathname.split('/');
     const lastPart = pathParts[pathParts.length - 1];
 
@@ -51,6 +53,7 @@ const Analytics = () => {
     const [allCategories, setAllCategories] = useState([]);
     const [allProducts, setAllProducts] = useState([]);
     const [productCategoryMap, setProductCategoryMap] = useState({});
+    const [showActiveBuyersModal, setShowActiveBuyersModal] = useState(false);
 
     const navigate = useNavigate();
 
@@ -611,6 +614,14 @@ const Analytics = () => {
 
         const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
+        // --- New Users Joined (Registration based) ---
+        let newUsersJoinedVal = 0;
+        users.forEach(u => {
+            if (u.createdAt && u.createdAt >= filterStartDate) {
+                newUsersJoinedVal++;
+            }
+        });
+
         // Iterating Customers
         let oneTime = 0, repeat = 0, frequent = 0, highValue = 0;
 
@@ -665,25 +676,50 @@ const Analytics = () => {
             { name: 'High Value', value: 0, color: '#f472b6' } // Placeholder if needed or removed
         ].filter(s => s.value > 0);
 
-        // Top List
-        const topCustomers = Object.values(customerStats)
-            .sort((a, b) => b.totalSpend - a.totalSpend)
-            .slice(0, 10)
-            .map(c => {
-                let badge = '';
-                const daysSinceLastOrder = (new Date() - c.lastOrderDate) / (1000 * 60 * 60 * 24);
-                if (daysSinceLastOrder > 30) badge = 'At-risk';
-                else if (c.orderCount >= 5) badge = 'Loyal';
-                else if (c.orderCount >= 2) badge = 'Regular';
-                else badge = 'New';
-                return { ...c, badge };
+        // All Registered Customers List (formerly Top List)
+        const allCustomersList = users
+            .map(u => {
+                const stats = customerStats[u.id] || {
+                    id: u.id,
+                    orderCount: 0,
+                    totalSpend: 0,
+                    lastOrderDate: new Date(0),
+                    firstOrderDate: u.createdAt || new Date()
+                };
+                
+                const lastOrder = orders
+                    .filter(o => (o.userId || 'guest') === u.id)
+                    .sort((a, b) => b.createdAt - a.createdAt)[0];
+                
+                return {
+                    ...stats,
+                    name: u.fullName || u.displayName || 'Unknown',
+                    email: u.email || 'NA',
+                    phone: u.phoneNumber || u.phone || 'NA',
+                    lastOrderId: lastOrder?.id || 'NA',
+                    joinedDate: u.createdAt || stats.firstOrderDate
+                };
+            })
+            .filter(c => {
+                if (!searchTerm) return true;
+                const s = searchTerm.toLowerCase();
+                return (
+                    c.name.toLowerCase().includes(s) ||
+                    c.id.toLowerCase().includes(s) ||
+                    (c.lastOrderId !== 'NA' && c.lastOrderId.toLowerCase().includes(s))
+                );
+            })
+            .sort((a, b) => {
+                // Primary Sort: Spend, Secondary Sort: Join Date
+                if (b.totalSpend !== a.totalSpend) return b.totalSpend - a.totalSpend;
+                return b.joinedDate - a.joinedDate;
             });
 
         const conversionRate = totalRegisteredUsers > 0 ? ((usersWithOrdersCount / totalRegisteredUsers) * 100).toFixed(1) : 0;
 
         return {
             segments,
-            topCustomers,
+            allCustomers: allCustomersList,
             totalRegisteredUsers,
             usersWithOrdersCount,
             visitorsOnly,
@@ -698,9 +734,40 @@ const Analytics = () => {
                 { name: 'New Customers', value: newCustomersVal, fill: '#10b981' },
                 { name: 'Returning', value: returningCustomersVal, fill: '#3b82f6' },
                 { name: 'Churned (>60d)', value: churnedCustomersVal, fill: '#ef4444' }
-            ]
+            ],
+            newUsersJoined: newUsersJoinedVal,
+            newCustomersOrdered: newCustomersVal
         };
-    }, [orders, users, dateFilter, filters, productCategoryMap]); // Added dateFilter and filters dependency
+    }, [orders, users, dateFilter, filters, productCategoryMap, searchTerm]); // Added searchTerm dependency
+
+    // Helper: Details for Active Buyers Modal
+    const activeBuyersDetails = useMemo(() => {
+        const details = [];
+        filteredOrders.forEach(order => {
+            const userId = order.userId || 'guest';
+            if (userId === 'guest') return;
+
+            const user = users.find(u => u.id === userId);
+            const contact = user ? (user.email || user.phoneNumber || 'N/A') : (order.shippingInfo?.email || order.shippingInfo?.phone || 'N/A');
+            const name = user ? (user.fullName || user.displayName || 'Unknown') : (order.shippingInfo?.fullName || 'Unknown');
+
+            if (order.items && Array.isArray(order.items)) {
+                order.items.forEach(item => {
+                    details.push({
+                        customerId: userId,
+                        name: name,
+                        contact: contact,
+                        product: item.name,
+                        qty: item.quantity,
+                        amount: (Number(item.price) || 0) * (Number(item.quantity) || 0),
+                        orderId: order.id,
+                        date: order.createdAt
+                    });
+                });
+            }
+        });
+        return details;
+    }, [filteredOrders, users]);
     
     // Export Customer Data Logic
     const handleExportCustomers = (type) => {
@@ -1077,8 +1144,7 @@ const Analytics = () => {
                 {/* Header */}
                 <div className="analytics-header">
                     <div>
-                        <h1 className="analytics-title">Customer Intelligence <FiChevronDown style={{ fontSize: '20px', color: '#94a3b8' }} /></h1>
-                        <p className="analytics-subtitle">Track acquisition, retention, and loyalty metrics</p>
+                        <h1 className="analytics-title">Customer Analysis <FiChevronDown style={{ fontSize: '20px', color: '#94a3b8' }} /></h1>
                     </div>
                     <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <DateFilter />
@@ -1189,14 +1255,14 @@ const Analytics = () => {
                         <div className="kpi-sub-new">Placed at least 1 order</div>
                     </div>
 
-                    {/* Conversion (Blue) */}
+                    {/* New Users (Blue) */}
                     <div className="kpi-card-new blue">
                         <div>
-                            <div className="kpi-icon-box"><FiTrendingUp /></div>
-                            <div className="kpi-label-new">CONVERSION</div>
-                            <div className="kpi-value-new">{customerAnalytics.conversionRate}%</div>
+                            <div className="kpi-icon-box"><FiUserPlus /></div>
+                            <div className="kpi-label-new">NEW USERS</div>
+                            <div className="kpi-value-new">{customerAnalytics.newUsersJoined}</div>
                         </div>
-                        <div className="kpi-sub-new">Users to Buyers</div>
+                        <div className="kpi-sub-new">Joined period / {customerAnalytics.newCustomersOrdered} Ordered</div>
                     </div>
 
                     {/* Visitors Only (White) */}
@@ -1212,42 +1278,59 @@ const Analytics = () => {
 
 
 
-                {/* Top Loyalty Customers Table */}
-                <div className="table-card">
-                    <div className="chart-header">
-                        <h3 className="chart-title">Top Loyalty Customers</h3>
-                    </div>
-                    <div className="products-table-container">
-                        <table className="products-table">
+                {/* Top Loyalty Customers Table - Removed outer table-card to eliminate double container feel */}
+                <div className="products-table-container">
+                    <table className="loyalty-table">
                             <thead>
                                 <tr>
-                                    <th>CUSTOMER</th>
-                                    <th>ORDERS</th>
-                                    <th>TOTAL SPEND</th>
-                                    <th>LAST ACTIVITY</th>
-
+                                    <th style={{ width: '40px' }}><input type="checkbox" className="table-checkbox" /></th>
+                                    <th>USER</th>
+                                    <th>EMAIL</th>
+                                    <th>PHONE</th>
+                                    <th>ORDER ID</th>
+                                    <th style={{ cursor: 'pointer' }}>JOINED <span style={{ fontSize: '14px', marginLeft: '4px' }}>↓</span></th>
+                                    <th>ORDER ITEMS</th>
+                                    <th style={{ textAlign: 'right' }}>ACTIONS</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {customerAnalytics.topCustomers.map((c, i) => (
-                                    <tr key={i} className="product-row">
+                                {customerAnalytics.allCustomers.map((c, i) => (
+                                    <tr key={i} className="loyalty-row">
+                                        <td><input type="checkbox" className="table-checkbox" /></td>
                                         <td>
-                                            <div style={{ fontWeight: '600', color: '#1e293b' }}>{c.name}</div>
-                                            <div style={{ fontSize: '11px', color: '#94a3b8' }}>ID: {c.id.slice(0, 8)}...</div>
+                                            <div className="user-info-cell">
+                                                <div className="user-avatar-circle">
+                                                    {c.name.charAt(0).toUpperCase()}
+                                                </div>
+                                                <div className="user-meta-info">
+                                                    <div className="user-display-name">{c.name}</div>
+                                                    <div className="user-id-slug">#{c.id.slice(0, 8)}</div>
+                                                </div>
+                                            </div>
                                         </td>
-                                        <td style={{ fontWeight: '600' }}>{c.orderCount}</td>
-                                        <td className="price-text">₹{c.totalSpend.toLocaleString()}</td>
-                                        <td style={{ color: '#64748b', fontSize: '13px' }}>{new Date(c.lastOrderDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</td>
-
+                                        <td className="user-meta-text">{c.email}</td>
+                                        <td className="user-meta-text">{c.phone}</td>
+                                        <td style={{ fontWeight: '700', color: '#1e293b' }}>
+                                            {c.lastOrderId !== 'NA' ? `#${c.lastOrderId.slice(-8).toUpperCase()}` : 'NA'}
+                                        </td>
+                                        <td className="user-meta-text">{c.joinedDate ? new Date(c.joinedDate).toLocaleDateString('en-US') : 'NA'}</td>
+                                        <td>
+                                            <div className={`order-count-pill ${c.orderCount > 0 ? 'active' : ''}`}>
+                                                <FiPackage size={14} /> 
+                                                <span>{c.orderCount > 0 ? `${c.orderCount} Orders` : 'NA'}</span>
+                                            </div>
+                                        </td>
+                                        <td style={{ textAlign: 'right' }}>
+                                            <button className="action-menu-btn"><FiMoreVertical /></button>
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
-                        </table>
-                    </div>
-                </div>
+                </table>
             </div>
-        );
-    }
+        </div>
+    );
+}
 
 
 
@@ -1926,18 +2009,18 @@ const Analytics = () => {
                     </div>
                 </div>
 
-                {/* Conversion Rate (White/Orange) */}
+                {/* New Users (White/Orange) */}
                 <div className="kpi-card-new white clickable" style={{ borderLeft: '6px solid #f97316' }} onClick={() => navigate('/admin/analytics/customers')}>
                     <div className="kpi-card-inner">
                         <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                            <div className="kpi-icon-box" style={{ background: '#ffedd5', color: '#f97316' }}><FiTrendingUp /></div>
-                            <div className={`trend-tag ${Number(customerAnalytics.conversionRate) > 2 ? 'up' : 'down'}`} style={{ background: '#f8fafc', color: '#64748b' }}>
-                                Target: 3.5%
+                            <div className="kpi-icon-box" style={{ background: '#ffedd5', color: '#f97316' }}><FiUserPlus /></div>
+                            <div className="trend-tag up" style={{ background: '#f8fafc', color: '#1e293b' }}>
+                                +{customerAnalytics.newUsersJoined} New
                             </div>
                         </div>
-                        <div className="kpi-label-new" style={{ color: '#64748b' }}>CONVERSION RATE</div>
-                        <div className="kpi-value-new" style={{ color: '#1e293b' }}>{customerAnalytics.conversionRate}%</div>
-                        <div className="kpi-sub-new" style={{ color: '#64748b' }}>Visitor to Buyer</div>
+                        <div className="kpi-label-new" style={{ color: '#64748b' }}>NEW USERS</div>
+                        <div className="kpi-value-new" style={{ color: '#1e293b' }}>{customerAnalytics.newUsersJoined}</div>
+                        <div className="kpi-sub-new" style={{ color: '#64748b' }}>{customerAnalytics.newCustomersOrdered} Ordered in period</div>
                     </div>
                 </div>
 
@@ -1959,7 +2042,7 @@ const Analytics = () => {
                 </div>
 
                 {/* Active Buyers (White/Green) */}
-                <div className="kpi-card-new white" style={{ borderLeft: '6px solid #10b981' }}>
+                <div className="kpi-card-new white clickable" style={{ borderLeft: '6px solid #10b981' }} onClick={() => setShowActiveBuyersModal(true)}>
                     <div className="kpi-card-inner">
                         <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
                             <div className="kpi-icon-box" style={{ background: '#ecfdf5', color: '#10b981' }}><FiUserCheck /></div>
@@ -2111,6 +2194,62 @@ const Analytics = () => {
                     </table>
                 </div>
             </div>
+
+            {/* Active Buyers Details Modal */}
+            {showActiveBuyersModal && (
+                <div className="modal-overlay" onClick={() => setShowActiveBuyersModal(false)}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2 className="modal-title">
+                                <FiUserCheck style={{ color: '#10b981' }} />
+                                Active Buyers Details
+                                <span style={{ fontSize: '0.8rem', background: '#ecfdf5', color: '#10b981', padding: '4px 12px', borderRadius: '12px', marginLeft: '8px' }}>
+                                    {customerAnalytics.usersWithOrdersCount} Buyers
+                                </span>
+                            </h2>
+                            <button className="modal-close-btn" onClick={() => setShowActiveBuyersModal(false)}>
+                                <FiX size={20} />
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="details-table-container">
+                                <table className="details-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Customer ID</th>
+                                            <th>Name</th>
+                                            <th>Contact (Email/Phone)</th>
+                                            <th>Product</th>
+                                            <th>Qty</th>
+                                            <th style={{ textAlign: 'right' }}>Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {activeBuyersDetails.length > 0 ? (
+                                            activeBuyersDetails.map((detail, idx) => (
+                                                <tr key={idx}>
+                                                    <td><span className="cust-id">#{detail.customerId.slice(-8).toUpperCase()}</span></td>
+                                                    <td style={{ fontWeight: '600' }}>{detail.name}</td>
+                                                    <td className="contact-info">{detail.contact}</td>
+                                                    <td>{detail.product}</td>
+                                                    <td>{detail.qty}</td>
+                                                    <td style={{ textAlign: 'right' }} className="amount-col">₹{detail.amount.toLocaleString()}</td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td colSpan="6" style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+                                                    No active buyers found for selected period.
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

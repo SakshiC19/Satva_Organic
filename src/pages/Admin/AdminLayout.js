@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '../../config/firebase';
@@ -13,6 +13,8 @@ import './Admin.css';
 const AdminLayout = () => {
   const { logout, currentUser } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchQuery = searchParams.get('q') || '';
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
 
@@ -156,7 +158,12 @@ const AdminLayout = () => {
         <header className="admin-topbar">
           <div className="topbar-search">
             <FiSearch />
-            <input type="text" placeholder="Search users, orders, products..." />
+            <input 
+              type="text" 
+              placeholder="Search users, orders, products..." 
+              value={searchQuery}
+              onChange={(e) => setSearchParams({ q: e.target.value }, { replace: true })}
+            />
           </div>
 
           <div className="topbar-actions">
