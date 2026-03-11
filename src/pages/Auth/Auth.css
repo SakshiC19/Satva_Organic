@@ -133,42 +133,24 @@
     color: var(--text-primary);
 }
 
-.input-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
 
-.input-icon {
-    position: absolute;
-    left: 18px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--color-primary-500);
-    font-size: 1.2rem;
-    pointer-events: none;
-    z-index: 1;
-}
 
 .form-input {
     width: 100%;
-    height: 50px;
-    /* Increased from auto/44px */
-    padding: 10px 16px 10px 48px;
-    /* Space for icon */
+    height: 54px;
+    /* Balanced height */
+    padding: 10px 16px 10px 58px !important;
+    /* Increased space for icon to prevent overlap */
     border: 1px solid #cbd5e1;
-    /* Slightly lighter than gray-200 */
     border-radius: var(--radius-lg);
-    font-size: 15px;
-    /* Comfortable reading size */
+    font-size: 16px;
     font-family: var(--font-family-primary);
     transition: all 0.2s ease;
     background: #f8fafc;
-    /* Very subtle background */
 }
 
 .form-input.no-icon {
-    padding-left: 16px;
+    padding-left: 16px !important;
 }
 
 .form-input:focus {
@@ -189,10 +171,14 @@
 
 .input-icon {
     position: absolute;
-    left: 16px;
-    color: #94a3b8;
-    /* Slate-400 */
-    font-size: 18px;
+    left: 20px;
+    /* Slightly more from left */
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+    /* Slate-500 for better visibility */
+    font-size: 20px;
+    /* Slightly larger icon */
     z-index: 5;
     pointer-events: none;
 }
@@ -200,8 +186,8 @@
 /* Country code adjustment */
 .country-code {
     position: absolute;
-    left: 44px;
-    /* Move after icon */
+    left: 48px;
+    /* Adjusted from 44px to match new icon placement */
     top: 50%;
     transform: translateY(-50%);
     font-weight: 600;
@@ -213,8 +199,8 @@
 }
 
 .form-input.phone-input {
-    padding-left: 90px !important;
-    /* Space for icon + code */
+    padding-left: 105px !important;
+    /* Increased space for icon + country code */
 }
 
 .password-toggle {
@@ -529,7 +515,7 @@
 }
 
 .phone-input {
-    padding-left: 65px !important;
+    padding-left: 105px !important;
 }
 
 .resend-container {
@@ -706,16 +692,16 @@
     }
 
     .form-input {
-        padding: 10px 16px 10px 48px;
-        /* Ensure space for icon on mobile */
+        padding: 10px 16px 10px 58px !important;
+        /* Increased to prevent overlap */
         font-size: 16px;
         /* Prevents zoom on iOS */
-        height: 50px;
+        height: 52px;
     }
 
     .form-input.phone-input {
-        padding-left: 90px;
-        /* Ensure space for icon + country code */
+        padding-left: 105px !important;
+        /* Match large screen fix */
     }
 
     /* Larger checkbox for easier tapping */
@@ -817,11 +803,11 @@
     }
 
     .form-input {
-        padding: 10px 12px;
-        font-size: 14px;
-        height: 42px;
-        /* Improve touch target */
-        min-height: 42px;
+        padding: 10px 16px 10px 58px !important;
+        /* Ensure consistency on mobile */
+        font-size: 16px;
+        height: 52px;
+        min-height: 52px;
     }
 
     .form-label {
@@ -994,7 +980,8 @@
 
     .form-input {
         font-size: 16px;
-        padding: 12px 14px;
+        padding: 12px 14px 12px 58px !important;
+        /* Force space for icons */
     }
 }
 

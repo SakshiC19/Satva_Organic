@@ -38,6 +38,7 @@ const Analytics = () => {
     const [dateFilter, setDateFilter] = useState('today'); // default today
     const [chartGroup, setChartGroup] = useState('day'); // day, month
     const [filters, setFilters] = useState({
+        category: '',
         product: '',
         paymentMode: '',
         customerType: ''
@@ -61,11 +62,23 @@ const Analytics = () => {
                 // Fetch all orders
                 const ordersQuery = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
                 const ordersSnapshot = await getDocs(ordersQuery);
-                const ordersData = ordersSnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data(),
-                    createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date(doc.data().createdAt)
-                }));
+                const ordersData = ordersSnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    let date = new Date();
+                    if (data.createdAt) {
+                        if (data.createdAt.toDate) date = data.createdAt.toDate();
+                        else if (data.createdAt.seconds) date = new Date(data.createdAt.seconds * 1000);
+                        else date = new Date(data.createdAt);
+                    } else if (data.date) {
+                        date = new Date(data.date);
+                    }
+                    
+                    return {
+                        id: doc.id,
+                        ...data,
+                        createdAt: isNaN(date.getTime()) ? new Date() : date
+                    };
+                });
                 setOrders(ordersData);
 
                 // Fetch all users (if needed for customer analysis)
@@ -106,6 +119,32 @@ const Analytics = () => {
 
         fetchData();
     }, []);
+
+    const formatDynamicDate = (date) => {
+        if (!date || isNaN(date.getTime())) return 'N/A';
+        
+        const now = new Date();
+        const diffInMs = now - date;
+        const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+        
+        if (diffInDays === 0) {
+            const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+            if (diffInHours === 0) {
+                const diffInMins = Math.floor(diffInMs / (1000 * 60));
+                return diffInMins <= 1 ? 'Just now' : `${diffInMins}m ago`;
+            }
+            return `${diffInHours}h ago`;
+        }
+        
+        if (diffInDays === 1) return 'Yesterday';
+        if (diffInDays < 7) return `${diffInDays} days ago`;
+        
+        return date.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric' 
+        });
+    };
 
 
 
@@ -211,8 +250,10 @@ const Analytics = () => {
             if (filters.category || filters.product) {
                 if (!o.items || !Array.isArray(o.items)) return false;
                 const hasMatch = o.items.some(i => {
-                    const cat = i.category || productCategoryMap[i.name];
-                    if (filters.category && cat !== filters.category) return false;
+                    const cat = (i.category || productCategoryMap[i.name] || '').trim().toLowerCase();
+                    const fCat = (filters.category || '').trim().toLowerCase();
+                    
+                    if (fCat && cat !== fCat) return false;
                     if (filters.product && i.name !== filters.product) return false;
                     return true;
                 });
@@ -280,8 +321,10 @@ const Analytics = () => {
             if (filters.category || filters.product) {
                 if (!o.items || !Array.isArray(o.items)) return false;
                 const hasMatch = o.items.some(i => {
-                    const cat = i.category || productCategoryMap[i.name];
-                    if (filters.category && cat !== filters.category) return false;
+                    const cat = (i.category || productCategoryMap[i.name] || '').trim().toLowerCase();
+                    const fCat = (filters.category || '').trim().toLowerCase();
+                    
+                    if (fCat && cat !== fCat) return false;
                     if (filters.product && i.name !== filters.product) return false;
                     return true;
                 });
@@ -302,8 +345,26 @@ const Analytics = () => {
         let cancelledCount = 0;
 
         orderList.forEach(o => {
-            const amount = Number(o.totalAmount || o.total) || 0;
+            let amount = 0;
             const status = (o.status || '').toLowerCase();
+
+            if (filters.category || filters.product) {
+                // Sum only matching items' revenue
+                if (o.items && Array.isArray(o.items)) {
+                    o.items.forEach(i => {
+                        const cat = (i.category || productCategoryMap[i.name] || '').trim().toLowerCase();
+                        const fCat = (filters.category || '').trim().toLowerCase();
+                        const matchesCategory = !fCat || cat === fCat;
+                        const matchesProduct = !filters.product || i.name === filters.product;
+                        
+                        if (matchesCategory && matchesProduct) {
+                            amount += (Number(i.price) || 0) * (Number(i.quantity) || 0);
+                        }
+                    });
+                }
+            } else {
+                amount = Number(o.totalAmount || o.total) || 0;
+            }
 
             grossRevenue += amount;
 
@@ -319,10 +380,31 @@ const Analytics = () => {
         const avgOrderValue = validOrders > 0 ? (netRevenue / validOrders).toFixed(0) : 0;
 
         const userCounts = {};
+        let maxOrderValue = 0;
         orderList.forEach(o => {
             if (o.userId) {
                 userCounts[o.userId] = (userCounts[o.userId] || 0) + 1;
             }
+            
+            // Calculate item-level amount if filters active, else total
+            let currentOrderVal = 0;
+            if (filters.category || filters.product) {
+                o.items?.forEach(i => {
+                    const cat = (i.category || productCategoryMap[i.name] || '').trim().toLowerCase();
+                    const fCat = (filters.category || '').trim().toLowerCase();
+                    if ((!fCat || cat === fCat) && (!filters.product || i.name === filters.product)) {
+                        currentOrderVal += (Number(i.price) || 0) * (Number(i.quantity) || 0);
+                    }
+                });
+            } else {
+                currentOrderVal = Number(o.totalAmount || o.total) || 0;
+            }
+            if (currentOrderVal > maxOrderValue) maxOrderValue = currentOrderVal;
+        });
+        
+        let ordersByRepeaters = 0;
+        orderList.forEach(o => {
+            if (o.userId && userCounts[o.userId] > 1) ordersByRepeaters++;
         });
         const totalUniqueCustomers = Object.keys(userCounts).length;
         const repeatCustomers = Object.values(userCounts).filter(count => count > 1).length;
@@ -334,7 +416,9 @@ const Analytics = () => {
             revenueLostCancelled,
             avgOrderValue: Number(avgOrderValue),
             repeatRate: Number(repeatRate),
-            cancelledCount
+            cancelledCount,
+            maxOrderValue: Math.round(maxOrderValue),
+            ordersByRepeaters
         };
     };
 
@@ -351,7 +435,15 @@ const Analytics = () => {
                     let category = item.category || productCategoryMap[productName] || 'Uncategorized';
 
                     // Normalize Category: Trim and Title Case to prevent duplicates
-                    category = category.trim().replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+                    const normalizedCategory = category.trim().replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+
+                    // Apply Item-level Filter
+                    if (filters.category) {
+                        const catLower = category.trim().toLowerCase();
+                        const filterCatLower = filters.category.trim().toLowerCase();
+                        if (catLower !== filterCatLower) return;
+                    }
+                    if (filters.product && productName !== filters.product) return;
 
                     const quantity = Number(item.quantity) || 0;
                     const price = Number(item.price) || 0;
@@ -361,7 +453,7 @@ const Analytics = () => {
                         productStats[productId] = {
                             id: productId,
                             name: productName,
-                            category: category,
+                            category: normalizedCategory,
                             quantity: 0,
                             revenue: 0
                         };
@@ -369,17 +461,17 @@ const Analytics = () => {
                     productStats[productId].quantity += quantity;
                     productStats[productId].revenue += revenue;
 
-                    if (!categoryStats[category]) {
-                        categoryStats[category] = {
-                            name: category,
+                    if (!categoryStats[normalizedCategory]) {
+                        categoryStats[normalizedCategory] = {
+                            name: normalizedCategory,
                             quantity: 0,
                             revenue: 0,
                             orders: new Set()
                         };
                     }
-                    categoryStats[category].quantity += quantity;
-                    categoryStats[category].revenue += revenue;
-                    categoryStats[category].orders.add(order.id);
+                    categoryStats[normalizedCategory].quantity += quantity;
+                    categoryStats[normalizedCategory].revenue += revenue;
+                    categoryStats[normalizedCategory].orders.add(order.id);
                 });
             }
         });
@@ -428,8 +520,8 @@ const Analytics = () => {
         // Track user first/last order dates for retention logic
         const userFirstOrder = {};
 
-        // Process ALL orders
-        orders.forEach(order => {
+        // Process filtered orders
+        filteredOrders.forEach(order => {
             const userId = order.userId || 'guest';
             if (userId === 'guest') return;
 
@@ -439,22 +531,33 @@ const Analytics = () => {
                     orderCount: 0,
                     totalSpend: 0,
                     lastOrderDate: new Date(0),
-                    firstOrderDate: order.createdAt, // Init with this, update if earlier found (order is DESC usually, but safety check)
+                    firstOrderDate: order.createdAt,
                     name: order.shippingInfo?.fullName || 'Unknown'
                 };
             }
-            customerStats[userId].orderCount += 1;
-            customerStats[userId].totalSpend += (Number(order.totalAmount) || 0);
 
-            const orderDate = order.createdAt;
-            if (orderDate > customerStats[userId].lastOrderDate) {
-                customerStats[userId].lastOrderDate = orderDate;
+            let amount = 0;
+            if (filters.category || filters.product) {
+                order.items?.forEach(i => {
+                    const cat = (i.category || productCategoryMap[i.name] || '').trim().toLowerCase();
+                    const fCat = (filters.category || '').trim().toLowerCase();
+                    if ((!fCat || cat === fCat) && (!filters.product || i.name === filters.product)) {
+                        amount += (Number(i.price) || 0) * (Number(i.quantity) || 0);
+                    }
+                });
+            } else {
+                amount = Number(order.totalAmount) || 0;
             }
-            // Update first order date (assuming orders might not be sorted strictly or we iterate differently)
-            // Ideally we need to find the absolute first order. 
-            // Since orders are updated via generic list, let's ensure we track min date
-            if (!userFirstOrder[userId] || orderDate < userFirstOrder[userId]) {
-                userFirstOrder[userId] = orderDate;
+
+            if (amount > 0) {
+                customerStats[userId].orderCount += 1;
+                customerStats[userId].totalSpend += amount;
+                if (order.createdAt > customerStats[userId].lastOrderDate) {
+                    customerStats[userId].lastOrderDate = order.createdAt;
+                }
+                if (!userFirstOrder[userId] || order.createdAt < userFirstOrder[userId]) {
+                    userFirstOrder[userId] = order.createdAt;
+                }
             }
         });
 
@@ -597,7 +700,7 @@ const Analytics = () => {
                 { name: 'Churned (>60d)', value: churnedCustomersVal, fill: '#ef4444' }
             ]
         };
-    }, [orders, users, dateFilter, productCategoryMap]); // Added dateFilter dependency
+    }, [orders, users, dateFilter, filters, productCategoryMap]); // Added dateFilter and filters dependency
     
     // Export Customer Data Logic
     const handleExportCustomers = (type) => {
@@ -760,10 +863,24 @@ const Analytics = () => {
         // Get earliest date for Avg calc
         let firstOrderDate = new Date();
 
-        orders.forEach(order => {
-            const amount = Number(order.totalAmount) || 0;
+        filteredOrders.forEach(order => {
+            let amount = 0;
             const status = (order.status || '').toLowerCase();
             const date = order.createdAt;
+
+            if (filters.category || filters.product) {
+                order.items?.forEach(i => {
+                    const cat = (i.category || productCategoryMap[i.name] || '').trim().toLowerCase();
+                    const fCat = (filters.category || '').trim().toLowerCase();
+                    if ((!fCat || cat === fCat) && (!filters.product || i.name === filters.product)) {
+                        amount += (Number(i.price) || 0) * (Number(i.quantity) || 0);
+                    }
+                });
+            } else {
+                amount = Number(order.totalAmount) || 0;
+            }
+
+            if (amount <= 0) return;
 
             // Track Loss
             if (status === 'cancelled') {
@@ -790,7 +907,7 @@ const Analytics = () => {
             if (date >= startOfYear) revenueYear += amount;
 
             // Payment Mode
-            const paymentMethod = order.paymentMethod || 'Unknown'; // COD, UPI, Card...
+            const paymentMethod = order.paymentMethod || 'Unknown';
             if (!paymentStats[paymentMethod]) paymentStats[paymentMethod] = 0;
             paymentStats[paymentMethod] += amount;
 
@@ -799,11 +916,17 @@ const Analytics = () => {
             if (!cityStats[city]) cityStats[city] = 0;
             cityStats[city] += amount;
 
-            // Category (Need item iteration)
+            // Category (Already implicitly filtered if filter active, but need breakdown)
             if (order.items && Array.isArray(order.items)) {
                 order.items.forEach(item => {
-                    let cat = item.category || productCategoryMap[item.name] || 'Uncategorized';
+                    const itemName = item.name || 'Unknown';
+                    let cat = item.category || productCategoryMap[itemName] || 'Uncategorized';
                     cat = cat.trim().replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+                    
+                    const fCat = (filters.category || '').trim().toLowerCase();
+                    if (fCat && cat.toLowerCase() !== fCat) return;
+                    if (filters.product && itemName !== filters.product) return;
+
                     const itemTotal = (Number(item.price) || 0) * (Number(item.quantity) || 0);
                     if (!categoryStats[cat]) categoryStats[cat] = 0;
                     categoryStats[cat] += itemTotal;
@@ -844,7 +967,7 @@ const Analytics = () => {
             cityChartData,
             categoryChartData
         };
-    }, [orders, productCategoryMap]);
+    }, [orders, filters, productCategoryMap]);
 
 
     // ... (Common Components) ...
@@ -1012,7 +1135,10 @@ const Analytics = () => {
                             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
                         >
                             <option value="">All Products</option>
-                            {allProducts.map(p => <option key={p} value={p}>{p}</option>)}
+                        {allProducts
+                            .filter(p => !filters.category || (productCategoryMap[p] && productCategoryMap[p].trim().toLowerCase() === filters.category.trim().toLowerCase()))
+                            .map(p => <option key={p} value={p}>{p}</option>)
+                        }
                         </select>
                     </div>
                     <div className="filter-card">
@@ -1216,7 +1342,10 @@ const Analytics = () => {
                             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
                         >
                             <option value="">All Products</option>
-                            {allProducts.map(p => <option key={p} value={p}>{p}</option>)}
+                        {allProducts
+                            .filter(p => !filters.category || (productCategoryMap[p] && productCategoryMap[p].trim().toLowerCase() === filters.category.trim().toLowerCase()))
+                            .map(p => <option key={p} value={p}>{p}</option>)
+                        }
                         </select>
                     </div>
                     <div className="filter-card">
@@ -1367,6 +1496,53 @@ const Analytics = () => {
                                 </PieChart>
                             </ResponsiveContainer>
                         </div>
+                    </div>
+                </div>
+
+                {/* Detailed Order Items Table */}
+                <div className="table-card" style={{ marginTop: '20px' }}>
+                    <div className="chart-header">
+                        <h3 className="chart-title">Detailed Order Items</h3>
+                    </div>
+                    <div className="products-table-container">
+                        <table className="products-table">
+                            <thead>
+                                <tr>
+                                    <th>ORDER ID</th>
+                                    <th>PRODUCT</th>
+                                    <th>CATEGORY</th>
+                                    <th>ORDER DATE</th>
+                                    <th>QTY</th>
+                                    <th>PAYMENT</th>
+                                    <th>STATUS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredOrders.flatMap(o => (o.items || []).map((item, idx) => {
+                                    const cat = item.category || productCategoryMap[item.name] || 'N/A';
+                                    const matchesCategory = !filters.category || cat.trim().toLowerCase() === filters.category.trim().toLowerCase();
+                                    const matchesProduct = !filters.product || item.name === filters.product;
+                                    
+                                    if (!matchesCategory || !matchesProduct) return null;
+
+                                    return (
+                                        <tr key={`${o.id}-${idx}`} className="product-row">
+                                            <td style={{ fontSize: '11px', fontWeight: '600', color: '#64748b' }}>#{o.id.slice(-8).toUpperCase()}</td>
+                                            <td style={{ fontWeight: '500' }}>{item.name}</td>
+                                            <td><span className="category-pill">{cat}</span></td>
+                                            <td style={{ fontSize: '13px', color: '#1e293b', fontWeight: '500' }}>{formatDynamicDate(o.createdAt)}</td>
+                                            <td style={{ fontWeight: '700' }}>{item.quantity}</td>
+                                            <td><span style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b' }}>{o.paymentMethod || 'COD'}</span></td>
+                                            <td>
+                                                <span className={`status-badge ${(o.status || 'Pending').toLowerCase()}`} style={{ fontSize: '10px' }}>
+                                                    {o.status || 'Pending'}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })).filter(Boolean)}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -1653,7 +1829,10 @@ const Analytics = () => {
                         style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
                     >
                         <option value="">All Products</option>
-                        {allProducts.map(p => <option key={p} value={p}>{p}</option>)}
+                        {allProducts
+                            .filter(p => !filters.category || (productCategoryMap[p] && productCategoryMap[p].trim().toLowerCase() === filters.category.trim().toLowerCase()))
+                            .map(p => <option key={p} value={p}>{p}</option>)
+                        }
                     </select>
                 </div>
                 {/* Payment Filter */}
