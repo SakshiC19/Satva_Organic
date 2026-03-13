@@ -32,6 +32,7 @@ const AddProduct = () => {
     
     // Advanced Pricing
     generatedSizes: [], // { size: '250g', autoPrice: 125, customPrice: '', enabled: true }
+    gst: 5,
   });
 
   const { categories: contextCategories } = useCategories();
@@ -114,10 +115,17 @@ const AddProduct = () => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      };
+      // Auto-set GST based on category
+      if (name === 'category') {
+        newData.gst = value === 'Vegetable Basket' ? 0 : 5;
+      }
+      return newData;
+    });
   };
 
   const handleImagesSelected = (files) => {
@@ -212,8 +220,8 @@ const AddProduct = () => {
         price: parseFloat(formData.basePrice), // Base price per 100g/ml
         unit: formData.productForm === 'liquid' ? 'ml' : (formData.productForm === 'powder' ? 'g' : 'piece'),
         productForm: formData.productForm,
-        productForm: formData.productForm,
         stock: activeSizes.reduce((sum, item) => sum + (parseInt(item.stock) || 0), 0),
+        gst: parseFloat(formData.gst) || 0,
         
         packingSizes: activeSizes.map(s => s.size), // Array of strings
         sizePrices: sizePrices, // Explicit overrides
@@ -367,7 +375,7 @@ const AddProduct = () => {
 
 
 
-            {/* Step 2: Base Price */}
+            {/* Step 2: Base Price & GST */}
             <div className="form-row">
               <div className="form-group">
                 <label>Base Price (₹ per {formData.productForm === 'pack' ? 'piece' : '100g/ml'}) *</label>
@@ -382,7 +390,18 @@ const AddProduct = () => {
                   placeholder="0.00"
                 />
               </div>
-
+              <div className="form-group">
+                <label>GST (%)</label>
+                <input
+                  type="number"
+                  name="gst"
+                  value={formData.gst !== undefined ? formData.gst : ''}
+                  onChange={handleInputChange}
+                  min="0"
+                  step="0.1"
+                  placeholder="0"
+                />
+              </div>
             </div>
 
             {/* Step 3: Package Sizes Table */}

@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import './CartDrawer.css';
 
 const CartDrawer = () => {
-  const { isCartOpen, closeCart, cartItems, updateQuantity, removeFromCart } = useCart();
+  const { isCartOpen, closeCart, cartItems, updateQuantity, removeFromCart, gstTotal } = useCart();
   const [showNotice, setShowNotice] = React.useState(false);
   const [showPolicy, setShowPolicy] = React.useState(false);
   const { currentUser } = useAuth();
@@ -21,8 +21,9 @@ const CartDrawer = () => {
   const itemTotal = calculateTotal();
   const deliveryCharge = 25;
   const handlingCharge = 2;
-  const smallCartCharge = itemTotal < 100 ? 20 : 0;
-  const grandTotal = itemTotal + deliveryCharge + handlingCharge + smallCartCharge;
+  const smallCartCharge = itemTotal < 100 && itemTotal > 0 ? 20 : 0;
+  const roundedGst = Math.round(gstTotal || 0);
+  const grandTotal = itemTotal > 0 ? (itemTotal + deliveryCharge + handlingCharge + smallCartCharge + roundedGst) : 0;
 
   const handleProceed = () => {
     closeCart();
@@ -150,11 +151,10 @@ const CartDrawer = () => {
               </div>
             </div>
 
-            {/* Footer Actions */}
             <div className="cart-footer" onClick={handleProceed}>
               <div className="cart-total-info">
                 <span className="total-amount">₹{grandTotal}</span>
-                <span className="total-label">TOTAL</span>
+                <span className="total-label">TOTAL {roundedGst > 0 && `(incl. ₹${roundedGst} GST)`}</span>
               </div>
               <button className="btn-proceed">
                 {currentUser ? 'Continue' : 'Login to Continue'} 

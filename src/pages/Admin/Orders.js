@@ -971,12 +971,18 @@ const Orders = () => {
                       <tfoot>
                         <tr>
                           <td colSpan="3">Subtotal</td>
-                          <td>{formatCurrency(viewingOrder.totalAmount || viewingOrder.total)}</td>
+                          <td>{formatCurrency(viewingOrder.items?.reduce((acc, item) => acc + item.price*item.quantity, 0) || 0)}</td>
                         </tr>
                         <tr>
-                          <td colSpan="3">Delivery Charge</td>
-                          <td>{formatCurrency(0)}</td>
+                          <td colSpan="3">Delivery & Shipping Charge</td>
+                          <td>{formatCurrency(27)}</td>
                         </tr>
+                        {viewingOrder.gstTotal > 0 && (
+                          <tr>
+                            <td colSpan="3">GST</td>
+                            <td>{formatCurrency(viewingOrder.gstTotal)}</td>
+                          </tr>
+                        )}
                         <tr className="grand-total-row">
                           <td colSpan="3">Grand Total</td>
                           <td>{formatCurrency(viewingOrder.totalAmount || viewingOrder.total)}</td>

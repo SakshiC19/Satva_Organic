@@ -22,7 +22,7 @@ const Checkout = () => {
       document.body.appendChild(script);
     });
   };
-  const { cartItems, cartTotal, updateQuantity, removeFromCart } = useCart();
+  const { cartItems, cartTotal, gstTotal, updateQuantity, removeFromCart } = useCart();
   const navigate = useNavigate();
 
   // Calculate grand total (same as CartDrawer)
@@ -30,7 +30,8 @@ const Checkout = () => {
   const deliveryCharge = 25;
   const shippingCharge = 2; // Renamed from handlingCharge
   const smallCartCharge = itemTotal > 0 && itemTotal < 100 ? 20 : 0;
-  const grandTotal = itemTotal + deliveryCharge + shippingCharge + smallCartCharge;
+  const roundedGst = Math.round(gstTotal || 0);
+  const grandTotal = itemTotal > 0 ? (itemTotal + deliveryCharge + shippingCharge + smallCartCharge + roundedGst) : 0;
 
   // Safety check for cartTotal
   const safeCartTotal = grandTotal;
@@ -267,7 +268,8 @@ const Checkout = () => {
         state: address.state || ''
       },
       items: sanitizedItems,
-      totalAmount: cartTotal || 0,
+      totalAmount: grandTotal || 0,
+      gstTotal: roundedGst > 0 ? roundedGst : 0,
       paymentMethod: selectedPaymentMethod,
       status: 'Pending',
       userId: currentUser?.uid || 'guest',
@@ -294,7 +296,7 @@ const Checkout = () => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            amount: Math.round((cartTotal || 0) * 100)
+            amount: Math.round((grandTotal || 0) * 100)
           })
         });
 
@@ -312,7 +314,7 @@ const Checkout = () => {
         const razorpayOrder = await response.json();
 
         const options = {
-          key: "rzp_test_RyAk3DGa85x3tr", 
+          key: "rzp_test_SPs6AqG8E3r2Cp", 
           amount: razorpayOrder.amount,
           currency: razorpayOrder.currency,
           name: "Satva Organics",
@@ -651,6 +653,12 @@ const Checkout = () => {
                             <span>Shipping charge</span>
                             <span>₹{shippingCharge}</span>
                           </div>
+                          {roundedGst > 0 && (
+                            <div className="bill-row">
+                              <span>GST</span>
+                              <span>₹{roundedGst}</span>
+                            </div>
+                          )}
                           {smallCartCharge > 0 && (
                             <div className="bill-row">
                               <span>Small basket charge</span>
@@ -732,6 +740,12 @@ const Checkout = () => {
                         <span>Shipping Charges</span>
                         <span className="green-text">₹{shippingCharge}</span>
                       </div>
+                      {roundedGst > 0 && (
+                        <div className="price-row">
+                          <span>GST</span>
+                          <span>₹{roundedGst}</span>
+                        </div>
+                      )}
                       {smallCartCharge > 0 && (
                         <div className="price-row">
                           <span>Small Basket Charge</span>
@@ -1274,6 +1288,12 @@ const Checkout = () => {
                 <span>Delivery Charges</span>
                 <span className="green-text">FREE</span>
               </div>
+              {roundedGst > 0 && (
+                <div className="price-row">
+                  <span>GST</span>
+                  <span>₹{roundedGst}</span>
+                </div>
+              )}
 
               <div className="price-divider"></div>
 

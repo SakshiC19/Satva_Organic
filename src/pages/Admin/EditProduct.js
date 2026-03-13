@@ -31,6 +31,7 @@ const EditProduct = () => {
     basePrice: '',
     stock: '',
     unit: 'g',
+    gst: 5,
     
     // Advanced Pricing
     generatedSizes: [],
@@ -68,6 +69,7 @@ const EditProduct = () => {
           basePrice: data.price || '',
           stock: data.stock || '',
           unit: data.unit || 'g',
+          gst: data.gst !== undefined ? data.gst : (data.category === 'Vegetable Basket' ? 0 : 5),
           
           // Reconstruct generatedSizes from packingSizes array and sizePrices map
           generatedSizes: [], // We'll let the useEffect handle initial generation, then merge
@@ -103,10 +105,17 @@ const EditProduct = () => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      };
+      // Auto-set GST based on category
+      if (name === 'category') {
+        newData.gst = value === 'Vegetable Basket' ? 0 : 5;
+      }
+      return newData;
+    });
   };
 
   // Auto-generate sizes logic (copied from AddProduct)
@@ -355,6 +364,7 @@ const EditProduct = () => {
         organic: formData.productType === 'organic',
         codAvailable: formData.codAvailable,
         refundPolicyAvailable: formData.refundPolicyAvailable,
+        gst: parseFloat(formData.gst) || 0,
         
         metaTitle: formData.metaTitle,
         metaDescription: formData.metaDescription,
@@ -509,6 +519,19 @@ const EditProduct = () => {
                       min="0"
                       step="0.01"
                       placeholder="0.00"
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label>GST (%)</label>
+                    <input
+                      type="number"
+                      name="gst"
+                      value={formData.gst !== undefined ? formData.gst : ''}
+                      onChange={handleInputChange}
+                      min="0"
+                      step="0.1"
+                      placeholder="0"
                     />
                   </div>
 

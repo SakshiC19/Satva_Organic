@@ -22,8 +22,8 @@ $amount = $input['amount']; // Amount in paise
 
 // RAZORPAY CONFIGURATION
 // REPLACE 'YOUR_KEY_SECRET_HERE' WITH YOUR ACTUAL RAZORPAY KEY SECRET
-$key_id = "rzp_test_RyAk3DGa85x3tr"; 
-$key_secret = "h34O3j50S0KKz4LerxRPz0W1"; 
+$key_id = "rzp_test_SPs6AqG8E3r2Cp"; 
+$key_secret = "6EF1JJ2U4Hy5h93WPHVb6GZg"; 
 
 if ($key_secret === "YOUR_KEY_SECRET_HERE") {
     http_response_code(500);
@@ -46,6 +46,7 @@ curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_USERPWD, $key_id . ":" . $key_secret);
 curl_setopt($ch, CURLOPT_POST, true);
 curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
 // Execute
 $response = curl_exec($ch);

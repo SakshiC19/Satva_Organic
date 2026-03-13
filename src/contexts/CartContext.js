@@ -89,6 +89,10 @@ export const CartProvider = ({ children }) => {
 
   const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
   const cartTotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+  const gstTotal = cartItems.reduce((total, item) => {
+    const itemGstConfig = item.gst !== undefined ? item.gst : (item.category === 'Vegetable Basket' ? 0 : 5);
+    return total + ((item.price * item.quantity) * (itemGstConfig / 100));
+  }, 0);
 
   const value = {
     cartItems,
@@ -98,6 +102,7 @@ export const CartProvider = ({ children }) => {
     clearCart,
     cartCount,
     cartTotal,
+    gstTotal,
     lastCartUpdatedAt,
     isCartOpen,
     openCart,
