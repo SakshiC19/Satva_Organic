@@ -1337,40 +1337,7 @@ const Analytics = () => {
     // VIEW: ORDERS ANALYSIS (Keep as is)
     // ... (Order View Logic)
     if (isOrdersView) {
-        const chartData = Object.values(orders.filter(o => {
-            return true;
-        }).reduce((grouped, order) => {
-            if (!filteredOrders.includes(order)) return grouped;
-            const date = order.createdAt;
-            let key = '';
-            if (chartGroup === 'day') key = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            else if (chartGroup === 'month') key = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-            else key = date.getFullYear().toString();
 
-            if (!grouped[key]) grouped[key] = { name: key, orders: 0, revenue: 0, rawDate: date, isWeekend: false };
-            grouped[key].orders += 1;
-            grouped[key].revenue += (Number(order.totalAmount) || 0);
-
-            const day = date.getDay();
-            if (day === 0 || day === 6) grouped[key].isWeekend = true;
-
-            return grouped;
-        }, {})).sort((a, b) => a.rawDate - b.rawDate);
-
-        const orderStatusData = (() => {
-            const statusCounts = {};
-            filteredOrders.forEach(o => {
-                let status = o.status || 'Pending';
-                status = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
-                statusCounts[status] = (statusCounts[status] || 0) + 1;
-            });
-            return Object.keys(statusCounts).filter(k => statusCounts[k] > 0).map(k => ({ name: k, value: statusCounts[k] }));
-        })();
-
-        const COLORS = {
-            'Delivered': '#10b981', 'Cancelled': '#ef4444', 'Returned': '#f59e0b',
-            'Pending': '#f97316', 'Processing': '#8b5cf6', 'Shipped': '#3b82f6'
-        };
 
         return (
             <div className="analytics-page">
@@ -1498,89 +1465,6 @@ const Analytics = () => {
                     </div>
                 </div>
 
-                <div className="charts-split">
-                    {/* Order Frequency Chart */}
-                    <div className="chart-card">
-                        <div className="chart-header">
-                            <h3 className="chart-title">Order Frequency & Peaks</h3>
-                        </div>
-                        <div style={{ width: '100%', height: 350 }}>
-                            <ResponsiveContainer>
-                                <BarChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                    <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                                    <YAxis tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                                    <Tooltip
-                                        cursor={{ fill: '#f8fafc' }}
-                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                                    />
-                                    <Bar dataKey="orders" name="Orders" radius={[6, 6, 0, 0]} barSize={40}>
-                                        {chartData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.isWeekend ? '#f59e0b' : '#3b82f6'} />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '20px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#64748b' }}>
-                                <div style={{ width: '12px', height: '12px', borderRadius: '4px', background: '#3b82f6' }}></div> Weekdays
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#64748b' }}>
-                                <div style={{ width: '12px', height: '12px', borderRadius: '4px', background: '#f59e0b' }}></div> Weekends / Peak
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Status Breakdown Chart */}
-                    <div className="chart-card">
-                        <div className="chart-header">
-                            <h3 className="chart-title">Status Breakdown</h3>
-                        </div>
-                        <div style={{ width: '100%', height: 350 }}>
-                            <ResponsiveContainer>
-                                <PieChart>
-                                    <Pie
-                                        data={orderStatusData}
-                                        dataKey="value"
-                                        nameKey="name"
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={80}
-                                        outerRadius={110} // Thinner ring
-                                        paddingAngle={2}
-                                    >
-                                        {orderStatusData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[entry.name] || '#94a3b8'} strokeWidth={0} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip />
-                                    <Legend
-                                        layout="vertical"
-                                        align="center"
-                                        verticalAlign="bottom"
-                                        iconType="circle"
-                                        iconSize={8}
-                                        wrapperStyle={{ fontSize: '12px', color: '#64748b', paddingTop: '20px', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '10px', width: '100%' }}
-                                        content={(props) => {
-                                            const { payload } = props;
-                                            return (
-                                                <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '12px', fontSize: '12px', color: '#64748b', paddingTop: '20px' }}>
-                                                    {payload.map((entry, index) => (
-                                                        <div key={`item-${index}`} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: entry.color }}></div>
-                                                            {entry.value}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            );
-                                        }}
-                                    />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-                </div>
 
                 {/* Detailed Order Items Table */}
                 <div className="table-card" style={{ marginTop: '20px' }}>
@@ -1610,14 +1494,16 @@ const Analytics = () => {
 
                                     return (
                                         <tr key={`${o.id}-${idx}`} className="product-row">
-                                            <td style={{ fontSize: '11px', fontWeight: '600', color: '#64748b' }}>#{o.id.slice(-8).toUpperCase()}</td>
+                                            <td style={{ fontSize: '13px', fontWeight: '700', color: '#27ae60' }}>
+                                                #{orders.length - orders.findIndex(item => item.id === o.id)}
+                                            </td>
                                             <td style={{ fontWeight: '500' }}>{item.name}</td>
                                             <td><span className="category-pill">{cat}</span></td>
                                             <td style={{ fontSize: '13px', color: '#1e293b', fontWeight: '500' }}>{formatDynamicDate(o.createdAt)}</td>
                                             <td style={{ fontWeight: '700' }}>{item.quantity}</td>
                                             <td><span style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b' }}>{o.paymentMethod || 'COD'}</span></td>
                                             <td>
-                                                <span className={`status-badge ${(o.status || 'Pending').toLowerCase()}`} style={{ fontSize: '10px' }}>
+                                                <span className={`status-badge status-${(o.status || 'Pending').toLowerCase()}`} style={{ fontSize: '10px' }}>
                                                     {o.status || 'Pending'}
                                                 </span>
                                             </td>
@@ -2228,7 +2114,7 @@ const Analytics = () => {
                                         {activeBuyersDetails.length > 0 ? (
                                             activeBuyersDetails.map((detail, idx) => (
                                                 <tr key={idx}>
-                                                    <td><span className="cust-id">#{detail.customerId.slice(-8).toUpperCase()}</span></td>
+                                                     <td><span className="cust-id">#{orders.length - orders.findIndex(o => o.id === detail.orderId)}</span></td>
                                                     <td style={{ fontWeight: '600' }}>{detail.name}</td>
                                                     <td className="contact-info">{detail.contact}</td>
                                                     <td>{detail.product}</td>

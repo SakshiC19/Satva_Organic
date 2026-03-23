@@ -24,6 +24,7 @@ const Orders = () => {
   const { addToCart, openCart } = useCart();
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
+  const [allOrders, setAllOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -46,8 +47,28 @@ const Orders = () => {
     }
   }, [location.search]);
 
+  const [allOrdersTotal, setAllOrdersTotal] = useState(0);
+
   useEffect(() => {
     if (!currentUser) return;
+
+    // Fetch total orders to calculate global serial numbers
+    const fetchGlobalInfo = async () => {
+      try {
+        const snap = await getDocs(collection(db, 'orders'));
+        const sortedAll = snap.docs.map(doc => ({
+          id: doc.id,
+          createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date(doc.data().createdAt || 0)
+        })).sort((a, b) => b.createdAt - a.createdAt);
+        
+        setAllOrders(sortedAll);
+        setAllOrdersTotal(snap.size);
+      } catch (err) {
+        console.error("Error fetching global orders for serials:", err);
+      }
+    };
+
+    fetchGlobalInfo();
 
     const q = query(
       collection(db, 'orders'),
@@ -271,7 +292,7 @@ const Orders = () => {
                 {/* Header: Order ID, Date, Status */}
                 <div className="card-header-row">
                   <div className="header-left">
-                    <span className="order-id">Order #{order.id.substring(0, 8).toUpperCase()}</span>
+                    <span className="order-id">Order #{allOrders.length - allOrders.findIndex(ao => ao.id === order.id)}</span>
                     <span className="order-date">{formatDate(order.createdAt)}</span>
                   </div>
                   <div className="header-right">
@@ -345,11 +366,11 @@ const Orders = () => {
                 <div className="mobile-view mobile-p-card" onClick={() => navigate(`/account/orders/${order.id}`)}>
                     <img src={order.items?.[0]?.image} alt={order.items?.[0]?.name} className="mobile-p-img" />
                     <div className="mobile-p-info">
-                        <div className="mobile-p-order-id">ORDER #{ (order.id || '').toUpperCase().substring(0, 12) }</div>
-                        <h4 className="mobile-p-name">{order.items?.[0]?.name}</h4>
-                        <p className="mobile-p-meta">
-                            {order.items?.[0]?.selectedSize || '300g'} <span className="dot-sep">•</span> {order.paymentMethod === 'cod' ? 'Cash' : 'Paid'} ₹{order.totalAmount}
-                        </p>
+                    <div className="mobile-p-order-id">ORDER #{allOrders.length - allOrders.findIndex(ao => ao.id === order.id)}</div>
+                    <h4 className="mobile-p-name">{order.items?.[0]?.name}</h4>
+                    <p className="mobile-p-meta">
+                        {order.items?.[0]?.selectedSize || '300g'} <span className="dot-sep">•</span> {order.paymentMethod === 'cod' ? 'Cash' : 'Paid'} ₹{order.totalAmount}
+                    </p>
                         <p className={`mobile-p-policy ${order.status === 'Cancelled' ? 'danger' : 'success'}`}>
                             {order.status === 'Delivered' ? `Delivered on ${formatDateOnly(order.updatedAt)}` : 
                              order.status === 'Cancelled' ? 'Order Cancelled' : `Delivery by ${getEstimatedDelivery(order.createdAt)}`}

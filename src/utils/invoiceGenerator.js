@@ -71,7 +71,7 @@ export const generateInvoice = (order) => {
   doc.setFont('helvetica', 'bold');
   doc.text('Invoice Number:', 140, startY + 12);
   doc.setFont('helvetica', 'normal');
-  doc.text(order.id.substring(0, 10).toUpperCase(), 168, startY + 12);
+  doc.text(String(order.orderSerial || order.id.substring(0, 10).toUpperCase()), 168, startY + 12);
   
   // --- Order Details Grid ---
   const gridY = startY + headerHeight; // 45
@@ -98,7 +98,7 @@ export const generateInvoice = (order) => {
   doc.setFont('helvetica', 'bold');
   doc.text('Order Id:', labelX, lineY);
   doc.setFont('helvetica', 'normal');
-  doc.text(order.id.substring(0, 8).toUpperCase(), valX, lineY);
+  doc.text(String(order.orderSerial || order.id.substring(0, 8).toUpperCase()), valX, lineY);
   
   lineY += gap;
   // Order Date
@@ -323,7 +323,8 @@ export const generateInvoice = (order) => {
 
 export const downloadInvoice = (order) => {
   const doc = generateInvoice(order);
-  const fileName = `Invoice_${order.id.substring(0, 10)}_${Date.now()}.pdf`;
+  const displayId = order.orderSerial || order.id.substring(0, 10);
+  const fileName = `Invoice_${displayId}_${Date.now()}.pdf`;
   doc.save(fileName);
 };
 

@@ -112,7 +112,13 @@ const OrderDetails = () => {
       try {
         const orderDoc = await getDoc(doc(db, 'orders', id));
         if (orderDoc.exists()) {
-          setOrder({ id: orderDoc.id, ...orderDoc.data() });
+          const data = orderDoc.data();
+          
+          // Calculate serial number based on all orders created up to this point
+          const qCount = query(collection(db, 'orders'), where('createdAt', '<=', data.createdAt));
+          const countSnap = await getDocs(qCount);
+          
+          setOrder({ id: orderDoc.id, ...data, orderSerial: countSnap.size });
         } else {
           navigate('/account/orders');
         }
@@ -338,7 +344,7 @@ const OrderDetails = () => {
             </button>
             <div className="order-meta-info">
               <div className="order-id-group">
-                <h1>Order #{order.id.substring(0, 10).toUpperCase()}</h1>
+                <h1>Order #{order.orderSerial || order.id.substring(0, 8).toUpperCase()}</h1>
                 <button className="copy-btn" onClick={handleCopyId} title="Copy Order ID">
                   <FiCopy />
                 </button>
@@ -357,6 +363,9 @@ const OrderDetails = () => {
           <div className="header-actions-new">
             <button className="btn-outline" onClick={() => downloadInvoice(order)}>
               <FiDownload /> Invoice
+            </button>
+            <button className="btn-primary-outline" onClick={() => navigate('/shop')}>
+              <FiPackage /> Reorder Items
             </button>
           </div>
         </div>
@@ -615,7 +624,15 @@ const OrderDetails = () => {
             </button>
             <h3>ORDER DETAILS</h3>
           </div>
-          <button className="btn-help-mobile">HELP</button>
+          <div className="mobile-header-actions">
+            <button className="icon-btn-mobile" onClick={() => downloadInvoice(order)} title="Invoice">
+              <FiDownload />
+            </button>
+            <button className="icon-btn-mobile" onClick={() => navigate('/shop')} title="Reorder">
+              <FiPackage />
+            </button>
+            <button className="btn-help-mobile">HELP</button>
+          </div>
         </div>
 
         <div className="mobile-scroll-content">
@@ -630,7 +647,7 @@ const OrderDetails = () => {
                 <div className="product-info-container">
                   <h4 className="p-name">{item.name}</h4>
                   <p className="p-variant">{item.selectedSize || '300g'}</p>
-                  <p className="p-order-id">Order #{(order.id || '').toUpperCase()}</p>
+                  <p className="p-order-id">Order #{order.orderSerial || (order.id || '').toUpperCase()}</p>
                   <p className="p-price">₹{item.price * item.quantity}</p>
                 </div>
               </div>

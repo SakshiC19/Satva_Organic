@@ -626,6 +626,7 @@ const Orders = () => {
                       }}
                     />
                   </th>
+                  <th>Sr. No.</th>
                   <th>Order ID</th>
                   <th>Customer</th>
                   <th>Items</th>
@@ -637,7 +638,7 @@ const Orders = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredOrders.map((order) => {
+                {filteredOrders.map((order, index) => {
                   const firstItem = order.items?.[0];
                   const isSelected = selectedOrders.includes(order.id);
                   
@@ -661,8 +662,11 @@ const Orders = () => {
                         />
                       </td>
                       <td>
+                        <span className="sr-no-text">{index + 1}</span>
+                      </td>
+                      <td>
                         <div className="order-id-cell">
-                          <span className="order-id-text">#{order.id.substring(0, 8)}</span>
+                          <span className="order-id-text">#{orders.length - orders.findIndex(o => o.id === order.id)}</span>
                         </div>
                       </td>
                       <td>
@@ -881,7 +885,7 @@ const Orders = () => {
             <div className="modal-header">
               <div className="header-title-group">
                 <h2>Order Details</h2>
-                <span className="order-id-badge">#{viewingOrder.id.toUpperCase()}</span>
+                <span className="order-id-badge">#{orders.length - orders.findIndex(o => o.id === viewingOrder.id)}</span>
               </div>
               <button className="close-btn" onClick={() => setViewingOrder(null)}><FiX /></button>
             </div>

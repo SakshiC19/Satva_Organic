@@ -44,8 +44,8 @@ const ProductDetail = () => {
   
   // Fixed bottom footer state for mobile
   const [showFixedFooter, setShowFixedFooter] = useState(true);
+  const [showMobilePolicy, setShowMobilePolicy] = useState(false);
   const productActionsRef = useRef(null);
-  const policyCardRef = useRef(null);
 
   const isInCart = cartItems.some(item => 
     item.id === product?.id && item.selectedSize === selectedSize
@@ -204,6 +204,17 @@ const ProductDetail = () => {
     if (product) {
       toggleWishlist(product);
     }
+  };
+
+  const getDeliveryDateRange = () => {
+    const today = new Date();
+    const minDelivery = new Date(today);
+    minDelivery.setDate(today.getDate() + 3);
+    const maxDelivery = new Date(today);
+    maxDelivery.setDate(today.getDate() + 5);
+    
+    const options = { month: 'short', day: 'numeric' };
+    return `${minDelivery.toLocaleDateString('en-US', options)} - ${maxDelivery.toLocaleDateString('en-US', options)}`;
   };
 
   const handleQuantityChange = (delta) => {
@@ -637,28 +648,39 @@ const ProductDetail = () => {
               </button>
             </div>
 
-            {/* Replacement Policy Card - Mobile Only */}
-            <div className="mobile-replacement-policy-card" ref={policyCardRef}>
-              <div className="policy-header">
-                <BsShieldCheck className="policy-icon" />
-                <h4>Easy Replacement Policy</h4>
-              </div>
-              <ul className="policy-list-minimal">
-                <li><BsClockHistory className="li-icon" /> Report damaged/spoiled items within 48 hours</li>
-                <li><BsSearch className="li-icon" /> Replacement after verification</li>
-                <li><BsTree className="li-icon" /> No return for natural taste/texture variations</li>
-              </ul>
-              <Link to="/refund-policy" className="mobile-full-policy-link-row">
-                <span className="link-content">
-                  <BsFileText className="file-icon" /> Read full refund & replacement policy
-                </span>
-                <BsArrowRight className="arrow-icon" />
-              </Link>
+            <div className="product-delivery-info">
+               <FiTruck className="delivery-icon" />
+               <span>Expected Delivery between <strong>{getDeliveryDateRange()}</strong></span>
             </div>
-            
-            <p className="mobile-policy-disclaimer">
-              Applicable only for damaged or spoiled products. Natural variations are not eligible for return.
-            </p>
+
+            {/* Replacement Policy Overlay - Mobile Only */}
+            {showMobilePolicy && (
+              <div className="mobile-policy-overlay" onClick={() => setShowMobilePolicy(false)}>
+                <div className="mobile-policy-content" onClick={(e) => e.stopPropagation()}>
+                  <div className="policy-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <BsShieldCheck className="policy-icon" />
+                      <h4>Easy Replacement Policy</h4>
+                    </div>
+                    <button className="close-policy-btn" onClick={() => setShowMobilePolicy(false)}><FiX /></button>
+                  </div>
+                  <ul className="policy-list-minimal">
+                    <li><BsClockHistory className="li-icon" /> Report damaged/spoiled items within 48 hours</li>
+                    <li><BsSearch className="li-icon" /> Replacement after verification</li>
+                    <li><BsTree className="li-icon" /> No return for natural taste/texture variations</li>
+                  </ul>
+                  <p className="mobile-policy-disclaimer" style={{ marginTop: '10px', marginBottom: '15px' }}>
+                    Applicable only for damaged or spoiled products. Natural variations are not eligible for return.
+                  </p>
+                  <Link to="/refund-policy" className="mobile-full-policy-link-row" onClick={() => setShowMobilePolicy(false)}>
+                    <span className="link-content">
+                      <BsFileText className="file-icon" /> Read full refund & replacement policy
+                    </span>
+                    <BsArrowRight className="arrow-icon" />
+                  </Link>
+                </div>
+              </div>
+            )}
 
             <div className="trust-signals">
               <div className="trust-signal-item">
@@ -670,8 +692,8 @@ const ProductDetail = () => {
               <div 
                 className="trust-signal-item tappable-mobile" 
                 onClick={() => {
-                  if (window.innerWidth <= 768 && policyCardRef.current) {
-                    policyCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  if (window.innerWidth <= 768) {
+                    setShowMobilePolicy(true);
                   }
                 }}
               >

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { FiX, FiShoppingCart } from 'react-icons/fi';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -7,6 +7,7 @@ import './AbandonedCartReminder.css';
 
 const AbandonedCartReminder = () => {
   const [isVisible, setIsVisible] = useState(false);
+  const location = useLocation();
   const { cartItems, cartCount, cartTotal, openCart } = useCart();
   const { currentUser } = useAuth();
   const lastShownRef = useRef(0);
@@ -15,7 +16,10 @@ const AbandonedCartReminder = () => {
   const checkReminder = React.useCallback((isManualTrigger = false) => {
     // Strictly mobile view constraint (768px or less)
     const isMobile = window.innerWidth <= 768;
-    if (!isMobile || document.hidden || cartItems.length === 0) {
+    // Don't show on auth pages or checkout
+    const isAuthPage = ['/login', '/signup', '/login-otp', '/verify-otp', '/forgot-password', '/reset-password', '/checkout'].includes(location.pathname);
+    
+    if (!isMobile || document.hidden || cartItems.length === 0 || isAuthPage) {
       setIsVisible(false);
       return;
     }

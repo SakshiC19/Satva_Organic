@@ -432,11 +432,19 @@
 }
 
 /* Table Cells */
+.sr-no-text {
+    font-size: 13px;
+    font-weight: 700;
+    color: #6b7280;
+}
+
 .order-id-text {
     font-size: 14px;
     font-weight: 600;
-    color: #1a1a1a;
+    color: #27ae60;
+    /* Making Order ID green as in screenshot */
 }
+
 
 .customer-cell {
     display: flex;

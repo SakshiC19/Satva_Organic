@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
-import { doc, updateDoc, arrayUnion, serverTimestamp, addDoc, collection, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, serverTimestamp, addDoc, collection, getDoc, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import config from '../../config';
 import { FiCheck, FiShield, FiEdit2, FiPlus, FiTruck, FiChevronLeft, FiCheckCircle, FiChevronDown, FiChevronUp, FiLock } from 'react-icons/fi';
@@ -13,10 +13,16 @@ const Checkout = () => {
   const { currentUser, login, signup } = useAuth();
   
   // Load Razorpay Script
+  // Load Razorpay Script as a singleton
   const loadRazorpay = () => {
     return new Promise((resolve) => {
+      if (window.Razorpay) {
+        resolve(true);
+        return;
+      }
       const script = document.createElement('script');
       script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.id = 'razorpay-checkout-js';
       script.onload = () => resolve(true);
       script.onerror = () => resolve(false);
       document.body.appendChild(script);
@@ -33,9 +39,23 @@ const Checkout = () => {
   const roundedGst = Math.round(gstTotal || 0);
   const grandTotal = itemTotal > 0 ? (itemTotal + deliveryCharge + shippingCharge + smallCartCharge + roundedGst) : 0;
 
-  // Safety check for cartTotal
+  const cleanImageUrl = (url) => {
+    if (!url || typeof url !== 'string') return '';
+    // Prevent Private Network Access errors for localhost/127.0.0.1
+    if (url.includes('localhost') || url.includes('127.0.0.1')) return '';
+    return url;
+  };
+
+  // Safety check and image cleaning for cartTotal
   const safeCartTotal = grandTotal;
-  const safeCartItems = cartItems || [];
+  const safeCartItems = (cartItems || []).map(item => ({
+    ...item,
+    image: cleanImageUrl(item.image),
+    images: (item.images || []).map(img => {
+      if (typeof img === 'string') return cleanImageUrl(img);
+      return { ...img, url: cleanImageUrl(img.url) };
+    })
+  }));
 
   const [activeStep, setActiveStep] = useState(1);
   const [email, setEmail] = useState('');
@@ -49,6 +69,7 @@ const Checkout = () => {
 
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(isCodAvailable ? 'cod' : 'razorpay');
   const [isProcessing, setIsProcessing] = useState(false);
+  const isInitiatingRef = React.useRef(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [showMobilePayment, setShowMobilePayment] = useState(false);
   const [showPriceBreakdown, setShowPriceBreakdown] = useState(false);
@@ -241,18 +262,27 @@ const Checkout = () => {
   };
 
   const handleConfirmOrder = async () => {
-    if (isProcessing) return;
+    if (isProcessing || isInitiatingRef.current) return;
+    isInitiatingRef.current = true;
     setIsProcessing(true);
 
-    const sanitizedItems = cartItems.map(item => ({
-      id: item.id || '',
-      name: item.name || '',
-      price: item.price || 0,
-      quantity: item.quantity || 1,
-      selectedSize: item.selectedSize || 'Standard',
-      image: item.image || (item.images && item.images[0] ? (item.images[0].url || item.images[0]) : ''),
-      category: item.category || 'General',
-    }));
+    const cleanImageUrl = (url) => {
+      if (!url || typeof url !== 'string') return '';
+      return (url.includes('localhost') || url.includes('127.0.0.1')) ? '' : url;
+    };
+
+    const sanitizedItems = cartItems.map(item => {
+      const rawImage = item.image || (item.images && item.images[0] ? (item.images[0].url || item.images[0]) : '');
+      return {
+        id: item.id || '',
+        name: item.name || '',
+        price: item.price || 0,
+        quantity: item.quantity || 1,
+        selectedSize: item.selectedSize || 'Standard',
+        image: cleanImageUrl(rawImage),
+        category: item.category || 'General',
+      };
+    });
 
     const rawOrderData = {
       customerName: address.name || currentUser?.displayName || 'Guest',
@@ -323,8 +353,10 @@ const Checkout = () => {
           order_id: razorpayOrder.id,
           handler: async function (response) {
             try {
+              const snap = await getDocs(collection(db, 'orders'));
               const orderToSave = {
                 ...orderData,
+                orderSr: snap.size + 1,
                 createdAt: serverTimestamp(),
                 paymentId: response.razorpay_payment_id,
                 paymentStatus: 'Paid',
@@ -367,6 +399,7 @@ const Checkout = () => {
       } catch (err) {
         console.error("Error creating order:", err);
         alert(`Failed to initiate payment. Technical Error: ${err.message}`);
+        isInitiatingRef.current = false;
         setIsProcessing(false);
         return;
       }
@@ -374,16 +407,21 @@ const Checkout = () => {
     } else {
       // Cash on Delivery
       try {
+        const snap = await getDocs(collection(db, 'orders'));
         await addDoc(collection(db, 'orders'), {
             ...orderData,
+            orderSr: snap.size + 1,
             createdAt: serverTimestamp(),
             paymentStatus: 'Pending'
         });
         setShowConfirmation(true);
+        setIsProcessing(false);
+        isInitiatingRef.current = false;
       } catch (error) {
         console.error("Error saving order (COD):", error);
         alert("Failed to place order. Please try again.");
         setIsProcessing(false);
+        isInitiatingRef.current = false;
       }
     }
   };

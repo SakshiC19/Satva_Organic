@@ -1284,6 +1284,26 @@
     background: #f0fdf4;
 }
 
+.btn-primary-outline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: 1.5px solid var(--primary-green);
+    background: #f0fdf4;
+    color: var(--primary-green);
+    font-weight: 700;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-primary-outline:hover {
+    background: var(--primary-green);
+    color: white;
+}
+
+
 /* Main Grid Layout */
 .order-main-grid {
     display: grid;
@@ -1425,6 +1445,11 @@
         display: none !important;
     }
 
+    .order-details-page {
+        padding: 0 0 60px;
+    }
+
+
     .mobile-view {
         display: flex;
     }
@@ -1546,6 +1571,30 @@
         margin: 0;
         color: #1e293b;
         letter-spacing: 0.5px;
+    }
+
+    .mobile-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .icon-btn-mobile {
+        background: none;
+        border: none;
+        color: #1e293b;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 4px;
+        transition: transform 0.2s;
+    }
+
+    .icon-btn-mobile:active {
+        transform: scale(0.9);
+        color: var(--primary-green);
     }
 
     .btn-help-mobile {
