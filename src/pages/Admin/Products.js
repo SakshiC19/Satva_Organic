@@ -5,6 +5,7 @@ import { db } from '../../config/firebase';
 import { deleteMultipleImages, getPathFromURL } from '../../services/storageService';
 import { FiPlus, FiEdit2, FiTrash2, FiSearch, FiPackage, FiX, FiStar, FiEye } from 'react-icons/fi';
 import { useCategories } from '../../contexts/CategoryContext';
+import Pagination from '../../components/common/Pagination';
 import './Products.css';
 
 const Products = () => {
@@ -19,6 +20,10 @@ const Products = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const { categories: contextCategories } = useCategories();
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+
   useEffect(() => {
     fetchProducts();
   }, []);
@@ -28,8 +33,14 @@ const Products = () => {
     const cat = searchParams.get('category');
     if (cat) {
       setFilterCategory(cat);
+      setCurrentPage(1); // Reset to first page when category changes
     }
   }, [searchParams]);
+
+  // Reset to first page when search term or category filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterCategory]);
 
   const handleProductClick = (product) => {
     setSelectedProduct(product);
@@ -86,6 +97,18 @@ const Products = () => {
     return matchesSearch && matchesCategory;
   });
 
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const categories = ['all', ...contextCategories.map(cat => cat.name)];
 
   if (loading) {
@@ -137,95 +160,104 @@ const Products = () => {
           <p>Try adjusting your search or filters</p>
         </div>
       ) : (
-        <div className="products-table-container">
-          <table className="products-table">
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Category</th>
-                <th>Price</th>
-                <th>Stock</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredProducts.map(product => (
-                <tr 
-                  key={product.id} 
-                  onClick={() => navigate(`/admin/products/edit/${product.id}`)}
-                  className="product-row-clickable"
-                >
-                  <td>
-                    <div className="product-cell">
-                      <img 
-                        src={product.images?.[0]?.url || product.images?.[0] || 'https://via.placeholder.com/50'} 
-                        alt={product.name} 
-                        className="product-table-img"
-                      />
-                      <div className="product-name-cell">
-                        <span className="product-name-text">{product.name}</span>
-                        <span className="product-id-text">ID: {product.id.substring(0, 8)}</span>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <span className="category-badge">{product.category}</span>
-                  </td>
-                  <td>
-                    <div className="price-group">
-                      <span className="price-text">₹{product.price}</span>
-                      {product.originalPrice > product.price && (
-                        <div className="discount-tag">
-                          {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td>
-                    <span className={`stock-badge ${
-                      product.stock === 0 ? 'out-of-stock' : 
-                      product.stock < 10 ? 'low-stock' : 'in-stock'
-                    }`}>
-                      {product.stock === 0 ? 'Out of Stock' : `${product.stock} in stock`}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="table-actions">
-                      <button 
-                        className="action-btn-circle" 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleProductClick(product);
-                        }}
-                        title="View Details"
-                      >
-                        <FiEye />
-                      </button>
-                      <Link 
-                        to={`/admin/products/edit/${product.id}`} 
-                        className="action-btn-circle"
-                        title="Edit"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <FiEdit2 />
-                      </Link>
-                      <button 
-                        className="action-btn-circle delete" 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(product.id, product.images);
-                        }}
-                        title="Delete"
-                      >
-                        <FiTrash2 />
-                      </button>
-                    </div>
-                  </td>
+        <>
+          <div className="products-table-container">
+            <table className="products-table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Category</th>
+                  <th>Price</th>
+                  <th>Stock</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {paginatedProducts.map(product => (
+                  <tr 
+                    key={product.id} 
+                    onClick={() => navigate(`/admin/products/edit/${product.id}`)}
+                    className="product-row-clickable"
+                  >
+                    <td>
+                      <div className="product-cell">
+                        <img 
+                          src={product.images?.[0]?.url || product.images?.[0] || 'https://via.placeholder.com/50'} 
+                          alt={product.name} 
+                          className="product-table-img"
+                        />
+                        <div className="product-name-cell">
+                          <span className="product-name-text">{product.name}</span>
+                          <span className="product-id-text">ID: {product.id.substring(0, 8)}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span className="category-badge">{product.category}</span>
+                    </td>
+                    <td>
+                      <div className="price-group">
+                        <span className="price-text">₹{product.price}</span>
+                        {product.originalPrice > product.price && (
+                          <div className="discount-tag">
+                            {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <span className={`stock-badge ${
+                        product.stock === 0 ? 'out-of-stock' : 
+                        product.stock < 10 ? 'low-stock' : 'in-stock'
+                      }`}>
+                        {product.stock === 0 ? 'Out of Stock' : `${product.stock} in stock`}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="table-actions">
+                        <button 
+                          className="action-btn-circle" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleProductClick(product);
+                          }}
+                          title="View Details"
+                        >
+                          <FiEye />
+                        </button>
+                        <Link 
+                          to={`/admin/products/edit/${product.id}`} 
+                          className="action-btn-circle"
+                          title="Edit"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <FiEdit2 />
+                        </Link>
+                        <button 
+                          className="action-btn-circle delete" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(product.id, product.images);
+                          }}
+                          title="Delete"
+                        >
+                          <FiTrash2 />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <Pagination 
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+            totalResults={filteredProducts.length}
+            itemsPerPage={itemsPerPage}
+          />
+        </>
       )}
 
       {selectedProduct && (

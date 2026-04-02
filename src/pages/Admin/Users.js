@@ -8,6 +8,7 @@ import {
   FiDownload, FiCheckCircle, FiXCircle, FiAlertCircle, FiClock, FiX, FiMapPin, FiPackage, FiStar,
   FiTruck, FiDollarSign, FiShoppingBag, FiCreditCard
 } from 'react-icons/fi';
+import Pagination from '../../components/common/Pagination';
 import './Users.css';
 
 const OrderDetailsModal = ({ order, onClose }) => {
@@ -479,8 +480,9 @@ const Users = () => {
     direction: 'desc'
   });
 
+  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [itemsPerPage] = useState(20);
 
   useEffect(() => {
     fetchUsers();
@@ -709,6 +711,11 @@ const Users = () => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   useEffect(() => {
     setCurrentPage(1);
@@ -1103,35 +1110,13 @@ const Users = () => {
         </div>
       )}
 
-      {totalPages > 1 && (
-        <div className="pagination">
-          <button 
-            disabled={currentPage === 1} 
-            onClick={() => setCurrentPage(prev => prev - 1)}
-            className="pagination-btn"
-          >
-            Previous
-          </button>
-          <div className="page-numbers">
-            {[...Array(totalPages)].map((_, i) => (
-              <button 
-                key={i + 1}
-                onClick={() => setCurrentPage(i + 1)}
-                className={`page-number ${currentPage === i + 1 ? 'active' : ''}`}
-              >
-                {i + 1}
-              </button>
-            ))}
-          </div>
-          <button 
-            disabled={currentPage === totalPages} 
-            onClick={() => setCurrentPage(prev => prev + 1)}
-            className="pagination-btn"
-          >
-            Next
-          </button>
-        </div>
-      )}
+      <Pagination 
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+        totalResults={filteredUsers.length}
+        itemsPerPage={itemsPerPage}
+      />
 
       {viewingUser && (
         <UserDetailsModal 

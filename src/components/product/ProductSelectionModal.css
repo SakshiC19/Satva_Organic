@@ -24,9 +24,9 @@
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
     display: flex !important;
     flex-direction: column !important;
-    max-height: 95vh !important;
+    max-height: 90vh !important;
     overflow: hidden !important;
-    /* THE FIX: REMOVE SCROLL */
+    /* Ensure no scroll */
 }
 
 /* Hide all scrollbars within the modal */
@@ -215,15 +215,23 @@
     transform: translateY(-2px) !important;
 }
 
+.modal-view-details-btn.disabled {
+    border-color: #94a3b8 !important;
+    color: #94a3b8 !important;
+    cursor: not-allowed !important;
+    opacity: 0.7 !important;
+    transform: none !important;
+}
+
 .modal-add-btn {
     flex: 2 !important;
-    /* Slightly wider than View Details */
     padding: 11px !important;
     background: #27ae60 !important;
     color: white !important;
     border: none !important;
     border-radius: 12px !important;
     font-weight: 700 !important;
+    display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     gap: 10px !important;
@@ -231,7 +239,52 @@
     transition: all 0.2s !important;
     font-size: 1rem !important;
     margin-top: 0 !important;
-    /* Reset margin from previous update */
+}
+
+.modal-add-btn.disabled {
+    background: #94a3b8 !important;
+    cursor: not-allowed !important;
+    opacity: 0.7 !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.shake-error {
+    animation: shake 0.4s cubic-bezier(.36, .07, .19, .97) both;
+}
+
+@keyframes shake {
+
+    10%,
+    90% {
+        transform: translate3d(-1px, 0, 0);
+    }
+
+    20%,
+    80% {
+        transform: translate3d(2px, 0, 0);
+    }
+
+    30%,
+    50%,
+    70% {
+        transform: translate3d(-4px, 0, 0);
+    }
+
+    40%,
+    60% {
+        transform: translate3d(4px, 0, 0);
+    }
+}
+
+.error-text {
+    color: #ef4444 !important;
+}
+
+.required-msg {
+    color: #ef4444;
+    font-size: 0.75rem;
+    font-weight: 500;
 }
 
 .modal-add-btn:hover {
@@ -274,57 +327,100 @@
     fill: #ef4444 !important;
 }
 
+.modal-wishlist-btn.disabled {
+    background: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
+    cursor: not-allowed !important;
+    opacity: 0.6 !important;
+}
+
+.modal-wishlist-btn.disabled svg {
+    color: #94a3b8 !important;
+}
+
 /* Mobile Adjustments */
 @media (max-width: 480px) {
     .selection-modal-content {
-        padding: 20px !important;
-        border-radius: 20px !important;
+        padding: 15px !important;
+        border-radius: 16px !important;
+        width: 95% !important;
+        max-height: 92vh !important;
     }
 
     .modal-body {
         flex-direction: column !important;
-        gap: 12px !important;
-        /* Reduced gap */
+        gap: 8px !important;
     }
 
     .product-preview {
         width: 100% !important;
-        height: 140px !important;
-        /* Reduced height */
+        height: 120px !important;
+        /* Shorter to fit everything */
+        border-radius: 12px !important;
+    }
+
+    .product-details {
+        gap: 4px !important;
     }
 
     .product-details h3 {
-        font-size: 1.3rem !important;
-        /* Slightly smaller h3 */
+        font-size: 1.15rem !important;
+        margin-bottom: 4px !important;
+    }
+
+    .modal-price {
+        margin-bottom: 12px !important;
+    }
+
+    .modal-price .current {
+        font-size: 1.4rem !important;
     }
 
     .modal-selection-row {
-        gap: 10px !important;
-        margin-bottom: 15px !important;
+        gap: 8px !important;
+        margin-bottom: 12px !important;
     }
 
-    .selection-group {
-        min-width: 120px !important;
+    .selection-group label {
+        margin-bottom: 4px !important;
+        font-size: 0.8rem !important;
+    }
+
+    .weight-btn {
+        padding: 6px 12px !important;
+        font-size: 0.8rem !important;
+    }
+
+    .quantity-selector {
+        gap: 10px !important;
+        padding: 4px !important;
+    }
+
+    .quantity-selector button {
+        width: 28px !important;
+        height: 28px !important;
     }
 
     .modal-action-row {
-        gap: 8px !important;
-        margin-top: 15px !important;
+        gap: 6px !important;
+        margin-top: 10px !important;
     }
 
     .modal-view-details-btn,
     .modal-add-btn {
-        padding: 12px 8px !important;
-        font-size: 0.9rem !important;
+        padding: 10px 4px !important;
+        font-size: 0.85rem !important;
+        border-radius: 10px !important;
     }
 
     .modal-wishlist-btn {
-        width: 48px !important;
-        height: 48px !important;
+        width: 42px !important;
+        height: 42px !important;
+        border-radius: 10px !important;
     }
 
     .modal-add-btn {
-        flex: 1.5 !important;
+        flex: 1.8 !important;
     }
 }
 

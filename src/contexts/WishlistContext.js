@@ -1,4 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
+import { useAuth } from './AuthContext';
 
 const WishlistContext = createContext();
 
@@ -11,14 +14,73 @@ export const useWishlist = () => {
 };
 
 export const WishlistProvider = ({ children }) => {
+  const { currentUser } = useAuth();
   const [wishlistItems, setWishlistItems] = useState(() => {
-    const savedWishlist = localStorage.getItem('wishlist');
-    return savedWishlist ? JSON.parse(savedWishlist) : [];
+    try {
+      const savedWishlist = localStorage.getItem('wishlist');
+      return savedWishlist ? JSON.parse(savedWishlist) : [];
+    } catch (error) {
+      console.error('Error parsing wishlist from local storage:', error);
+      return [];
+    }
   });
 
+  // Load wishlist from Firestore when user logs in
   useEffect(() => {
-    localStorage.setItem('wishlist', JSON.stringify(wishlistItems));
-  }, [wishlistItems]);
+    const loadUserWishlist = async () => {
+      if (currentUser) {
+        try {
+          const userRef = doc(db, 'users', currentUser.uid);
+          const userDoc = await getDoc(userRef);
+          if (userDoc.exists()) {
+            const firestoreWishlist = userDoc.data().wishlist || [];
+            
+            // If local has items but firestore is empty, sync local to firestore
+            if (wishlistItems.length > 0 && firestoreWishlist.length === 0) {
+              await updateDoc(userRef, { 
+                wishlist: wishlistItems,
+                lastWishlistUpdatedAt: new Date().toISOString()
+              });
+              console.log('Initial wishlist sync: Local to Firestore');
+            } 
+            // Otherwise, if they differ, use firestore (cloud priority)
+            else if (JSON.stringify(firestoreWishlist) !== JSON.stringify(wishlistItems)) {
+              console.log('Syncing wishlist from Firestore...');
+              setWishlistItems(firestoreWishlist);
+            }
+          }
+        } catch (error) {
+          console.error('Error loading wishlist from Firestore:', error);
+        }
+      }
+    };
+    loadUserWishlist();
+  }, [currentUser]);
+
+  // Save wishlist to local storage and Firestore whenever it changes
+  useEffect(() => {
+    const syncWishlist = async () => {
+      const savedStr = localStorage.getItem('wishlist');
+      const hasChanged = savedStr !== JSON.stringify(wishlistItems);
+      
+      localStorage.setItem('wishlist', JSON.stringify(wishlistItems));
+      
+      if (currentUser && hasChanged) {
+        try {
+          const userRef = doc(db, 'users', currentUser.uid);
+          await updateDoc(userRef, { 
+            wishlist: wishlistItems,
+            lastWishlistUpdatedAt: new Date().toISOString()
+          });
+          console.log('Wishlist synced to Firestore');
+        } catch (error) {
+          console.error('Error syncing wishlist to Firestore:', error);
+        }
+      }
+    };
+    
+    syncWishlist();
+  }, [wishlistItems, currentUser]);
 
   const addToWishlist = (product) => {
     setWishlistItems((prev) => {

@@ -6,6 +6,7 @@ import { db } from '../../config/firebase';
 import { FiPlus, FiEdit2, FiTrash2, FiX, FiImage } from 'react-icons/fi';
 import ImageUpload from '../../components/admin/ImageUpload';
 import { uploadImage } from '../../services/storageService';
+import Pagination from '../../components/common/Pagination';
 import './Categories.css';
 import './CategoriesModalFix.css';
 
@@ -18,6 +19,8 @@ const Categories = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(8);
 
   useEffect(() => {
     const fetchProductCounts = async () => {
@@ -193,6 +196,17 @@ const Categories = () => {
     }
   };
 
+  const totalPages = Math.ceil(categories.length / itemsPerPage);
+  const paginatedCategories = categories.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="admin-categories">
       <div className="categories-header">
@@ -208,7 +222,7 @@ const Categories = () => {
       </div>
 
       <div className="categories-grid">
-        {categories.map((category) => (
+        {paginatedCategories.map((category) => (
           <div key={category.id} className="category-card">
             <div className="category-image-wrapper">
               {category.image ? (
@@ -268,6 +282,14 @@ const Categories = () => {
           </div>
         ))}
       </div>
+
+      <Pagination 
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+        totalResults={categories.length}
+        itemsPerPage={itemsPerPage}
+      />
 
       {isModalOpen && (
         <div className="modal-overlay">
