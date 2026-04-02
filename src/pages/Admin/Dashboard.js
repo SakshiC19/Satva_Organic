@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { FiTrendingUp, FiTrendingDown, FiDollarSign, FiShoppingBag, FiBox, FiUsers, FiFilter } from 'react-icons/fi';
+import { FiTrendingUp, FiTrendingDown, FiDollarSign, FiShoppingBag, FiBox, FiUsers, FiFilter, FiShoppingCart } from 'react-icons/fi';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -11,16 +11,45 @@ const Dashboard = () => {
     totalRevenue: 0,
     totalOrders: 0,
     totalProducts: 0,
-    activeCustomers: 0
+    activeCustomers: 0,
+    totalWishlistItems: 0,
+    totalCartItems: 0
   });
   const [topProducts, setTopProducts] = useState([]);
   const [recentOrders, setRecentOrders] = useState([]);
+  const [wishlistData, setWishlistData] = useState([]);
+  const [cartData, setCartData] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [productNames, setProductNames] = useState({});
   const [loading, setLoading] = useState(true);
   const [orderFilter, setOrderFilter] = useState('All');
+  const [showWishlistTable, setShowWishlistTable] = useState(false);
+  const [showCartTable, setShowCartTable] = useState(false);
+  const wishlistTableRef = useRef(null);
+  const cartTableRef = useRef(null);
+
+  const handleWishlistCardClick = () => {
+    setShowWishlistTable(true);
+    setShowCartTable(false); // Hide the other if open
+    setTimeout(() => {
+      wishlistTableRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  };
+
+  const handleCartCardClick = () => {
+    setShowCartTable(true);
+    setShowWishlistTable(false); // Hide the other if open
+    setTimeout(() => {
+      cartTableRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  };
+
+
 
   useEffect(() => {
     const ordersRef = collection(db, 'orders');
     const productsRef = collection(db, 'products');
+    const usersRef = collection(db, 'users');
 
     const unsubscribeOrders = onSnapshot(query(ordersRef, orderBy('createdAt', 'desc'), limit(100)), (snapshot) => {
       const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -40,14 +69,61 @@ const Dashboard = () => {
       const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setStats(prev => ({ ...prev, totalProducts: products.length }));
       
-      // We'll update the top products list whenever either products or orders change
-      // Handled in a separate useEffect or by recalculating here
+      // Create product name map
+      const nameMap = {};
+      products.forEach(p => {
+        nameMap[p.id] = p.name;
+      });
+      setProductNames(nameMap);
+      
       setLoading(false);
+    });
+
+    const unsubscribeUsers = onSnapshot(usersRef, (snapshot) => {
+      const usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setUsers(usersData);
+      
+      // Process wishlist data
+      const allWishlistItems = usersData.flatMap(u => u.wishlist || []);
+      const wishlistCounts = {};
+      allWishlistItems.forEach(item => {
+        const id = item.id || item.productId;
+        if (id) {
+          wishlistCounts[id] = (wishlistCounts[id] || 0) + 1;
+        }
+      });
+      const wishlistArray = Object.entries(wishlistCounts).map(([id, count]) => ({
+        id,
+        count
+      })).sort((a, b) => b.count - a.count);
+      setWishlistData(wishlistArray);
+
+      // Process cart data
+      const allCartItems = usersData.flatMap(u => u.cart || []);
+      const cartCounts = {};
+      allCartItems.forEach(item => {
+        const id = item.id || item.productId;
+        if (id) {
+          cartCounts[id] = (cartCounts[id] || 0) + (item.quantity || 1);
+        }
+      });
+      const cartArray = Object.entries(cartCounts).map(([id, count]) => ({
+        id,
+        count
+      })).sort((a, b) => b.count - a.count);
+      setCartData(cartArray);
+
+      setStats(prev => ({ 
+        ...prev, 
+        totalWishlistItems: allWishlistItems.length,
+        totalCartItems: allCartItems.length
+      }));
     });
 
     return () => {
       unsubscribeOrders();
       unsubscribeProducts();
+      unsubscribeUsers();
     };
   }, []);
 
@@ -59,7 +135,6 @@ const Dashboard = () => {
     recentOrders.forEach(order => {
       if (order.items) {
         order.items.forEach(item => {
-          // Normalize names for better matching
           const productName = item.name?.trim().toLowerCase();
           if (productName) {
             const quantity = item.quantity || 1;
@@ -69,7 +144,6 @@ const Dashboard = () => {
       }
     });
 
-    // Fetch products again to ensure we have the latest stock
     const productsRef = collection(db, 'products');
     getDocs(productsRef).then(productsSnapshot => {
       const productsData = productsSnapshot.docs.map(doc => ({
@@ -83,7 +157,7 @@ const Dashboard = () => {
           ...product,
           salesCount: productSales[normalizedName] || 0
         };
-      }).sort((a, b) => (a.stock || 0) - (b.stock || 0)); // Least stock first
+      }).sort((a, b) => (a.stock || 0) - (b.stock || 0));
 
       setTopProducts(sortedBySales);
     });
@@ -98,7 +172,7 @@ const Dashboard = () => {
   };
 
   const formatDate = (date) => {
-    if (!date) return 'Just now'; // Handle serverTimestamp latency
+    if (!date) return 'Just now';
     
     let d;
     if (date.seconds) {
@@ -158,6 +232,24 @@ const Dashboard = () => {
       icon: <FiUsers />,
       iconClass: 'orange',
       path: '/admin/users'
+    },
+    {
+      label: 'Wishlist Items',
+      value: stats.totalWishlistItems.toString(),
+      trend: 'Total saved products',
+      trendUp: true,
+      icon: <FiTrendingUp />,
+      iconClass: 'green',
+      onClick: handleWishlistCardClick
+    },
+    {
+      label: 'Items in Carts',
+      value: stats.totalCartItems.toString(),
+      trend: 'Total added to cart',
+      trendUp: true,
+      icon: <FiShoppingCart />,
+      iconClass: 'blue',
+      onClick: handleCartCardClick
     }
   ];
 
@@ -196,7 +288,7 @@ const Dashboard = () => {
           <div 
             key={index} 
             className={`stat-card clickable ${stat.primary ? 'primary' : ''}`}
-            onClick={() => navigate(stat.path)}
+            onClick={() => stat.onClick ? stat.onClick() : navigate(stat.path)}
           >
             <div className="stat-card-header">
               <div className={`stat-icon ${stat.iconClass || ''}`}>
@@ -214,7 +306,6 @@ const Dashboard = () => {
               {stat.trendUp ? <FiTrendingUp className="trend-up" /> : <FiTrendingDown className="trend-down" />}
               <span className={stat.trendUp ? 'trend-up' : 'trend-down'}>{stat.trend}</span>
             </div>
-            {/* Mini Chart SVG Placeholder */}
             <svg className="mini-chart" viewBox="0 0 100 40">
               <path
                 d="M0 30 Q 20 10, 40 25 T 80 15 L 100 35"
@@ -231,62 +322,66 @@ const Dashboard = () => {
       <div className="charts-grid">
         <div className="chart-card">
           <div className="chart-header">
-            <h3>Sales By Category</h3>
+            <h3>Checkout Status Analysis</h3>
           </div>
           <div className="chart-placeholder">
-            <div style={{ position: 'absolute', left: '20px', top: '20px', textAlign: 'left' }}>
-              <span style={{ fontSize: '1.5rem', fontWeight: 800 }}>₹18,200.82</span>
-              <span style={{ fontSize: '0.8rem', color: '#10b981', marginLeft: '8px', background: '#dcfce7', padding: '2px 8px', borderRadius: '10px' }}>
-                <FiTrendingUp size={10} /> 8.24%
-              </span>
-            </div>
-            {/* Main Line Chart SVG */}
-            <svg width="100%" height="200" viewBox="0 0 600 200" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#059669" stopOpacity="0.2" />
-                  <stop offset="100%" stopColor="#059669" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <path
-                d="M0 150 Q 100 130, 150 160 T 250 120 T 350 140 T 450 100 T 600 130"
-                fill="none"
-                stroke="#059669"
-                strokeWidth="4"
+            <svg width="180" height="180" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="40" fill="none" stroke="#f1f5f9" strokeWidth="12" />
+              <circle 
+                cx="50" cy="50" r="40" 
+                fill="none" stroke="#059669" strokeWidth="12" 
+                strokeDasharray={`${Math.min((recentOrders.filter(o => o.status !== 'Cancelled').length / (recentOrders.length || 1)) * 251, 251)} 251`} 
+                strokeDashoffset="0" 
               />
-              <path
-                d="M0 150 Q 100 130, 150 160 T 250 120 T 350 140 T 450 100 T 600 130 L 600 200 L 0 200 Z"
-                fill="url(#chartGradient)"
+              <circle 
+                cx="50" cy="50" r="40" 
+                fill="none" stroke="#ef4444" strokeWidth="12" 
+                strokeDasharray={`${Math.min((recentOrders.filter(o => o.status === 'Cancelled').length / (recentOrders.length || 1)) * 251, 251)} 251`} 
+                strokeDashoffset={`-${Math.min((recentOrders.filter(o => o.status !== 'Cancelled').length / (recentOrders.length || 1)) * 251, 251)}`} 
               />
-              <circle cx="450" cy="100" r="6" fill="#059669" stroke="white" strokeWidth="2" />
-              <rect x="430" y="70" width="60" height="20" rx="10" fill="#059669" />
-              <text x="440" y="84" fill="white" fontSize="10" fontWeight="bold">₹4,645.80</text>
             </svg>
-            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', padding: '0 20px', marginTop: '10px', color: '#64748b', fontSize: '0.75rem' }}>
-              <span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span>
+            <div className="chart-legend" style={{ textAlign: 'left', marginTop: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
+                    <span style={{ width: '10px', height: '10px', background: '#059669', borderRadius: '2px' }}></span>
+                    <span>Successful Checkouts: {recentOrders.filter(o => o.status !== 'Cancelled').length}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
+                    <span style={{ width: '10px', height: '10px', background: '#ef4444', borderRadius: '2px' }}></span>
+                    <span>Cancelled: {recentOrders.filter(o => o.status === 'Cancelled').length}</span>
+                </div>
             </div>
           </div>
         </div>
 
         <div className="chart-card">
           <div className="chart-header">
-            <h3>Sales By Category</h3>
+            <h3>Most Wishlisted Products</h3>
           </div>
-          <div className="chart-placeholder">
-            <svg width="180" height="180" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="40" fill="none" stroke="#f1f5f9" strokeWidth="12" />
-              <circle cx="50" cy="50" r="40" fill="none" stroke="#059669" strokeWidth="12" strokeDasharray="180 251" strokeDashoffset="0" />
-              <circle cx="50" cy="50" r="40" fill="none" stroke="#34d399" strokeWidth="12" strokeDasharray="40 251" strokeDashoffset="-180" />
-              <g transform="translate(50, 50)">
-                <text textAnchor="middle" dy="-5" fontSize="10" fontWeight="800" fill="#1e293b">16,100</text>
-                <rect x="-15" y="2" width="30" height="10" rx="5" fill="#059669" />
-                <text textAnchor="middle" dy="10" fontSize="6" fill="white">+ 45%</text>
-              </g>
-            </svg>
-            <div style={{ marginTop: '20px', textAlign: 'center' }}>
-              <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>Total Number of Sales</p>
-              <h4 style={{ margin: '4px 0', fontSize: '1.2rem', fontWeight: 800 }}>3,40,0031</h4>
-            </div>
+          <div className="wishlist-list" style={{ padding: '0 15px', overflowY: 'auto', maxHeight: '240px' }}>
+             {wishlistData.length > 0 ? wishlistData.slice(0, 5).map((item, idx) => (
+                 <div key={idx} className="wishlist-item" style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
+                    <span style={{ fontWeight: 500, color: '#1e293b' }}>#{idx + 1} {productNames[item.id] || `ID: ${item.id.substring(0, 8)}...`}</span>
+                    <span className="count-badge" style={{ background: '#dcfce7', color: '#059669', padding: '2px 8px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                        {item.count} Wishlists
+                    </span>
+                 </div>
+             )) : <p>No wishlist data available.</p>}
+          </div>
+        </div>
+
+        <div className="chart-card">
+          <div className="chart-header">
+            <h3>Most Carted Products</h3>
+          </div>
+          <div className="wishlist-list" style={{ padding: '0 15px', overflowY: 'auto', maxHeight: '240px' }}>
+             {cartData.length > 0 ? cartData.slice(0, 5).map((item, idx) => (
+                 <div key={idx} className="wishlist-item" style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
+                    <span style={{ fontWeight: 500, color: '#1e293b' }}>#{idx + 1} {productNames[item.id] || `ID: ${item.id.substring(0, 8)}...`}</span>
+                    <span className="count-badge" style={{ background: '#e0f2fe', color: '#0284c7', padding: '2px 8px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                        {item.count} Items
+                    </span>
+                 </div>
+             )) : <p>No cart data available.</p>}
           </div>
         </div>
       </div>
@@ -394,6 +489,133 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Customer Carts Section */}
+      {showCartTable && (
+        <div className="data-grid" style={{ marginTop: '30px' }} ref={cartTableRef}>
+          <div className="admin-table-container" style={{ gridColumn: '1 / -1' }}>
+            <div className="list-header" style={{ padding: '24px 24px 0 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3>Customer Carts Analysis</h3>
+              <button 
+                onClick={() => setShowCartTable(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', fontSize: '14px', fontWeight: 'bold' }}
+              >
+                Close
+              </button>
+            </div>
+            <div className="admin-table-wrapper">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Customer</th>
+                    <th>Contact</th>
+                    <th>Cart Items</th>
+                    <th>Total Value</th>
+                    <th>Last Updated</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.filter(u => u.cart && u.cart.length > 0).length > 0 ? (
+                    users.filter(u => u.cart && u.cart.length > 0).map((user) => {
+                      const cartTotal = user.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                      return (
+                        <tr key={user.id}>
+                          <td>
+                            <div className="customer-cell">
+                              <span className="customer-name">{user.displayName || user.fullName || 'Anonymous'}</span>
+                            </div>
+                          </td>
+                          <td>{user.email || user.phoneNumber || 'N/A'}</td>
+                          <td>
+                            <div className="order-product-info">
+                              <span className="product-name-table">
+                                {user.cart.map(item => `${item.name} (x${item.quantity})`).join(', ')}
+                              </span>
+                            </div>
+                          </td>
+                          <td>{formatCurrency(cartTotal)}</td>
+                          <td>{formatDate(user.lastCartUpdatedAt || user.updatedAt)}</td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan="5" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                        No active customer carts found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Customer Wishlist Section */}
+      {showWishlistTable && (
+        <div className="data-grid" style={{ marginTop: '30px' }} ref={wishlistTableRef}>
+          <div className="admin-table-container" style={{ gridColumn: '1 / -1' }}>
+            <div className="list-header" style={{ padding: '24px 24px 0 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3>Customer Wishlist Analysis</h3>
+              <button 
+                onClick={() => setShowWishlistTable(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', fontSize: '14px', fontWeight: 'bold' }}
+              >
+                Close
+              </button>
+            </div>
+            <div className="admin-table-wrapper">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Customer</th>
+                    <th>Contact</th>
+                    <th>Wishlist Items</th>
+                    <th>Total Items</th>
+                    <th>Last Updated</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.filter(u => u.wishlist && u.wishlist.length > 0).length > 0 ? (
+                    users.filter(u => u.wishlist && u.wishlist.length > 0).map((user) => {
+                      return (
+                        <tr key={user.id}>
+                          <td>
+                            <div className="customer-cell">
+                              <span className="customer-name">{user.displayName || user.fullName || 'Anonymous'}</span>
+                            </div>
+                          </td>
+                          <td>{user.email || user.phoneNumber || 'N/A'}</td>
+                          <td>
+                            <div className="order-product-info">
+                              <span className="product-name-table">
+                                {user.wishlist.map(item => item.name || productNames[item.id || item.productId] || 'Unknown Product').join(', ')}
+                              </span>
+                            </div>
+                          </td>
+                          <td>
+                            <span className="count-badge" style={{ background: '#dcfce7', color: '#059669', padding: '2px 8px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                              {user.wishlist.length} Items
+                            </span>
+                          </td>
+                          <td>{formatDate(user.lastWishlistUpdatedAt || user.updatedAt)}</td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan="4" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                        No active customer wishlists found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { FiActivity, FiCheckCircle, FiXCircle, FiRefreshCw, FiDownload, FiFilter } from 'react-icons/fi';
+import Pagination from '../../components/common/Pagination';
 import './APILogs.css';
 
 const APILogs = () => {
@@ -10,6 +11,8 @@ const APILogs = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterAPI, setFilterAPI] = useState('all');
   const [selectedLog, setSelectedLog] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   useEffect(() => {
     fetchLogs();
@@ -71,12 +74,26 @@ const APILogs = () => {
     link.click();
     document.body.removeChild(link);
   };
-
   const filteredLogs = logs.filter(log => {
     if (filterStatus !== 'all' && log.status !== filterStatus) return false;
     if (filterAPI !== 'all' && log.api_name !== filterAPI) return false;
     return true;
   });
+
+  const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
+  const paginatedLogs = filteredLogs.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterStatus, filterAPI]);
 
   const stats = {
     total: logs.length,
@@ -225,7 +242,7 @@ const APILogs = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredLogs.map((log) => (
+              {paginatedLogs.map((log) => (
                 <tr key={log.id}>
                   <td className="timestamp-cell">
                     {formatDate(log.created_at)}
@@ -266,6 +283,14 @@ const APILogs = () => {
           </table>
         )}
       </div>
+
+      <Pagination 
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+        totalResults={filteredLogs.length}
+        itemsPerPage={itemsPerPage}
+      />
 
       {/* Log Details Modal */}
       {selectedLog && (

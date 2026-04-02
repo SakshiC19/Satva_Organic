@@ -1319,13 +1319,31 @@ const Checkout = () => {
               <div className="price-divider"></div>
 
               <div className="price-row">
-                <span>Subtotal</span>
-                <span>₹{safeCartTotal.toLocaleString()}</span>
+                <span>Items Subtotal</span>
+                <span>₹{itemTotal.toLocaleString()}</span>
               </div>
-              <div className="price-row">
-                <span>Delivery Charges</span>
-                <span className="green-text">FREE</span>
-              </div>
+              
+              {deliveryCharge > 0 && (
+                <div className="price-row">
+                  <span>Delivery Charges</span>
+                  <span>₹{deliveryCharge}</span>
+                </div>
+              )}
+
+              {shippingCharge > 0 && (
+                <div className="price-row">
+                  <span>Shipping Charges</span>
+                  <span>₹{shippingCharge}</span>
+                </div>
+              )}
+
+              {smallCartCharge > 0 && (
+                <div className="price-row">
+                  <span>Small Basket Charge</span>
+                  <span>₹{smallCartCharge}</span>
+                </div>
+              )}
+
               {roundedGst > 0 && (
                 <div className="price-row">
                   <span>GST</span>

@@ -1,4 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
+import { useAuth } from './AuthContext';
 
 const CartContext = createContext();
 
@@ -7,6 +10,7 @@ export const useCart = () => {
 };
 
 export const CartProvider = ({ children }) => {
+  const { currentUser } = useAuth();
   const [cartItems, setCartItems] = useState(() => {
     try {
       const savedCart = localStorage.getItem('cart');
@@ -21,25 +25,77 @@ export const CartProvider = ({ children }) => {
     return localStorage.getItem('last_cart_updated_at') || null;
   });
 
-  // Save cart and timestamp to local storage whenever it changes
+  // Load cart from Firestore when user logs in
   useEffect(() => {
-    const savedCartStr = localStorage.getItem('cart');
-    const hasCartChanged = savedCartStr !== JSON.stringify(cartItems);
-    
-    localStorage.setItem('cart', JSON.stringify(cartItems));
-    
-    if (cartItems.length > 0) {
-      // Only update timestamp if cart actually changed or if it doesn't exist
-      if (hasCartChanged || !localStorage.getItem('last_cart_updated_at')) {
-        const now = new Date().toISOString();
-        localStorage.setItem('last_cart_updated_at', now);
-        setLastCartUpdatedAt(now);
+    const loadUserCart = async () => {
+      if (currentUser) {
+        try {
+          const userRef = doc(db, 'users', currentUser.uid);
+          const userDoc = await getDoc(userRef);
+          if (userDoc.exists() && userDoc.data().cart) {
+            const firestoreCart = userDoc.data().cart;
+            // Simple merge: Priority to Firestore if different
+            if (JSON.stringify(firestoreCart) !== JSON.stringify(cartItems)) {
+              console.log('Syncing cart from Firestore...');
+              setCartItems(firestoreCart);
+            }
+          }
+        } catch (error) {
+          console.error('Error loading cart from Firestore:', error);
+        }
       }
-    } else {
-      localStorage.removeItem('last_cart_updated_at');
-      setLastCartUpdatedAt(null);
-    }
-  }, [cartItems]);
+    };
+    loadUserCart();
+  }, [currentUser]);
+
+  // Save cart and timestamp to local storage and Firestore whenever it changes
+  useEffect(() => {
+    const syncCart = async () => {
+      const savedCartStr = localStorage.getItem('cart');
+      const hasCartChanged = savedCartStr !== JSON.stringify(cartItems);
+      
+      localStorage.setItem('cart', JSON.stringify(cartItems));
+      
+      if (cartItems.length > 0) {
+        // Only update timestamp if cart actually changed or if it doesn't exist
+        if (hasCartChanged || !localStorage.getItem('last_cart_updated_at')) {
+          const now = new Date().toISOString();
+          localStorage.setItem('last_cart_updated_at', now);
+          setLastCartUpdatedAt(now);
+          
+          // Sync to Firestore if logged in
+          if (currentUser) {
+            try {
+              const userRef = doc(db, 'users', currentUser.uid);
+              await updateDoc(userRef, { 
+                cart: cartItems,
+                lastCartUpdatedAt: now 
+              });
+              console.log('Cart synced to Firestore');
+            } catch (error) {
+              console.error('Error syncing cart to Firestore:', error);
+            }
+          }
+        }
+      } else {
+        localStorage.removeItem('last_cart_updated_at');
+        setLastCartUpdatedAt(null);
+        
+        // Sync empty cart to Firestore if logged in and it was changed
+        if (currentUser && hasCartChanged) {
+          try {
+            const userRef = doc(db, 'users', currentUser.uid);
+            await updateDoc(userRef, { cart: [] });
+            console.log('Empty cart synced to Firestore');
+          } catch (error) {
+            console.error('Error clearing cart in Firestore:', error);
+          }
+        }
+      }
+    };
+    
+    syncCart();
+  }, [cartItems, currentUser]);
 
   const addToCart = (product) => {
     setCartItems(prevItems => {

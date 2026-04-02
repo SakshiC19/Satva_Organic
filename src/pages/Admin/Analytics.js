@@ -11,6 +11,7 @@ import {
     LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
     Tooltip, Legend, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell, LabelList
 } from 'recharts';
+import Pagination from '../../components/common/Pagination';
 import './Analytics.css';
 
 const Analytics = () => {
@@ -54,6 +55,19 @@ const Analytics = () => {
     const [allProducts, setAllProducts] = useState([]);
     const [productCategoryMap, setProductCategoryMap] = useState({});
     const [showActiveBuyersModal, setShowActiveBuyersModal] = useState(false);
+
+    // Pagination state
+    const [customerPage, setCustomerPage] = useState(1);
+    const [orderPage, setOrderPage] = useState(1);
+    const [revenuePage, setRevenuePage] = useState(1);
+    const itemsPerPage = 15;
+
+    // Reset pages when filters change
+    useEffect(() => {
+        setCustomerPage(1);
+        setOrderPage(1);
+        setRevenuePage(1);
+    }, [dateFilter, filters, searchTerm, lastPart]);
 
     const navigate = useNavigate();
 
@@ -1294,7 +1308,9 @@ const Analytics = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {customerAnalytics.allCustomers.map((c, i) => (
+                                {customerAnalytics.allCustomers
+                                    .slice((customerPage - 1) * itemsPerPage, customerPage * itemsPerPage)
+                                    .map((c, i) => (
                                     <tr key={i} className="loyalty-row">
                                         <td><input type="checkbox" className="table-checkbox" /></td>
                                         <td>
@@ -1328,6 +1344,14 @@ const Analytics = () => {
                             </tbody>
                 </table>
             </div>
+            
+            <Pagination 
+                currentPage={customerPage}
+                totalPages={Math.ceil(customerAnalytics.allCustomers.length / itemsPerPage)}
+                onPageChange={setCustomerPage}
+                totalResults={customerAnalytics.allCustomers.length}
+                itemsPerPage={itemsPerPage}
+            />
         </div>
     );
 }
@@ -1492,27 +1516,55 @@ const Analytics = () => {
                                     
                                     if (!matchesCategory || !matchesProduct) return null;
 
-                                    return (
-                                        <tr key={`${o.id}-${idx}`} className="product-row">
-                                            <td style={{ fontSize: '13px', fontWeight: '700', color: '#27ae60' }}>
-                                                #{orders.length - orders.findIndex(item => item.id === o.id)}
-                                            </td>
-                                            <td style={{ fontWeight: '500' }}>{item.name}</td>
-                                            <td><span className="category-pill">{cat}</span></td>
-                                            <td style={{ fontSize: '13px', color: '#1e293b', fontWeight: '500' }}>{formatDynamicDate(o.createdAt)}</td>
-                                            <td style={{ fontWeight: '700' }}>{item.quantity}</td>
-                                            <td><span style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b' }}>{o.paymentMethod || 'COD'}</span></td>
-                                            <td>
-                                                <span className={`status-badge status-${(o.status || 'Pending').toLowerCase()}`} style={{ fontSize: '10px' }}>
-                                                    {o.status || 'Pending'}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    );
-                                })).filter(Boolean)}
+                                    return {
+                                        ...item,
+                                        orderId: o.id,
+                                        orderSerial: orders.length - orders.findIndex(x => x.id === o.id),
+                                        createdAt: o.createdAt,
+                                        paymentMethod: o.paymentMethod,
+                                        status: o.status,
+                                        idx
+                                    };
+                                })).filter(Boolean)
+                                .slice((orderPage - 1) * itemsPerPage, orderPage * itemsPerPage)
+                                .map((item, idx) => (
+                                    <tr key={`${item.orderId}-${item.idx}`} className="product-row">
+                                        <td style={{ fontSize: '13px', fontWeight: '700', color: '#27ae60' }}>
+                                            #{item.orderSerial}
+                                        </td>
+                                        <td style={{ fontWeight: '500' }}>{item.name}</td>
+                                        <td><span className="category-pill">{item.category || productCategoryMap[item.name] || 'N/A'}</span></td>
+                                        <td style={{ fontSize: '13px', color: '#1e293b', fontWeight: '500' }}>{formatDynamicDate(item.createdAt)}</td>
+                                        <td style={{ fontWeight: '700' }}>{item.quantity}</td>
+                                        <td><span style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b' }}>{item.paymentMethod || 'COD'}</span></td>
+                                        <td>
+                                            <span className={`status-badge status-${(item.status || 'Pending').toLowerCase()}`} style={{ fontSize: '10px' }}>
+                                                {item.status || 'Pending'}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
                     </div>
+
+                    <Pagination 
+                        currentPage={orderPage}
+                        totalPages={Math.ceil(filteredOrders.flatMap(o => (o.items || []).filter(item => {
+                            const cat = item.category || productCategoryMap[item.name] || 'N/A';
+                            const matchesCategory = !filters.category || cat.trim().toLowerCase() === filters.category.trim().toLowerCase();
+                            const matchesProduct = !filters.product || item.name === filters.product;
+                            return matchesCategory && matchesProduct;
+                        })).length / itemsPerPage)}
+                        onPageChange={setOrderPage}
+                        totalResults={filteredOrders.flatMap(o => (o.items || []).filter(item => {
+                            const cat = item.category || productCategoryMap[item.name] || 'N/A';
+                            const matchesCategory = !filters.category || cat.trim().toLowerCase() === filters.category.trim().toLowerCase();
+                            const matchesProduct = !filters.product || item.name === filters.product;
+                            return matchesCategory && matchesProduct;
+                        })).length}
+                        itemsPerPage={itemsPerPage}
+                    />
                 </div>
             </div>
         );
@@ -1712,8 +1764,55 @@ const Analytics = () => {
                     </div>
                 </div>
 
-                {/* Revenue by Region (Cities) - New Table Style */}
+                {/* Detailed Revenue Table */}
+                <div className="table-card" style={{ marginTop: '20px' }}>
+                    <div className="chart-header">
+                        <h3 className="chart-title">Transaction Details</h3>
+                    </div>
+                    <div className="products-table-container">
+                        <table className="products-table">
+                            <thead>
+                                <tr>
+                                    <th>ORDER ID</th>
+                                    <th>CUSTOMER</th>
+                                    <th>DATE</th>
+                                    <th>PAYMENT</th>
+                                    <th>STATUS</th>
+                                    <th style={{ textAlign: 'right' }}>AMOUNT</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredOrders
+                                    .filter(o => o.status?.toLowerCase() !== 'cancelled')
+                                    .slice((revenuePage - 1) * itemsPerPage, revenuePage * itemsPerPage)
+                                    .map((o) => (
+                                    <tr key={o.id} className="product-row">
+                                        <td style={{ fontSize: '13px', fontWeight: '700', color: '#27ae60' }}>
+                                            #{orders.length - orders.findIndex(x => x.id === o.id)}
+                                        </td>
+                                        <td style={{ fontWeight: '500' }}>{o.shippingInfo?.fullName || 'Customer'}</td>
+                                        <td style={{ fontSize: '13px', color: '#1e293b' }}>{formatDynamicDate(o.createdAt)}</td>
+                                        <td><span style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b' }}>{o.paymentMethod || 'COD'}</span></td>
+                                        <td>
+                                            <span className={`status-badge status-${(o.status || 'Pending').toLowerCase()}`} style={{ fontSize: '10px' }}>
+                                                {o.status || 'Pending'}
+                                            </span>
+                                        </td>
+                                        <td style={{ textAlign: 'right', fontWeight: '700' }}>₹{(Number(o.totalAmount) || 0).toLocaleString()}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
 
+                    <Pagination 
+                        currentPage={revenuePage}
+                        totalPages={Math.ceil(filteredOrders.filter(o => o.status?.toLowerCase() !== 'cancelled').length / itemsPerPage)}
+                        onPageChange={setRevenuePage}
+                        totalResults={filteredOrders.filter(o => o.status?.toLowerCase() !== 'cancelled').length}
+                        itemsPerPage={itemsPerPage}
+                    />
+                </div>
             </div>
         );
     }

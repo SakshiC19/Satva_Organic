@@ -1400,3 +1400,201 @@
         transform: translateY(0);
     }
 }
+
+/* Product Header Layout */
+.product-info-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+    margin-bottom: 2px;
+}
+
+.product-title-group {
+    flex: 1;
+}
+
+.product-title-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+}
+
+.share-btn-mobile-inline {
+    display: none;
+    /* hidden on desktop */
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #64748b;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.product-actions-top-right {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-top: 5px;
+}
+
+.share-btn-container {
+    position: relative;
+}
+
+.share-button-desktop,
+.wishlist-button-desktop {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    color: #4b5563;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.share-button-desktop:hover {
+    background: #f0fdf4;
+    color: #16a34a;
+    border-color: #16a34a;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.15);
+}
+
+.wishlist-button-desktop:hover,
+.wishlist-button-desktop.active {
+    background: #fff1f2;
+    color: #ef4444;
+    border-color: #fecaca;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+}
+
+.wishlist-button-desktop.active {
+    border-color: #ef4444;
+}
+
+.wishlist-button-desktop.active svg {
+    fill: #ef4444;
+    stroke: #ef4444;
+}
+
+.share-tooltip {
+    position: absolute;
+    bottom: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    color: white;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    z-index: 100;
+    pointer-events: none;
+    animation: tooltipFadeUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.share-tooltip::after {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 5px solid #1e293b;
+}
+
+.footer-share-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.footer-tooltip {
+    bottom: auto;
+    top: -45px;
+}
+
+.footer-tooltip::after {
+    top: auto;
+    bottom: -4px;
+    border-bottom: none;
+    border-top: 5px solid #1e293b;
+}
+
+@keyframes tooltipFadeUp {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
+/* Responsive Hide/Show */
+@media (max-width: 768px) {
+    .product-actions-top-right {
+        display: none;
+    }
+
+    .share-btn-mobile-inline {
+        display: flex;
+    }
+
+    .product-info-header-row {
+        gap: 0;
+    }
+
+    .fixed-bottom-footer {
+        display: flex;
+        padding: 10px 12px;
+        gap: 8px;
+    }
+
+    .fixed-bottom-footer .btn-add-to-cart,
+    .fixed-bottom-footer .btn-buy-now {
+        min-width: unset;
+        flex: 2;
+        font-size: 12px;
+        height: 44px;
+    }
+
+    .fixed-bottom-footer .wishlist-btn {
+        flex: 1;
+        max-width: 44px;
+        height: 44px;
+        font-size: 18px;
+    }
+}
+
+@media (min-width: 769px) {
+    .mobile-action-wishlist {
+        display: none !important;
+    }
+
+    .product-actions {
+        /* On desktop, the cart and buy now buttons are enough at the bottom */
+        gap: 20px;
+    }
+}

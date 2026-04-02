@@ -9,6 +9,7 @@ import {
 } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import { downloadInvoice, viewInvoice } from '../../utils/invoiceGenerator';
+import Pagination from '../../components/common/Pagination';
 import './Orders.css';
 
 const Orders = () => {
@@ -26,6 +27,10 @@ const Orders = () => {
   const [viewingOrder, setViewingOrder] = useState(null);
   const [viewingCancellation, setViewingCancellation] = useState(null);
   const { currentUser } = useAuth();
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   useEffect(() => {
     setLoading(true);
@@ -156,6 +161,7 @@ const Orders = () => {
     setDateRange('all');
     setSpecialFilter(null);
     setActiveTab('all');
+    setCurrentPage(1);
   };
 
   const handleBulkStatusUpdate = async (newStatus) => {
@@ -382,6 +388,23 @@ const Orders = () => {
     };
     return getTime(b.createdAt) - getTime(a.createdAt);
   });
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const paginatedOrders = filteredOrders.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, activeTab, dateRange, paymentFilter, statusFilter, specialFilter]);
 
   if (loading) {
     return (
@@ -638,9 +661,12 @@ const Orders = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredOrders.map((order, index) => {
+                {paginatedOrders.map((order, index) => {
                   const firstItem = order.items?.[0];
                   const isSelected = selectedOrders.includes(order.id);
+                  
+                  // Adjust index for pagination
+                  const displayIndex = (currentPage - 1) * itemsPerPage + index + 1;
                   
                   return (
                     <tr 
@@ -662,7 +688,7 @@ const Orders = () => {
                         />
                       </td>
                       <td>
-                        <span className="sr-no-text">{index + 1}</span>
+                        <span className="sr-no-text">{displayIndex}</span>
                       </td>
                       <td>
                         <div className="order-id-cell">
@@ -864,6 +890,13 @@ const Orders = () => {
                 })}
               </tbody>
             </table>
+            <Pagination 
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              totalResults={filteredOrders.length}
+              itemsPerPage={itemsPerPage}
+            />
           </div>
         ) : (
           <div className="empty-state">

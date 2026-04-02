@@ -8,7 +8,8 @@ import './ProductSelectionModal.css';
 const ProductSelectionModal = ({ product, isOpen, onClose }) => {
   const { addToCart, openCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
-  const [selectedWeight, setSelectedWeight] = useState(product.weight || '500g');
+  const [selectedWeight, setSelectedWeight] = useState(null);
+  const [error, setError] = useState(false);
   const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
@@ -79,6 +80,10 @@ const ProductSelectionModal = ({ product, isOpen, onClose }) => {
     : image;
 
   const handleAddToCart = () => {
+    if (!selectedWeight) {
+      setError(true);
+      return;
+    }
     addToCart({
       ...product,
       price: currentPrice,
@@ -112,15 +117,20 @@ const ProductSelectionModal = ({ product, isOpen, onClose }) => {
               </span>
             </div>
 
-            <div className="modal-selection-row">
+            <div className={`modal-selection-row ${error && !selectedWeight ? 'shake-error' : ''}`}>
               <div className="selection-group">
-                <label>Select Weight</label>
+                <label className={error && !selectedWeight ? 'error-text' : ''}>
+                  Select Weight {error && !selectedWeight && <span className="required-msg">- Required</span>}
+                </label>
                 <div className="weight-options">
                   {availableOptions.map(w => (
                     <button 
                       key={w}
                       className={`weight-btn ${selectedWeight === w ? 'active' : ''}`}
-                      onClick={() => setSelectedWeight(w)}
+                      onClick={() => {
+                        setSelectedWeight(w);
+                        setError(false);
+                      }}
                     >
                       {w}
                     </button>
@@ -139,21 +149,38 @@ const ProductSelectionModal = ({ product, isOpen, onClose }) => {
             </div>
 
             <div className="modal-action-row">
-              <button className="modal-view-details-btn" onClick={() => {
-                onClose();
-                window.location.href = `/product/${product.id}`;
-              }}>
+              <button 
+                className={`modal-view-details-btn ${!selectedWeight ? 'disabled' : ''}`} 
+                onClick={() => {
+                  if (!selectedWeight) {
+                    setError(true);
+                    return;
+                  }
+                  onClose();
+                  window.location.href = `/product/${product.id}`;
+                }}
+                disabled={!selectedWeight}
+              >
                 View Details
               </button>
-              <button className="modal-add-btn" onClick={handleAddToCart}>
+              <button 
+                className={`modal-add-btn ${!selectedWeight ? 'disabled' : ''}`} 
+                onClick={handleAddToCart}
+                disabled={!selectedWeight}
+              >
                 <FiShoppingCart /> Add to Basket
               </button>
               <button 
-                className={`modal-wishlist-btn ${isInWishlist(product.id) ? 'active' : ''}`} 
+                className={`modal-wishlist-btn ${isInWishlist(product.id) ? 'active' : ''} ${!selectedWeight ? 'disabled' : ''}`} 
                 onClick={(e) => {
+                  if (!selectedWeight) {
+                    setError(true);
+                    return;
+                  }
                   e.stopPropagation();
                   toggleWishlist(product);
                 }}
+                disabled={!selectedWeight}
                 title="Wishlist"
               >
                 <FiHeart className={isInWishlist(product.id) ? 'filled' : ''} />

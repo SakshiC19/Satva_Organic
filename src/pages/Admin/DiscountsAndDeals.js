@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, getDocs, updateDoc, doc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { FiSearch, FiSave } from 'react-icons/fi';
+import Pagination from '../../components/common/Pagination';
 import './DiscountsAndDeals.css';
 
 const DiscountsAndDeals = () => {
@@ -9,6 +10,8 @@ const DiscountsAndDeals = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [saving, setSaving] = useState({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   useEffect(() => {
     fetchProducts();
@@ -58,6 +61,21 @@ const DiscountsAndDeals = () => {
     p.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
   return (
     <div className="admin-page">
       <div className="admin-page-header">
@@ -91,7 +109,7 @@ const DiscountsAndDeals = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredProducts.map(product => (
+            {paginatedProducts.map(product => (
               <tr key={product.id}>
                 <td>
                   <div className="product-cell">
@@ -160,6 +178,14 @@ const DiscountsAndDeals = () => {
           </tbody>
         </table>
       </div>
+
+      <Pagination 
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+        totalResults={filteredProducts.length}
+        itemsPerPage={itemsPerPage}
+      />
     </div>
   );
 };

@@ -3,15 +3,18 @@ import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getD
 import { db } from '../../config/firebase';
 import { 
   FiPackage, FiMapPin, FiPhone, FiUser, FiTruck, 
-  FiCheckCircle, FiAlertCircle, FiSearch, FiLoader, FiX
+  FiCheckCircle, FiAlertCircle, FiSearch, FiLoader, FiX, FiChevronLeft, FiChevronRight
 } from 'react-icons/fi';
 import tpcService from '../../services/tpcCourierService';
+import Pagination from '../../components/common/Pagination';
 import './Dispatch.css';
 
 const Dispatch = () => {
   const [loading, setLoading] = useState(false);
   const [inspectedOrders, setInspectedOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(8); // Smaller for list panel
   
   // Form state
   const [formData, setFormData] = useState({
@@ -87,6 +90,16 @@ const Dispatch = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const totalPages = Math.ceil(inspectedOrders.length / itemsPerPage);
+  const paginatedOrders = inspectedOrders.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
   };
 
   // Handle order selection
@@ -403,26 +416,52 @@ const Dispatch = () => {
                 <small>Orders will appear here after inspection</small>
               </div>
             ) : (
-              inspectedOrders.map(order => (
-                <div 
-                  key={order.id}
-                  className={`order-card ${selectedOrder?.id === order.id ? 'selected' : ''}`}
-                  onClick={() => handleOrderSelect(order)}
-                >
-                  <div className="order-card-header">
-                    <span className="order-id">#{order.id.substring(0, 8)}</span>
-                    <span className="order-status">{order.status}</span>
+              <>
+                {paginatedOrders.map(order => (
+                  <div 
+                    key={order.id}
+                    className={`order-card ${selectedOrder?.id === order.id ? 'selected' : ''}`}
+                    onClick={() => handleOrderSelect(order)}
+                  >
+                    <div className="order-card-header">
+                      <span className="order-id">#{order.id.substring(0, 8)}</span>
+                      <span className="order-status">{order.status}</span>
+                    </div>
+                    <div className="order-card-body">
+                      <p className="customer-name">
+                        <FiUser /> {order.customerName || 'Guest'}
+                      </p>
+                      <p className="order-items">
+                        <FiPackage /> {order.items?.length || 0} items
+                      </p>
+                    </div>
                   </div>
-                  <div className="order-card-body">
-                    <p className="customer-name">
-                      <FiUser /> {order.customerName || 'Guest'}
-                    </p>
-                    <p className="order-items">
-                      <FiPackage /> {order.items?.length || 0} items
-                    </p>
+                ))}
+
+                {totalPages > 1 && (
+                  <div className="list-pagination" style={{ display: 'flex', justifyContent: 'center', gap: '8px', padding: '16px 0', borderTop: '1px solid #f1f5f9', marginTop: 'auto' }}>
+                    <button 
+                      className="pagination-btn-small" 
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(prev => prev - 1)}
+                      style={{ padding: '6px', borderRadius: '6px', border: '1px solid #e2e8f0', background: 'white', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', color: currentPage === 1 ? '#cbd5e1' : '#64748b' }}
+                    >
+                      <FiChevronLeft />
+                    </button>
+                    <span style={{ fontSize: '12px', color: '#64748b', alignSelf: 'center' }}>
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <button 
+                      className="pagination-btn-small" 
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage(prev => prev + 1)}
+                      style={{ padding: '6px', borderRadius: '6px', border: '1px solid #e2e8f0', background: 'white', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', color: currentPage === totalPages ? '#cbd5e1' : '#64748b' }}
+                    >
+                      <FiChevronRight />
+                    </button>
                   </div>
-                </div>
-              ))
+                )}
+              </>
             )}
           </div>
         </div>

@@ -552,19 +552,36 @@ const OrderDetails = () => {
               <div className="price-breakdown">
                 <div className="price-row">
                   <span>Items Total</span>
-                  <span>₹{order.totalAmount}</span>
+                  <span>₹{(order.items || []).reduce((acc, item) => acc + (item.price * item.quantity), 0).toLocaleString()}</span>
                 </div>
-                <div className="price-row">
-                  <span>Delivery Fee</span>
-                  <span className="success">FREE</span>
-                </div>
-                <div className="price-row">
-                  <span>Tax</span>
-                  <span>₹0</span>
-                </div>
+                {order.gstTotal > 0 && (
+                  <div className="price-row">
+                    <span>Tax (GST)</span>
+                    <span>₹{order.gstTotal.toLocaleString()}</span>
+                  </div>
+                )}
+                {/* Calculate other charges as the difference */}
+                {(() => {
+                  const itemsPrice = (order.items || []).reduce((acc, item) => acc + (item.price * item.quantity), 0);
+                  const otherCharges = (order.totalAmount || 0) - itemsPrice - (order.gstTotal || 0);
+                  if (otherCharges > 0) {
+                    return (
+                      <div className="price-row">
+                        <span>Delivery & Handling</span>
+                        <span>₹{otherCharges.toLocaleString()}</span>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="price-row">
+                      <span>Delivery Fee</span>
+                      <span className="success">FREE</span>
+                    </div>
+                  );
+                })()}
                 <div className="price-row total-row">
-                  <span>Total Paid</span>
-                  <span>₹{order.totalAmount}</span>
+                  <span>{order.paymentStatus === 'Paid' ? 'Total Paid' : 'Total Payable'}</span>
+                  <span>₹{(order.totalAmount || 0).toLocaleString()}</span>
                 </div>
               </div>
               {order.paymentStatus === 'Paid' && (

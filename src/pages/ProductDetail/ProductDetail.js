@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { doc, getDoc, addDoc, collection, serverTimestamp, updateDoc, increment, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { FiHeart, FiMinus, FiPlus, FiCheck, FiStar, FiX, FiTruck, FiRefreshCw, FiPackage } from 'react-icons/fi';
+import { FiHeart, FiMinus, FiPlus, FiCheck, FiStar, FiX, FiTruck, FiRefreshCw, FiPackage, FiShare2 } from 'react-icons/fi';
 import { BsTruck, BsArrowRepeat, BsShieldCheck, BsClockHistory, BsSearch, BsTree, BsFileText, BsArrowRight } from 'react-icons/bs';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -45,6 +45,7 @@ const ProductDetail = () => {
   // Fixed bottom footer state for mobile
   const [showFixedFooter, setShowFixedFooter] = useState(true);
   const [showMobilePolicy, setShowMobilePolicy] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
   const productActionsRef = useRef(null);
 
   const isInCart = cartItems.some(item => 
@@ -370,6 +371,28 @@ const ProductDetail = () => {
     }
   };
 
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: product.name,
+          text: `Check out ${product.name} at Satva Organics!`,
+          url: window.location.href,
+        });
+      } catch (error) {
+        console.error("Error sharing:", error);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        setCopySuccess(true);
+        setTimeout(() => setCopySuccess(false), 2000);
+      } catch (error) {
+        console.error("Error copying link:", error);
+      }
+    }
+  };
+
   const handleSubmitReview = async (e) => {
     e.preventDefault();
     if (!currentUser) {
@@ -466,37 +489,70 @@ const ProductDetail = () => {
           </div>
 
           <div className="product-info">
-            <div className="product-category-label">{product.category}</div>
-            <h1 className="product-title">{product.name}</h1>
-
-            <div className="product-meta">
-              {product.brands && product.brands.length > 0 && (
-                <div className="meta-item">
-                  <span className="meta-label">Brands:</span>
-                  <span className="meta-value">{product.brands.join(', ')}</span>
+            <div className="product-info-header-row">
+              <div className="product-title-group">
+                <div className="product-category-label">{product.category}</div>
+                <div className="product-title-container">
+                  <h1 className="product-title">{product.name}</h1>
+                  <button 
+                    className="share-btn-mobile-inline" 
+                    onClick={handleShare}
+                    title="Share Product"
+                  >
+                    <FiShare2 />
+                  </button>
                 </div>
-              )}
 
-              <div className="meta-item">
-                <span className="rating-stars">
-                  {[...Array(5)].map((_, i) => (
-                    <span key={i} className={i < Math.floor(product.rating || 4) ? 'star filled' : 'star'}>★</span>
-                  ))}
-                </span>
-                <span className="rating-value" style={{ marginLeft: '8px', fontWeight: '600', color: '#4b5563' }}>
-                  {product.rating ? product.rating.toFixed(1) : '4.0'}
-                </span>
-                <span className="stock-status-inline" style={{ marginLeft: '12px' }}>
-                  {currentStock > 0 ? (
-                    currentStock <= 5 ? (
-                      <span className="low-stock">🔴 Only {currentStock} left</span>
-                    ) : (
-                      <span className="in-stock">🟢 In Stock</span>
-                    )
-                  ) : (
-                    <span className="out-of-stock">🔴 Out of Stock</span>
+                <div className="product-meta">
+                  {product.brands && product.brands.length > 0 && (
+                    <div className="meta-item">
+                      <span className="meta-label">Brands:</span>
+                      <span className="meta-value">{product.brands.join(', ')}</span>
+                    </div>
                   )}
-                </span>
+
+                  <div className="meta-item">
+                    <span className="rating-stars">
+                      {[...Array(5)].map((_, i) => (
+                        <span key={i} className={i < Math.floor(product.rating || 4) ? 'star filled' : 'star'}>★</span>
+                      ))}
+                    </span>
+                    <span className="rating-value" style={{ marginLeft: '8px', fontWeight: '600', color: '#4b5563' }}>
+                      {product.rating ? product.rating.toFixed(1) : '4.0'}
+                    </span>
+                    <span className="stock-status-inline" style={{ marginLeft: '12px' }}>
+                      {currentStock > 0 ? (
+                        currentStock <= 5 ? (
+                          <span className="low-stock">🔴 Only {currentStock} left</span>
+                        ) : (
+                          <span className="in-stock">🟢 In Stock</span>
+                        )
+                      ) : (
+                        <span className="out-of-stock">🔴 Out of Stock</span>
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="product-actions-top-right">
+                <div className="share-btn-container">
+                  <button 
+                    className="share-button-desktop" 
+                    onClick={handleShare}
+                    title="Share Product"
+                  >
+                    <FiShare2 />
+                  </button>
+                  {copySuccess && <span className="share-tooltip">Link Copied!</span>}
+                </div>
+                <button 
+                  className={`wishlist-button-desktop ${isItemInWishlist ? 'active' : ''}`} 
+                  onClick={handleWishlistToggle}
+                  title={isItemInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+                >
+                  <FiHeart className={isItemInWishlist ? 'filled' : ''} />
+                </button>
               </div>
             </div>
 
@@ -998,6 +1054,16 @@ const ProductDetail = () => {
 
       {/* Fixed Bottom Footer for Mobile */}
       <div className={`fixed-bottom-footer ${showFixedFooter ? 'visible' : 'hidden'}`}>
+        <div className="footer-share-wrapper">
+          <button 
+            className="wishlist-btn footer-share-btn" 
+            onClick={handleShare}
+            title="Share Product"
+          >
+            <FiShare2 />
+          </button>
+          {copySuccess && <span className="share-tooltip footer-tooltip">Link Copied!</span>}
+        </div>
         <button 
           className={`btn-add-to-cart ${isInCart ? 'in-cart' : ''}`}
           onClick={handleAddToCart}
@@ -1010,14 +1076,7 @@ const ProductDetail = () => {
           onClick={handleBuyNow}
           disabled={product.stock <= 0}
         >
-          Buy Now
-        </button>
-        <button 
-          className={`wishlist-btn ${isItemInWishlist ? 'active' : ''}`} 
-          onClick={handleWishlistToggle}
-          title={isItemInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
-        >
-          <FiHeart className={isItemInWishlist ? 'filled' : ''} />
+          {product.stock <= 0 ? 'Out of Stock' : 'Buy Now'}
         </button>
       </div>
     </div>
