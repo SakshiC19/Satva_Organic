@@ -373,6 +373,19 @@
     box-shadow: 0 8px 20px rgba(31, 45, 38, 0.3);
 }
 
+.notify-btn {
+    background: #f1f5f9;
+    color: var(--color-primary-dark);
+    width: 100%;
+    padding: 0 20px;
+    border: 1px solid #e2e8f0;
+}
+
+.notify-btn:hover {
+    background: #e2e8f0;
+    transform: translateY(-2px);
+}
+
 .out-of-stock-overlay {
     position: absolute;
     inset: 0;
