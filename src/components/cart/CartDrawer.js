@@ -20,10 +20,10 @@ const CartDrawer = () => {
 
   const itemTotal = calculateTotal();
   const deliveryCharge = 25;
-  const handlingCharge = 2;
-  const smallCartCharge = itemTotal < 100 && itemTotal > 0 ? 20 : 0;
-  const roundedGst = Math.round(gstTotal || 0);
-  const grandTotal = itemTotal > 0 ? (itemTotal + deliveryCharge + handlingCharge + smallCartCharge + roundedGst) : 0;
+  const handlingCharge = 0; // Removed as per request
+  const smallCartCharge = 0; // Removed small basket charge
+  const roundedGst = 0; // GST already included in price
+  const grandTotal = itemTotal > 0 ? (itemTotal + deliveryCharge) : 0;
 
   const handleProceed = () => {
     closeCart();
@@ -51,7 +51,11 @@ const CartDrawer = () => {
             <p>Your basket is empty</p>
             <button className="btn-start-shopping" onClick={() => {
               closeCart();
-              navigate('/shop');
+              if (currentUser) {
+                navigate('/shop');
+              } else {
+                navigate('/login?redirect=shop');
+              }
             }}>
               Start Shopping
             </button>
@@ -154,7 +158,7 @@ const CartDrawer = () => {
             <div className="cart-footer" onClick={handleProceed}>
               <div className="cart-total-info">
                 <span className="total-amount">₹{grandTotal}</span>
-                <span className="total-label">TOTAL {roundedGst > 0 && `(incl. ₹${roundedGst} GST)`}</span>
+                <span className="total-label">TOTAL (GST Included)</span>
               </div>
               <button className="btn-proceed">
                 {currentUser ? 'Continue' : 'Login to Continue'} 

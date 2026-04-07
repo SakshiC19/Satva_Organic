@@ -28,16 +28,16 @@ const Checkout = () => {
       document.body.appendChild(script);
     });
   };
-  const { cartItems, cartTotal, gstTotal, updateQuantity, removeFromCart } = useCart();
+  const { cartItems, cartTotal, gstTotal, updateQuantity, removeFromCart, calculateTotal } = useCart();
   const navigate = useNavigate();
 
   // Calculate grand total (same as CartDrawer)
   const itemTotal = cartTotal || 0;
   const deliveryCharge = 25;
-  const shippingCharge = 2; // Renamed from handlingCharge
-  const smallCartCharge = itemTotal > 0 && itemTotal < 100 ? 20 : 0;
-  const roundedGst = Math.round(gstTotal || 0);
-  const grandTotal = itemTotal > 0 ? (itemTotal + deliveryCharge + shippingCharge + smallCartCharge + roundedGst) : 0;
+  const shippingCharge = 0; // Removed shipping charge
+  const smallCartCharge = 0; // Removed small basket charge
+  const roundedGst = 0; // GST already included in price
+  const grandTotal = itemTotal > 0 ? (itemTotal + deliveryCharge) : 0;
 
   const cleanImageUrl = (url) => {
     if (!url || typeof url !== 'string') return '';
@@ -688,21 +688,9 @@ const Checkout = () => {
                             <span>₹{deliveryCharge}</span>
                           </div>
                           <div className="bill-row">
-                            <span>Shipping charge</span>
-                            <span>₹{shippingCharge}</span>
+                            <span>GST</span>
+                            <span style={{ fontSize: '12px', color: '#666' }}>Included in price</span>
                           </div>
-                          {roundedGst > 0 && (
-                            <div className="bill-row">
-                              <span>GST</span>
-                              <span>₹{roundedGst}</span>
-                            </div>
-                          )}
-                          {smallCartCharge > 0 && (
-                            <div className="bill-row">
-                              <span>Small basket charge</span>
-                              <span>₹{smallCartCharge}</span>
-                            </div>
-                          )}
                         </div>
                       )}
                       
@@ -775,21 +763,9 @@ const Checkout = () => {
                         <span className="green-text">₹{deliveryCharge}</span>
                       </div>
                       <div className="price-row">
-                        <span>Shipping Charges</span>
-                        <span className="green-text">₹{shippingCharge}</span>
+                        <span>GST</span>
+                        <span style={{ fontSize: '12px', color: '#666' }}>Included in price</span>
                       </div>
-                      {roundedGst > 0 && (
-                        <div className="price-row">
-                          <span>GST</span>
-                          <span>₹{roundedGst}</span>
-                        </div>
-                      )}
-                      {smallCartCharge > 0 && (
-                        <div className="price-row">
-                          <span>Small Basket Charge</span>
-                          <span>₹{smallCartCharge}</span>
-                        </div>
-                      )}
                       <div className="price-row total">
                         <span>Total Payable</span>
                         <span>₹{grandTotal.toLocaleString()}</span>
@@ -1093,18 +1069,6 @@ const Checkout = () => {
                       onChange={e => setAddress({...address, state: e.target.value})}
                     />
 
-                    <div className="form-row">
-                      <select
-                        className="checkout-input"
-                        value={address.deliverySlot || ''}
-                        onChange={e => setAddress({...address, deliverySlot: e.target.value})}
-                      >
-                        <option value="">Select Delivery Slot</option>
-                        <option value="Morning (8 AM - 11 AM)">Morning (8 AM - 11 AM)</option>
-                        <option value="Afternoon (1 PM - 4 PM)">Afternoon (1 PM - 4 PM)</option>
-                        <option value="Evening (5 PM - 8 PM)">Evening (5 PM - 8 PM)</option>
-                      </select>
-                    </div>
 
                     <div className="form-row">
                       <input 
@@ -1330,26 +1294,11 @@ const Checkout = () => {
                 </div>
               )}
 
-              {shippingCharge > 0 && (
-                <div className="price-row">
-                  <span>Shipping Charges</span>
-                  <span>₹{shippingCharge}</span>
-                </div>
-              )}
 
-              {smallCartCharge > 0 && (
-                <div className="price-row">
-                  <span>Small Basket Charge</span>
-                  <span>₹{smallCartCharge}</span>
-                </div>
-              )}
 
-              {roundedGst > 0 && (
-                <div className="price-row">
-                  <span>GST</span>
-                  <span>₹{roundedGst}</span>
-                </div>
-              )}
+              <div className="price-row" style={{ marginTop: '12px', borderTop: '1px solid #f0f0f0', paddingTop: '12px' }}>
+                <span style={{ fontSize: '13px', color: '#666' }}>* GST included in product prices</span>
+              </div>
 
               <div className="price-divider"></div>
 

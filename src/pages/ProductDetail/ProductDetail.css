@@ -93,6 +93,7 @@
     justify-content: center;
     border: 1px solid #e5e7eb;
     position: relative;
+    user-select: none;
 }
 
 .main-image img {
@@ -100,11 +101,40 @@
     height: 100%;
     display: block;
     object-fit: cover;
-    transition: transform 0.3s;
+    transition: transform 0.3s, opacity 0.25s ease;
+    pointer-events: none;
 }
 
 .main-image:hover img {
     transform: scale(1.05);
+}
+
+/* Swipe dot indicators (mobile) */
+.image-swipe-dots {
+    display: none;
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    gap: 6px;
+    z-index: 10;
+}
+
+.swipe-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+    display: inline-block;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.swipe-dot.active {
+    background: #16a34a;
+    transform: scale(1.3);
+    border-color: #16a34a;
 }
 
 .image-thumbnails {
@@ -1196,6 +1226,7 @@
         align-items: center;
         justify-content: center;
         border: 1px solid #f1f5f9;
+        touch-action: pan-y;
     }
 
     .main-image img {
@@ -1204,6 +1235,16 @@
         object-fit: contain;
         padding: 8px;
     }
+
+    /* Show dots on mobile, hide thumbnails for cleaner swipe UX */
+    .image-swipe-dots {
+        display: flex;
+    }
+
+    .product-images .image-thumbnails {
+        display: none;
+    }
+
 
     .current-price {
         font-size: 24px;

@@ -48,6 +48,28 @@ const ProductDetail = () => {
   const [copySuccess, setCopySuccess] = useState(false);
   const productActionsRef = useRef(null);
 
+  // Touch swipe state for mobile image gallery
+  const touchStartX = useRef(null);
+  const touchEndX = useRef(null);
+
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.changedTouches[0].clientX;
+  };
+
+  const handleTouchEnd = (e) => {
+    touchEndX.current = e.changedTouches[0].clientX;
+    const diff = touchStartX.current - touchEndX.current;
+    if (Math.abs(diff) > 40) { // minimum swipe distance
+      if (diff > 0) {
+        // swiped left -> next image
+        setSelectedImage(prev => (prev + 1) % productImages.length);
+      } else {
+        // swiped right -> prev image
+        setSelectedImage(prev => (prev - 1 + productImages.length) % productImages.length);
+      }
+    }
+  };
+
   const isInCart = cartItems.some(item => 
     item.id === product?.id && item.selectedSize === selectedSize
   );
@@ -483,8 +505,24 @@ const ProductDetail = () => {
                 ))}
               </div>
             )}
-            <div className="main-image">
+            <div
+              className="main-image"
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+              style={{ cursor: productImages.length > 1 ? 'grab' : 'default' }}
+            >
               <img src={currentImage} alt={product.name} />
+              {productImages.length > 1 && (
+                <div className="image-swipe-dots">
+                  {productImages.map((_, i) => (
+                    <span
+                      key={i}
+                      className={`swipe-dot ${i === selectedImage ? 'active' : ''}`}
+                      onClick={() => setSelectedImage(i)}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

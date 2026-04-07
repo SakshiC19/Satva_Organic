@@ -320,39 +320,41 @@ const Dashboard = () => {
 
       {/* Charts Section */}
       <div className="charts-grid">
+        {/* Most Carted Products Visual Chart */}
         <div className="chart-card">
           <div className="chart-header">
-            <h3>Checkout Status Analysis</h3>
+            <h3>Most Carted Products Analysis</h3>
           </div>
-          <div className="chart-placeholder">
-            <svg width="180" height="180" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="40" fill="none" stroke="#f1f5f9" strokeWidth="12" />
-              <circle 
-                cx="50" cy="50" r="40" 
-                fill="none" stroke="#059669" strokeWidth="12" 
-                strokeDasharray={`${Math.min((recentOrders.filter(o => o.status !== 'Cancelled').length / (recentOrders.length || 1)) * 251, 251)} 251`} 
-                strokeDashoffset="0" 
-              />
-              <circle 
-                cx="50" cy="50" r="40" 
-                fill="none" stroke="#ef4444" strokeWidth="12" 
-                strokeDasharray={`${Math.min((recentOrders.filter(o => o.status === 'Cancelled').length / (recentOrders.length || 1)) * 251, 251)} 251`} 
-                strokeDashoffset={`-${Math.min((recentOrders.filter(o => o.status !== 'Cancelled').length / (recentOrders.length || 1)) * 251, 251)}`} 
-              />
-            </svg>
-            <div className="chart-legend" style={{ textAlign: 'left', marginTop: '10px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
-                    <span style={{ width: '10px', height: '10px', background: '#059669', borderRadius: '2px' }}></span>
-                    <span>Successful Checkouts: {recentOrders.filter(o => o.status !== 'Cancelled').length}</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
-                    <span style={{ width: '10px', height: '10px', background: '#ef4444', borderRadius: '2px' }}></span>
-                    <span>Cancelled: {recentOrders.filter(o => o.status === 'Cancelled').length}</span>
-                </div>
+          <div className="chart-wrapper" style={{ padding: '20px', height: '240px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+            <div className="bar-chart-container" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '100%', gap: '10px' }}>
+              {cartData.slice(0, 5).map((item, idx) => {
+                const maxCount = Math.max(...cartData.map(d => d.count), 1);
+                const barHeight = (item.count / maxCount) * 100;
+                return (
+                  <div key={idx} className="bar-group" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <div className="bar-label" style={{ fontSize: '12px', fontWeight: 'bold', color: '#0284c7' }}>{item.count}</div>
+                    <div 
+                      className="chart-bar" 
+                      style={{ 
+                        width: '100%', 
+                        height: `${barHeight}%`, 
+                        background: 'linear-gradient(to top, #0284c7, #7dd3fc)', 
+                        borderRadius: '4px 4px 0 0',
+                        transition: 'height 1s ease-out'
+                      }}
+                      title={productNames[item.id]}
+                    ></div>
+                    <div className="bar-name" style={{ fontSize: '10px', color: '#64748b', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
+                      {productNames[item.id] || 'Product'}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
 
+        {/* Most Wishlisted List */}
         <div className="chart-card">
           <div className="chart-header">
             <h3>Most Wishlisted Products</h3>
@@ -369,19 +371,31 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* Inventory Overview or Sales Status */}
         <div className="chart-card">
           <div className="chart-header">
-            <h3>Most Carted Products</h3>
+            <h3>Inventory Status</h3>
           </div>
-          <div className="wishlist-list" style={{ padding: '0 15px', overflowY: 'auto', maxHeight: '240px' }}>
-             {cartData.length > 0 ? cartData.slice(0, 5).map((item, idx) => (
-                 <div key={idx} className="wishlist-item" style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
-                    <span style={{ fontWeight: 500, color: '#1e293b' }}>#{idx + 1} {productNames[item.id] || `ID: ${item.id.substring(0, 8)}...`}</span>
-                    <span className="count-badge" style={{ background: '#e0f2fe', color: '#0284c7', padding: '2px 8px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                        {item.count} Items
-                    </span>
-                 </div>
-             )) : <p>No cart data available.</p>}
+          <div className="chart-body" style={{ padding: '20px' }}>
+            <div className="inventory-stats" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              <div className="inv-stat-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: '#64748b', fontSize: '0.9rem' }}>Out of Stock Products</span>
+                <span style={{ fontWeight: 'bold', color: '#ef4444' }}>{topProducts.filter(p => !p.stock || p.stock <= 0).length}</span>
+              </div>
+              <div className="inv-stat-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: '#64748b', fontSize: '0.9rem' }}>Low Stock ( &lt; 10 )</span>
+                <span style={{ fontWeight: 'bold', color: '#f59e0b' }}>{topProducts.filter(p => p.stock > 0 && p.stock < 10).length}</span>
+              </div>
+              <div className="inv-stat-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: '#64748b', fontSize: '0.9rem' }}>Healthy Stock</span>
+                <span style={{ fontWeight: 'bold', color: '#059669' }}>{topProducts.filter(p => p.stock >= 10).length}</span>
+              </div>
+            </div>
+            <div className="inv-progress" style={{ marginTop: '20px', height: '10px', background: '#f1f5f9', borderRadius: '5px', overflow: 'hidden', display: 'flex' }}>
+              <div style={{ width: `${(topProducts.filter(p => p.stock >= 10).length / (topProducts.length || 1)) * 100}%`, background: '#059669' }}></div>
+              <div style={{ width: `${(topProducts.filter(p => p.stock > 0 && p.stock < 10).length / (topProducts.length || 1)) * 100}%`, background: '#f59e0b' }}></div>
+              <div style={{ width: `${(topProducts.filter(p => !p.stock || p.stock <= 0).length / (topProducts.length || 1)) * 100}%`, background: '#ef4444' }}></div>
+            </div>
           </div>
         </div>
       </div>
