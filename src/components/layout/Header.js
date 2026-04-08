@@ -20,7 +20,8 @@ import {
   FiLayers,
   FiDisc,
   FiStar,
-  FiClock
+  FiClock,
+  FiBell
 } from 'react-icons/fi';
 import {
   BsHouse,
@@ -37,7 +38,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { useCategories } from '../../contexts/CategoryContext';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import './Header.css';
 import logo from '../../assets/logo-new.png';
@@ -56,6 +57,8 @@ const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [products, setProducts] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
   const dropdownRef = useRef(null);
   const searchRef = useRef(null);
 
@@ -78,6 +81,34 @@ const Header = () => {
     };
     fetchProducts();
   }, []);
+
+  // Listen for back-in-stock notifications
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const q = query(
+      collection(db, 'users', currentUser.uid, 'notifications'),
+      where('read', '==', false),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const notifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setNotifications(notifs);
+    });
+
+    return () => unsubscribe();
+  }, [currentUser]);
+
+  const markAsRead = async (notifId) => {
+    try {
+      await updateDoc(doc(db, 'users', currentUser.uid, 'notifications', notifId), {
+        read: true
+      });
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -442,10 +473,46 @@ const Header = () => {
             <img src={logo} alt="Satva" className="sidebar-logo" />
             <span className="sidebar-brand-name">Satva Organics</span>
           </div>
-          <button className="close-sidebar-btn" onClick={() => setMobileMenuOpen(false)}>
-            <FiX />
-          </button>
+          <div className="sidebar-header-actions">
+            {currentUser && (
+              <div className="sidebar-notification-bell" onClick={() => setShowNotifications(!showNotifications)}>
+                <FiBell />
+                {notifications.length > 0 && <span className="bell-badge">{notifications.length}</span>}
+              </div>
+            )}
+            <button className="close-sidebar-btn" onClick={() => setMobileMenuOpen(false)}>
+              <FiX />
+            </button>
+          </div>
         </div>
+
+        {/* Notifications Panel (Slides in/out) */}
+        {showNotifications && (
+          <div className="sidebar-notifications-panel">
+            <div className="notif-panel-header">
+              <h4>Notifications</h4>
+              <button onClick={() => setShowNotifications(false)}><FiX /></button>
+            </div>
+            <div className="notif-panel-list">
+              {notifications.length > 0 ? (
+                notifications.map(n => (
+                  <div key={n.id} className="notif-item" onClick={() => { markAsRead(n.id); navigate(n.link || '/shop'); setMobileMenuOpen(false); }}>
+                    <div className="notif-icon-box in-stock"><FiPackage /></div>
+                    <div className="notif-text">
+                      <p className="notif-msg">{n.message}</p>
+                      <span className="notif-time">Just now</span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="notif-empty">
+                  <FiBell size={32} />
+                  <p>No new notifications</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="mobile-sidebar-content">
           {/* Auth Section in Sidebar */}

@@ -6,7 +6,7 @@ import { db } from '../../config/firebase';
 import {
   FiGrid, FiBox, FiPackage, FiImage, FiList,
   FiUsers, FiHome, FiLogOut, FiSearch, FiBell, FiTag, FiPercent, FiAlertCircle, FiCheckCircle,
-  FiTruck, FiSettings, FiActivity, FiBarChart2, FiPieChart, FiTrendingUp, FiDollarSign, FiShoppingBag
+  FiTruck, FiSettings, FiActivity, FiBarChart2, FiPieChart, FiTrendingUp, FiDollarSign, FiShoppingBag, FiRefreshCcw
 } from 'react-icons/fi';
 import './Admin.css';
 
@@ -78,6 +78,7 @@ const AdminLayout = () => {
     { path: '/admin/dashboard', icon: <FiGrid />, label: 'Dashboard' },
     { path: '/admin/products', icon: <FiBox />, label: 'Products' },
     { path: '/admin/orders', icon: <FiPackage />, label: 'Orders' },
+    { path: '/admin/refund-requests', icon: <FiRefreshCcw />, label: 'Refund Requests' },
     { path: '/admin/dispatch', icon: <FiTruck />, label: 'Dispatch' },
     { path: '/admin/banners', icon: <FiImage />, label: 'Hero Banners' },
     { path: '/admin/special-offer', icon: <FiTag />, label: 'Special Offer' },

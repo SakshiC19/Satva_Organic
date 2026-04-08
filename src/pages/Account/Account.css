@@ -429,7 +429,7 @@
     .account-layout {
         display: block !important;
         grid-template-columns: 1fr;
-        padding: 16px 0 !important;
+        padding: 0 0 16px 0 !important;
         margin: 0 !important;
         gap: 0px;
     }
@@ -478,7 +478,7 @@
     }
 
     .account-content {
-        padding: 16px !important;
+        padding: 0 16px 16px 16px !important;
         border-radius: 0;
         box-shadow: none;
         width: 100% !important;
@@ -3251,6 +3251,33 @@
 .btn-cancel.disabled:hover {
     transform: none;
     background: #9ca3af;
+}
+
+/* Refund Button Styles */
+.btn-refund {
+    background: #f59e0b;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+}
+
+.btn-refund:hover:not(:disabled) {
+    background: #d97706;
+    transform: translateY(-1px);
+}
+
+.btn-refund.disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
 

@@ -185,23 +185,32 @@ export const generateInvoice = (order) => {
   const tableData = [];
   
   let subtotal = 0;
+  let totalCgst = 0;
+  let totalSgst = 0;
   
   items.forEach(item => {
     const price = item.price || 0;
     const qty = item.quantity || 1;
-    const gross = price * qty;
-    subtotal += gross;
+    const lineTotal = price * qty;            // Total incl. GST (admin price × qty)
+    const grossAmt = lineTotal / 1.05;        // Base price excl. 5% GST
+    const gstAmt = lineTotal - grossAmt;      // 5% GST portion
+    const cgst = gstAmt / 2;                  // CGST = 2.5%
+    const sgst = gstAmt / 2;                  // SGST = 2.5%
+
+    subtotal += lineTotal;
+    totalCgst += cgst;
+    totalSgst += sgst;
     
     tableData.push([
       item.name || 'Product',
-      item.name || 'Product', // Title
+      item.name || 'Product',       // Title
       qty,
-      `Rs. ${gross.toFixed(2)}`,
-      '0.00', // Discount
-      `Rs. ${gross.toFixed(2)}`, // Taxable
-      '0.00', // CGST
-      '0.00', // SGST
-      `Rs. ${gross.toFixed(2)}` // Total
+      grossAmt.toFixed(2),          // Gross Amount (excl. GST)
+      '0.00',                       // Discount
+      grossAmt.toFixed(2),          // Taxable Value = Gross Amount
+      cgst.toFixed(2),              // CGST (2.5%)
+      sgst.toFixed(2),              // SGST (2.5%)
+      `Rs. ${lineTotal.toFixed(2)}`          // Total (incl. GST)
     ]);
   });
   
@@ -263,7 +272,17 @@ export const generateInvoice = (order) => {
   
   // "Total" Text and Amount
   doc.setFont('helvetica', 'bold');
-  doc.text('Total', startX + 35 + 2, finalY + 5.5); 
+  doc.text('Total', startX + 35 + 2, finalY + 5.5);
+
+  // CGST total (column 6 position)
+  const cgstColX = startX + 35 + 35 + 10 + 18 + 15 + 18 + 2; // accumulated widths
+  doc.text(totalCgst.toFixed(2), cgstColX + 13, finalY + 5.5, { align: 'right' });
+
+  // SGST total (column 7 position)
+  const sgstColX = cgstColX + 15;
+  doc.text(totalSgst.toFixed(2), sgstColX + 13, finalY + 5.5, { align: 'right' });
+
+  // Grand total (last column)
   doc.text(`Rs. ${subtotal.toFixed(2)}`, startX + fullWidth - 2, finalY + 5.5, { align: 'right' });
   
   // --- Footer Section ---
@@ -288,25 +307,45 @@ export const generateInvoice = (order) => {
   
   const deliveryCharge = order.deliveryCharge || 0;
   doc.setFont('helvetica', 'normal');
-  doc.text(`Rs. ${deliveryCharge.toFixed(2)}`, startX + fullWidth - 2, shippingBoxY + 5.5, { align: 'right' });
+  doc.text(deliveryCharge.toFixed(2), startX + fullWidth - 2, shippingBoxY + 5.5, { align: 'right' });
   
   // Grand Total Box
   const grandTotalBoxY = shippingBoxY + shippingBoxHeight;
   const grandTotalBoxHeight = 8;
-  doc.line(footerSplitX, grandTotalBoxY + grandTotalBoxHeight, startX + fullWidth, grandTotalBoxY + grandTotalBoxHeight);
+
+  // CGST Row
+  const cgstRowY = grandTotalBoxY;
+  doc.line(footerSplitX, cgstRowY + grandTotalBoxHeight, startX + fullWidth, cgstRowY + grandTotalBoxHeight);
+  doc.setFont('helvetica', 'bold');
+  doc.text('CGST (2.5%):', footerSplitX + 2, cgstRowY + 5.5);
+  doc.setFont('helvetica', 'normal');
+  doc.text(totalCgst.toFixed(2), startX + fullWidth - 2, cgstRowY + 5.5, { align: 'right' });
+
+  // SGST Row
+  const sgstRowY = cgstRowY + grandTotalBoxHeight;
+  doc.line(footerSplitX, sgstRowY + grandTotalBoxHeight, startX + fullWidth, sgstRowY + grandTotalBoxHeight);
+  doc.setFont('helvetica', 'bold');
+  doc.text('SGST (2.5%):', footerSplitX + 2, sgstRowY + 5.5);
+  doc.setFont('helvetica', 'normal');
+  doc.text(totalSgst.toFixed(2), startX + fullWidth - 2, sgstRowY + 5.5, { align: 'right' });
+
+  // Grand Total Row
+  const grandTotalActualY = sgstRowY + grandTotalBoxHeight;
+  doc.line(footerSplitX, grandTotalActualY + grandTotalBoxHeight, startX + fullWidth, grandTotalActualY + grandTotalBoxHeight);
   
   doc.setFont('helvetica', 'bold');
-  doc.text('Grand Total:', footerSplitX + 2, grandTotalBoxY + 5.5);
+  doc.text('Grand Total:', footerSplitX + 2, grandTotalActualY + 5.5);
   
   const discount = order.discount || 0;
   const finalTotal = subtotal + deliveryCharge - discount;
   
-  doc.text(`Rs. ${finalTotal.toFixed(2)}`, startX + fullWidth - 2, grandTotalBoxY + 5.5, { align: 'right' });
+  doc.text(`Rs. ${finalTotal.toFixed(2)}`, startX + fullWidth - 2, grandTotalActualY + 5.5, { align: 'right' });
   
-  // Satva Organics Text
+  // Satva Organics Text (shifted down to accommodate extra rows)
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('Satva Organics', startX + fullWidth - 25, grandTotalBoxY + 20, { align: 'center' });
+  doc.text('Satva Organics', startX + fullWidth - 25, grandTotalActualY + 20, { align: 'center' });
+
   
   // Authorized Signatory
   doc.setFontSize(9);

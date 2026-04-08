@@ -623,6 +623,12 @@
     color: #9333ea;
 }
 
+.status-badge.status-returned {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+
 .cancellation-badge {
     font-size: 10px;
     background: #fee2e2;
@@ -640,6 +646,28 @@
 }
 
 .cancellation-badge.clickable:hover {
+    background: #fecaca;
+    transform: scale(1.05);
+}
+
+.refund-badge {
+    font-size: 10px;
+    background: #fee2e2;
+    color: #ef4444;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+    text-transform: uppercase;
+    width: fit-content;
+    border: 1px solid #fca5a5;
+}
+
+.refund-badge.clickable {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.refund-badge.clickable:hover {
     background: #fecaca;
     transform: scale(1.05);
 }

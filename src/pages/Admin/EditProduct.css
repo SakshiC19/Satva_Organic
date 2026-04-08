@@ -140,6 +140,18 @@
     outline: none;
 }
 
+/* Remove default spin buttons from number inputs for clean UI */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type=number] {
+    -moz-appearance: textfield;
+}
+
+
 /* 2-Column Basic Info Grid */
 .basic-info-grid {
     display: flex;
@@ -215,8 +227,9 @@
     border-radius: 12px;
     overflow-x: auto;
     max-height: 500px;
-    /* Optional vertical scroll for many sizes */
+    width: 100%;
 }
+
 
 .pricing-table-container.compact-table table {
     width: 100%;
@@ -269,13 +282,15 @@
 
 /* Compact Input */
 .size-price-input.compact-input {
-    width: 80%;
+    width: 100%;
+    min-width: 60px;
     padding: 6px 10px;
     font-size: 0.9rem;
     text-align: right;
     border: 1px solid #e2e8f0;
     background: white;
 }
+
 
 .size-price-input.compact-input:disabled {
     background-color: #f1f5f9;

@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import './CartDrawer.css';
 
 const CartDrawer = () => {
-  const { isCartOpen, closeCart, cartItems, updateQuantity, removeFromCart, gstTotal } = useCart();
+  const { isCartOpen, closeCart, cartItems, updateQuantity, removeFromCart, gstTotal, shippingConfig } = useCart();
   const [showNotice, setShowNotice] = React.useState(false);
   const [showPolicy, setShowPolicy] = React.useState(false);
   const { currentUser } = useAuth();
@@ -19,7 +19,9 @@ const CartDrawer = () => {
   };
 
   const itemTotal = calculateTotal();
-  const deliveryCharge = 25;
+  const freeAbove = shippingConfig?.freeShippingAbove !== undefined ? shippingConfig.freeShippingAbove : 500;
+  const shipCharge = shippingConfig?.shippingCharge !== undefined ? shippingConfig.shippingCharge : 50;
+  const deliveryCharge = (itemTotal >= freeAbove || itemTotal === 0) ? 0 : parseFloat(shipCharge);
   const handlingCharge = 0; // Removed as per request
   const smallCartCharge = 0; // Removed small basket charge
   const roundedGst = 0; // GST already included in price
@@ -120,8 +122,16 @@ const CartDrawer = () => {
                                 </button>
                                 <span>{item.quantity}</span>
                                 <button 
-                                  onClick={() => updateQuantity(item.id, item.selectedSize, item.quantity + 1)}
-                                  className="qty-control-btn"
+                                  onClick={() => {
+                                    const limit = item.maxStock || item.stock || 999;
+                                    if (item.quantity < limit) {
+                                      updateQuantity(item.id, item.selectedSize, item.quantity + 1);
+                                    } else {
+                                      alert(`Only ${limit} items available in stock.`);
+                                    }
+                                  }}
+                                  className={`qty-control-btn ${item.quantity >= (item.maxStock || item.stock || 999) ? 'disabled' : ''}`}
+                                  disabled={item.quantity >= (item.maxStock || item.stock || 999)}
                                 >
                                   <FiPlus />
                                 </button>

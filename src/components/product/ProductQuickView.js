@@ -34,9 +34,22 @@ const ProductQuickView = ({ product, onClose }) => {
 
   const isInStock = stock !== undefined ? stock > 0 : true;
 
+  const getCurrentStock = () => {
+    if (selectedSize && product.sizeStocks && product.sizeStocks[selectedSize] !== undefined) {
+      return parseInt(product.sizeStocks[selectedSize]);
+    }
+    return product.stock || 0;
+  };
+
+  const currentStock = getCurrentStock();
+
   const handleQuantityChange = (type) => {
-    if (type === 'increment' && quantity < stock) {
-      setQuantity(quantity + 1);
+    if (type === 'increment') {
+      if (quantity < (currentStock || 999)) {
+        setQuantity(quantity + 1);
+      } else {
+        alert(`Only ${currentStock} items available in stock.`);
+      }
     } else if (type === 'decrement' && quantity > 1) {
       setQuantity(quantity - 1);
     }
@@ -46,7 +59,8 @@ const ProductQuickView = ({ product, onClose }) => {
     addToCart({
       ...product,
       quantity,
-      selectedSize: selectedSize || (packingSizes && packingSizes.length > 0 ? packingSizes[0] : 'Standard')
+      selectedSize: selectedSize || (packingSizes && packingSizes.length > 0 ? packingSizes[0] : 'Standard'),
+      maxStock: currentStock // Pass max stock to cart for validation
     });
     onClose();
     if (window.innerWidth > 768) {

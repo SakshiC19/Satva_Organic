@@ -28,16 +28,23 @@ const Checkout = () => {
       document.body.appendChild(script);
     });
   };
-  const { cartItems, cartTotal, gstTotal, updateQuantity, removeFromCart, calculateTotal } = useCart();
+  const { cartItems, cartTotal, gstTotal, updateQuantity, removeFromCart, calculateTotal, shippingConfig } = useCart();
   const navigate = useNavigate();
 
   // Calculate grand total (same as CartDrawer)
   const itemTotal = cartTotal || 0;
-  const deliveryCharge = 25;
+  const freeAbove = shippingConfig?.freeShippingAbove !== undefined ? shippingConfig.freeShippingAbove : 500;
+  const shipCharge = shippingConfig?.shippingCharge !== undefined ? shippingConfig.shippingCharge : 50;
+  const deliveryCharge = (itemTotal >= freeAbove || itemTotal === 0) ? 0 : parseFloat(shipCharge);
+  
   const shippingCharge = 0; // Removed shipping charge
   const smallCartCharge = 0; // Removed small basket charge
   const roundedGst = 0; // GST already included in price
+  // Gross = base price before 5% GST; GST amount = 5% portion
+  const grossAmount = Math.round(itemTotal / 1.05);
+  const gstAmount = itemTotal - grossAmount;
   const grandTotal = itemTotal > 0 ? (itemTotal + deliveryCharge) : 0;
+
 
   const cleanImageUrl = (url) => {
     if (!url || typeof url !== 'string') return '';
@@ -680,16 +687,16 @@ const Checkout = () => {
                       {showPriceBreakdown && (
                         <div className="price-breakdown-expanded">
                           <div className="bill-row">
-                            <span>Items total</span>
-                            <span>₹{itemTotal.toLocaleString()}</span>
+                            <span>Gross amount</span>
+                            <span>₹{grossAmount.toLocaleString()}</span>
+                          </div>
+                          <div className="bill-row">
+                            <span>GST (5%)</span>
+                            <span>₹{gstAmount.toLocaleString()}</span>
                           </div>
                           <div className="bill-row">
                             <span>Delivery charge</span>
-                            <span>₹{deliveryCharge}</span>
-                          </div>
-                          <div className="bill-row">
-                            <span>GST</span>
-                            <span style={{ fontSize: '12px', color: '#666' }}>Included in price</span>
+                            <span>{deliveryCharge === 0 ? <span className="green-text">FREE</span> : `₹${deliveryCharge}`}</span>
                           </div>
                         </div>
                       )}
@@ -755,16 +762,16 @@ const Checkout = () => {
                     </div>
                     <div className="step-body">
                       <div className="price-row">
-                        <span>Price ({safeCartItems.length} items)</span>
-                        <span>₹{itemTotal.toLocaleString()}</span>
+                        <span>Gross Amount ({safeCartItems.length} items)</span>
+                        <span>₹{grossAmount.toLocaleString()}</span>
+                      </div>
+                      <div className="price-row">
+                        <span>GST (5%)</span>
+                        <span>₹{gstAmount.toLocaleString()}</span>
                       </div>
                       <div className="price-row">
                         <span>Delivery Charges</span>
-                        <span className="green-text">₹{deliveryCharge}</span>
-                      </div>
-                      <div className="price-row">
-                        <span>GST</span>
-                        <span style={{ fontSize: '12px', color: '#666' }}>Included in price</span>
+                        <span className={deliveryCharge === 0 ? "green-text" : ""}>{deliveryCharge === 0 ? "FREE" : `₹${deliveryCharge}`}</span>
                       </div>
                       <div className="price-row total">
                         <span>Total Payable</span>
@@ -1150,7 +1157,19 @@ const Checkout = () => {
                         <div className="quantity-controls small">
                           <button onClick={() => updateQuantity(item.id, item.selectedSize, item.quantity - 1)} disabled={item.quantity <= 1}>-</button>
                           <span>{item.quantity}</span>
-                          <button onClick={() => updateQuantity(item.id, item.selectedSize, item.quantity + 1)}>+</button>
+                          <button 
+                            onClick={() => {
+                              const limit = item.maxStock || item.stock || 999;
+                              if (item.quantity < limit) {
+                                updateQuantity(item.id, item.selectedSize, item.quantity + 1);
+                              } else {
+                                alert(`Only ${limit} items available in stock.`);
+                              }
+                            }}
+                            disabled={item.quantity >= (item.maxStock || item.stock || 999)}
+                          >
+                            +
+                          </button>
                         </div>
                         <button className="remove-item-btn" onClick={() => removeFromCart(item.id, item.selectedSize)}>
                           REMOVE
@@ -1283,21 +1302,18 @@ const Checkout = () => {
               <div className="price-divider"></div>
 
               <div className="price-row">
-                <span>Items Subtotal</span>
-                <span>₹{itemTotal.toLocaleString()}</span>
+                <span>Gross Amount</span>
+                <span>₹{grossAmount.toLocaleString()}</span>
               </div>
-              
-              {deliveryCharge > 0 && (
-                <div className="price-row">
-                  <span>Delivery Charges</span>
-                  <span>₹{deliveryCharge}</span>
-                </div>
-              )}
 
+              <div className="price-row">
+                <span>GST (5%)</span>
+                <span>₹{gstAmount.toLocaleString()}</span>
+              </div>
 
-
-              <div className="price-row" style={{ marginTop: '12px', borderTop: '1px solid #f0f0f0', paddingTop: '12px' }}>
-                <span style={{ fontSize: '13px', color: '#666' }}>* GST included in product prices</span>
+              <div className="price-row">
+                <span>Delivery Charges</span>
+                <span className={deliveryCharge === 0 ? "green-text" : ""}>{deliveryCharge === 0 ? "FREE" : `₹${deliveryCharge}`}</span>
               </div>
 
               <div className="price-divider"></div>

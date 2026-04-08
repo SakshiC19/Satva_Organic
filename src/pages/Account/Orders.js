@@ -5,6 +5,7 @@ import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { downloadInvoice } from '../../utils/invoiceGenerator';
+import { uploadImage } from '../../services/storageService';
 import Badge from '../../components/common/Badge';
 import {
   BsDownload,
@@ -99,15 +100,46 @@ const Orders = () => {
   const [cancelModal, setCancelModal] = useState({ isOpen: false, orderId: null });
   const [cancelReason, setCancelReason] = useState('');
   const [customReason, setCustomReason] = useState('');
+  const [cancelImage, setCancelImage] = useState(null);
+  const [cancelPreview, setCancelPreview] = useState(null);
+  const [isSubmittingCancel, setIsSubmittingCancel] = useState(false);
 
-  const cancellationReasons = [
+  const [cancellationReasons, setCancellationReasons] = useState([
     "Changed my mind",
     "Ordered by mistake",
     "Found a better price",
     "Item not needed anymore",
     "Expected delivery date changed",
     "Other"
-  ];
+  ]);
+
+  // Refund State
+  const [refundModal, setRefundModal] = useState({ isOpen: false, orderId: null });
+  const [refundReason, setRefundReason] = useState('');
+  const [refundNote, setRefundNote] = useState('');
+  const [refundImage, setRefundImage] = useState(null);
+  const [refundPreview, setRefundPreview] = useState(null);
+  const [isSubmittingRefund, setIsSubmittingRefund] = useState(false);
+
+  const [refundReasons, setRefundReasons] = useState([
+    "Product is damaged / broken",
+    "Wrong item received",
+    "Product quality not as expected",
+    "Expired product",
+    "Missing items in package",
+    "Other"
+  ]);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, 'settings', 'order_reasons'), (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data.cancellationReasons) setCancellationReasons(data.cancellationReasons);
+        if (data.refundReasons) setRefundReasons(data.refundReasons);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
 
   const handleCancelClick = (orderId, e) => {
@@ -115,25 +147,51 @@ const Orders = () => {
     setCancelModal({ isOpen: true, orderId });
     setCancelReason('');
     setCustomReason('');
+    setCancelImage(null);
+    setCancelPreview(null);
+  };
+
+  const handleCancelImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setCancelImage(file);
+      setCancelPreview(URL.createObjectURL(file));
+    }
   };
 
   const submitCancellation = async () => {
-    if (!cancelReason) return;
-    const reason = cancelReason === 'Other' ? customReason : cancelReason;
+    if (!cancelReason) {
+      alert('Please select a reason for cancellation.');
+      return;
+    }
+    if (cancelReason === 'Other' && !customReason.trim()) {
+      alert('Please specify the reason for choosing "Other".');
+      return;
+    }
+    const reason = cancelReason === 'Other' ? customReason.trim() : cancelReason;
     
+    setIsSubmittingCancel(true);
     try {
+      let imageUrl = null;
+      if (cancelImage) {
+        const uploadResult = await uploadImage(cancelImage, `cancellations/${cancelModal.orderId}`);
+        imageUrl = uploadResult.url;
+      }
+
       const orderRef = doc(db, 'orders', cancelModal.orderId);
       await updateDoc(orderRef, {
         cancellationRequest: {
           status: 'pending',
           reason: reason,
+          message: cancelReason === 'Other' ? customReason.trim() : '',
+          photoUrl: imageUrl,
           requestedAt: serverTimestamp()
         }
       });
       
       setOrders(orders.map(o => o.id === cancelModal.orderId ? { 
         ...o, 
-        cancellationRequest: { status: 'pending', reason, requestedAt: new Date() } 
+        cancellationRequest: { status: 'pending', reason, message: cancelReason === 'Other' ? customReason.trim() : '', photoUrl: imageUrl, requestedAt: new Date() } 
       } : o));
       
       setCancelModal({ isOpen: false, orderId: null });
@@ -141,7 +199,78 @@ const Orders = () => {
     } catch (error) {
       console.error("Error requesting cancellation:", error);
       alert('Failed to send cancellation request.');
+    } finally {
+      setIsSubmittingCancel(false);
     }
+  };
+
+  const handleRefundClick = (orderId, e) => {
+    if (e) e.stopPropagation();
+    setRefundModal({ isOpen: true, orderId });
+    setRefundReason('');
+    setRefundNote('');
+    setRefundImage(null);
+    setRefundPreview(null);
+  };
+
+  const handleRefundImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setRefundImage(file);
+      setRefundPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const submitRefundRequest = async () => {
+    if (!refundReason) {
+      alert('Please select a reason for refund.');
+      return;
+    }
+    if (refundReason === 'Other' && !refundNote.trim()) {
+      alert('Please provide details for choosing "Other".');
+      return;
+    }
+    
+    setIsSubmittingRefund(true);
+    try {
+      let imageUrl = null;
+      if (refundImage) {
+        const uploadResult = await uploadImage(refundImage, `refunds/${refundModal.orderId}`);
+        imageUrl = uploadResult.url;
+      }
+
+      const orderRef = doc(db, 'orders', refundModal.orderId);
+      await updateDoc(orderRef, {
+        refundRequest: {
+          status: 'pending',
+          reason: refundReason,
+          message: refundNote,
+          photoUrl: imageUrl,
+          requestedAt: serverTimestamp()
+        }
+      });
+
+      setOrders(orders.map(o => o.id === refundModal.orderId ? {
+        ...o,
+        refundRequest: { status: 'pending', reason: refundReason, message: refundNote, photoUrl: imageUrl, requestedAt: new Date() }
+      } : o));
+
+      setRefundModal({ isOpen: false, orderId: null });
+      alert('Your refund request has been submitted and is pending approval.');
+    } catch (error) {
+      console.error("Error submitting refund request:", error);
+      alert('Failed to submit refund request. Please try again.');
+    } finally {
+      setIsSubmittingRefund(false);
+    }
+  };
+
+  const isEligibleForRefund = (status, updatedAt) => {
+    if (status !== 'Delivered' || !updatedAt) return false;
+    const deliveryDate = updatedAt.toDate ? updatedAt.toDate() : new Date(updatedAt);
+    const diffTime = Math.abs(new Date() - deliveryDate);
+    const diffHours = diffTime / (1000 * 60 * 60);
+    return diffHours <= 48; // 2 days = 48 hours
   };
 
   const formatDate = (timestamp) => {
@@ -350,6 +479,17 @@ const Orders = () => {
                         </button>
                       )
                     )}
+                    {isEligibleForRefund(order.status, order.updatedAt) && (
+                      order.refundRequest ? (
+                        <button className="btn-refund disabled" disabled>
+                          Refund {order.refundRequest.status.charAt(0).toUpperCase() + order.refundRequest.status.slice(1)}
+                        </button>
+                      ) : (
+                        <button className="btn-refund" onClick={(e) => handleRefundClick(order.id, e)}>
+                          Refund Product
+                        </button>
+                      )
+                    )}
                     {['confirmed', 'processing', 'packed', 'shipped', 'out for delivery', 'delivered'].includes(order.status?.toLowerCase()) && (
                       <button className="btn-text" onClick={() => downloadInvoice(order)}>
                         <BsDownload /> Invoice
@@ -500,15 +640,112 @@ const Orders = () => {
                   style={{ marginTop: '10px', width: '100%' }}
                 />
               )}
+
+              <div className="upload-section" style={{ marginTop: '15px' }}>
+                <label style={{ fontSize: '14px', fontWeight: '500', display: 'block', marginBottom: '8px' }}>
+                  Upload Product Photo (Optional)
+                </label>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleCancelImageChange}
+                  style={{ fontSize: '12px' }}
+                />
+                {cancelPreview && (
+                  <div className="photo-preview" style={{ marginTop: '10px', textAlign: 'center' }}>
+                    <img 
+                      src={cancelPreview} 
+                      alt="Preview" 
+                      style={{ maxWidth: '100%', maxHeight: '150px', borderRadius: '8px' }} 
+                    />
+                  </div>
+                )}
+              </div>
             </div>
             <div className="modal-footer">
-              <button className="btn-secondary" onClick={() => setCancelModal({ isOpen: false, orderId: null })}>Close</button>
               <button 
-                className="btn-danger" 
-                onClick={submitCancellation}
-                disabled={!cancelReason || (cancelReason === 'Other' && !customReason)}
+                className="btn-secondary" 
+                onClick={() => setCancelModal({ isOpen: false, orderId: null })}
+                disabled={isSubmittingCancel}
               >
-                Submit Request
+                Close
+              </button>
+              <button 
+                className="btn-primary" 
+                onClick={submitCancellation}
+                disabled={!cancelReason || (cancelReason === 'Other' && !customReason.trim()) || isSubmittingCancel}
+                style={{ backgroundColor: !cancelReason || (cancelReason === 'Other' && !customReason.trim()) || isSubmittingCancel ? '#fda4af' : '#ef4444' }}
+              >
+                {isSubmittingCancel ? 'Submitting...' : 'Submit Request'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Refund Modal */}
+      {refundModal.isOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content small-modal">
+            <div className="modal-header">
+              <h3>Request Refund</h3>
+              <button className="close-btn" onClick={() => setRefundModal({ isOpen: false, orderId: null })}>
+                <BsXCircle />
+              </button>
+            </div>
+            <div className="modal-body">
+              <p>Requested refunds must be within 2 days of delivery.</p>
+              
+              <div className="form-group" style={{ marginBottom: '15px' }}>
+                <label className="form-label">Reason for Refund *</label>
+                <select 
+                  className="form-select"
+                  value={refundReason}
+                  onChange={(e) => setRefundReason(e.target.value)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}
+                >
+                  <option value="">Select Reason</option>
+                  {refundReasons.map(r => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '15px' }}>
+                <label className="form-label">Additional Details</label>
+                <textarea
+                  className="form-textarea"
+                  placeholder="Tell us more about the issue..."
+                  value={refundNote}
+                  onChange={(e) => setRefundNote(e.target.value)}
+                  rows="3"
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', resize: 'vertical' }}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Product Photo *</label>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={handleRefundImageChange}
+                  style={{ width: '100%', marginBottom: '10px' }}
+                />
+                {refundPreview && (
+                  <div className="refund-preview" style={{ marginTop: '10px', textAlign: 'center' }}>
+                    <img src={refundPreview} alt="Refund Preview" style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '8px', border: '1px solid #e2e8f0' }} />
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={() => setRefundModal({ isOpen: false, orderId: null })}>Close</button>
+              <button 
+                className="btn-primary" 
+                onClick={submitRefundRequest}
+                disabled={isSubmittingRefund || !refundReason || (refundReason === 'Other' && !refundNote.trim()) || !refundImage}
+              >
+                {isSubmittingRefund ? 'Submitting...' : 'Submit Refund Request'}
               </button>
             </div>
           </div>
