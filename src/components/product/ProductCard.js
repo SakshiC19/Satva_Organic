@@ -6,6 +6,9 @@ import { useCart } from '../../contexts/CartContext';
 import { useWishlist } from '../../contexts/WishlistContext';
 import ProductSelectionModal from './ProductSelectionModal';
 import ProductQuickView from './ProductQuickView';
+import { useAuth } from '../../contexts/AuthContext';
+import { db } from '../../config/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const FlashDealTimer = ({ expiryDate }) => {
   const [timeLeft, setTimeLeft] = React.useState({
@@ -60,6 +63,7 @@ const ProductCard = ({
   const { toggleWishlist, isInWishlist, removeFromWishlist } = useWishlist();
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [isQuickViewOpen, setIsQuickViewOpen] = React.useState(false);
+  const { currentUser } = useAuth();
 
   const {
     id,
@@ -262,9 +266,26 @@ const ProductCard = ({
               </div>
             </div>
           ) : (
-            <button className="card-btn notify-btn" onClick={e => {
+            <button className="card-btn notify-btn" onClick={async (e) => {
               e.stopPropagation();
-              alert(`Notified for ${name}`);
+              if (!currentUser) {
+                alert("Please login to get notified!");
+                navigate('/login');
+                return;
+              }
+              try {
+                await addDoc(collection(db, 'stockNotifications'), {
+                  productId: id,
+                  productName: name,
+                  userId: currentUser.uid,
+                  userEmail: currentUser.email,
+                  status: 'pending',
+                  createdAt: serverTimestamp()
+                });
+                alert("We will notify you when back in stock!");
+              } catch (error) {
+                console.error("Notify error:", error);
+              }
             }}>
               Notify Me
             </button>

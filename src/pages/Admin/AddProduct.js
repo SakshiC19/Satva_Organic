@@ -165,6 +165,35 @@ const AddProduct = () => {
     });
   };
 
+  const handleSizeChange = (index, valueStr, unitStr) => {
+    setFormData(prev => {
+      const newSizes = [...prev.generatedSizes];
+      const newSizeStr = `${valueStr}${unitStr}`;
+      
+      let autoPrice = 0;
+      if (prev.basePrice && valueStr) {
+        let multiplier = 0;
+        const numVal = parseFloat(valueStr);
+        if (!isNaN(numVal)) {
+            const unitLower = unitStr.toLowerCase();
+            if (unitLower === 'g' || unitLower === 'ml') multiplier = numVal / 100;
+            if (unitLower === 'kg' || unitLower === 'l') multiplier = (numVal * 1000) / 100;
+            if (unitLower === 'piece') multiplier = numVal;
+            autoPrice = Math.round(multiplier * parseFloat(prev.basePrice));
+        }
+      }
+
+      newSizes[index] = { 
+        ...newSizes[index], 
+        size: newSizeStr,
+        autoPrice: autoPrice || 0
+      };
+      
+      return { ...prev, generatedSizes: newSizes };
+    });
+  };
+
+
 
 
   const handleSubmit = async (e) => {
@@ -203,6 +232,8 @@ const AddProduct = () => {
           sizePrices[s.size] = parseFloat(s.customPrice);
           // Calculate discount percentage for display if needed
           // discount = ((auto - custom) / auto) * 100
+        } else if (s.autoPrice !== undefined && s.autoPrice !== null) {
+          sizePrices[s.size] = parseFloat(s.autoPrice);
         }
       });
 
@@ -435,8 +466,42 @@ const AddProduct = () => {
                               onChange={(e) => updateSizeField(index, 'enabled', e.target.checked)}
                             />
                           </td>
-                          <td>{item.size}</td>
-                          <td style={{ color: '#6b7280' }}>{item.autoPrice}</td>
+                          <td>
+                            <div style={{ display: 'flex', gap: '4px', alignItems: 'center', minWidth: '130px' }}>
+                              <input
+                                type="number"
+                                value={item.size.match(/(\d+(?:\.\d+)?)/)?.[1] || ''}
+                                onChange={(e) => handleSizeChange(index, e.target.value, item.size.replace(/[\d.\s]/g, '') || 'g')}
+                                className="size-price-input compact-input"
+                                style={{ width: '100%', minWidth: '60px', padding: '6px' }}
+                                disabled={!item.enabled}
+                                placeholder="0"
+                              />
+                              <select
+                                value={item.size.replace(/[\d.\s]/g, '') || 'g'}
+                                onChange={(e) => handleSizeChange(index, item.size.match(/(\d+(?:\.\d+)?)/)?.[1] || '', e.target.value)}
+                                className="form-select compact-select"
+                                style={{ padding: '6px 2px', width: 'auto', minWidth: '60px', height: '36px' }}
+                                disabled={!item.enabled}
+                              >
+                                <option value="g">g</option>
+                                <option value="kg">kg</option>
+                                <option value="ml">ml</option>
+                                <option value="L">L</option>
+                                <option value="piece">piece</option>
+                              </select>
+                            </div>
+                          </td>
+                          <td>
+                            <input
+                              type="number"
+                              value={item.autoPrice}
+                              onChange={(e) => updateSizeField(index, 'autoPrice', e.target.value)}
+                              className="size-price-input compact-input"
+                              disabled={!item.enabled}
+                              style={{ minWidth: '80px' }}
+                            />
+                          </td>
                           <td>
                             <input
                               type="number"

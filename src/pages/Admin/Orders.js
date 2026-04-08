@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { collection, query, orderBy, getDocs, doc, updateDoc, where, onSnapshot, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { 
@@ -26,7 +27,9 @@ const Orders = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [viewingOrder, setViewingOrder] = useState(null);
   const [viewingCancellation, setViewingCancellation] = useState(null);
+  const [viewingRefund, setViewingRefund] = useState(null);
   const { currentUser } = useAuth();
+  const location = useLocation();
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -44,13 +47,24 @@ const Orders = () => {
       }));
       setOrders(ordersData);
       setLoading(false);
+
+      // Handle query param filter
+      const params = new URLSearchParams(location.search);
+      const filterParam = params.get('filter');
+      if (filterParam === 'refund_requests' || filterParam === 'cancellation_requests') {
+        setSpecialFilter(filterParam);
+        setActiveTab('issues');
+      } else if (filterParam === 'pending_payments') {
+        setSpecialFilter('pending_payments');
+        setActiveTab('all');
+      }
     }, (error) => {
       console.error('Error fetching orders:', error);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [location.search]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -106,6 +120,10 @@ const Orders = () => {
       o.cancellationRequest?.status === 'pending' || o.status?.toLowerCase() === 'cancellation_requested'
     ).length;
 
+    const refundRequests = orders.filter(o =>
+      o.refundRequest?.status === 'pending'
+    ).length;
+
     const completedOrders = orders.filter(o => o.status?.toLowerCase() === 'delivered');
     const avgOrderValue = completedOrders.length > 0
       ? totalRevenue / completedOrders.length
@@ -121,7 +139,8 @@ const Orders = () => {
       pending: orders.filter(o => o.status?.toLowerCase() === 'pending').length,
       processing: orders.filter(o => ['accepted', 'processing', 'packed', 'shipped'].includes(o.status?.toLowerCase())).length,
       delivered: orders.filter(o => o.status?.toLowerCase() === 'delivered').length,
-      cancelled: orders.filter(o => o.status?.toLowerCase() === 'cancelled').length
+      cancelled: orders.filter(o => o.status?.toLowerCase() === 'cancelled').length,
+      refundRequests
     };
   };
 
@@ -145,6 +164,10 @@ const Orders = () => {
       case 'cancellation_requests':
         setActiveTab('issues');
         setSpecialFilter('cancellation_requests');
+        break;
+      case 'refund_requests':
+        setActiveTab('issues');
+        setSpecialFilter('refund_requests');
         break;
       default:
         setActiveTab('all');
@@ -286,6 +309,47 @@ const Orders = () => {
     }
   };
 
+  const handleApproveRefund = async (orderId) => {
+    if (!window.confirm('Are you sure you want to APPROVE this refund request?')) return;
+    
+    try {
+      const orderRef = doc(db, 'orders', orderId);
+      await updateDoc(orderRef, {
+        status: 'Returned',
+        'refundRequest.status': 'approved',
+        'refundRequest.approvedAt': serverTimestamp(),
+        'refundRequest.approvedBy': currentUser.email,
+        refundStatus: 'Initiated',
+        paymentStatus: 'Refund Processing'
+      });
+      setViewingRefund(null);
+      alert('Refund request approved. Order status set to Returned.');
+    } catch (error) {
+      console.error("Error approving refund:", error);
+      alert('Failed to approve refund request.');
+    }
+  };
+
+  const handleRejectRefund = async (orderId) => {
+    const reason = window.prompt('Please provide a reason for rejecting the refund request:');
+    if (reason === null) return;
+
+    try {
+      const orderRef = doc(db, 'orders', orderId);
+      await updateDoc(orderRef, {
+        'refundRequest.status': 'rejected',
+        'refundRequest.rejectedAt': serverTimestamp(),
+        'refundRequest.rejectedBy': currentUser.email,
+        'refundRequest.rejectionReason': reason
+      });
+      setViewingRefund(null);
+      alert('Refund request rejected.');
+    } catch (error) {
+      console.error("Error rejecting refund:", error);
+      alert('Failed to reject refund request.');
+    }
+  };
+
   const formatDate = (timestamp) => {
     if (!timestamp) return 'N/A';
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
@@ -317,6 +381,7 @@ const Orders = () => {
       case 'delivered': return 'status-delivered';
       case 'cancelled': return 'status-cancelled';
       case 'refunded': return 'status-refunded';
+      case 'returned': return 'status-returned';
       default: return 'status-pending';
     }
   };
@@ -346,6 +411,8 @@ const Orders = () => {
       if (!(order.paymentMethod === 'cod' && order.status?.toLowerCase() === 'delivered' && !order.paymentReceived)) return false;
     } else if (specialFilter === 'cancellation_requests') {
       if (!(order.cancellationRequest?.status === 'pending' || order.status?.toLowerCase() === 'cancellation_requested')) return false;
+    } else if (specialFilter === 'refund_requests') {
+      if (!(order.refundRequest?.status === 'pending')) return false;
     }
 
     // Date range filter
@@ -582,7 +649,7 @@ const Orders = () => {
               Completed <span className="tab-count">{stats.delivered}</span>
             </button>
             <button className={`om-tab ${activeTab === 'issues' ? 'active' : ''}`} onClick={() => setActiveTab('issues')}>
-              Issues <span className="tab-count">{stats.cancelled + stats.cancellationRequests}</span>
+              Issues <span className="tab-count">{stats.cancelled + stats.cancellationRequests + stats.refundRequests}</span>
             </button>
           </div>
         </div>
@@ -750,8 +817,39 @@ const Orders = () => {
                               className="cancellation-badge clickable" 
                               onClick={() => setViewingCancellation(order)}
                               title="Click to view cancellation details"
+                              style={{ 
+                                backgroundColor: '#fff7ed', 
+                                color: '#ea580c', 
+                                fontSize: '10px', 
+                                fontWeight: 'bold', 
+                                padding: '2px 6px', 
+                                borderRadius: '4px', 
+                                marginTop: '4px',
+                                textAlign: 'center',
+                                border: '1px solid #fdba74'
+                              }}
                             >
                               Cancellation Requested
+                            </div>
+                          )}
+                          {order.refundRequest?.status === 'pending' && (
+                            <div 
+                              className="refund-badge clickable" 
+                              onClick={() => setViewingRefund(order)}
+                              title="Click to view refund details"
+                              style={{ 
+                                backgroundColor: '#fee2e2', 
+                                color: '#ef4444', 
+                                fontSize: '10px', 
+                                fontWeight: 'bold', 
+                                padding: '2px 6px', 
+                                borderRadius: '4px', 
+                                marginTop: '4px',
+                                textAlign: 'center',
+                                border: '1px solid #fca5a5'
+                              }}
+                            >
+                              Refund Requested
                             </div>
                           )}
                         </div>
@@ -775,6 +873,23 @@ const Orders = () => {
                                 className="action-icon-btn danger" 
                                 onClick={() => handleRejectCancellation(order.id)}
                                 title="Reject Cancellation"
+                              >
+                                <FiX />
+                              </button>
+                            </>
+                          ) : order.refundRequest?.status === 'pending' ? (
+                            <>
+                              <button 
+                                className="action-icon-btn success" 
+                                onClick={() => handleApproveRefund(order.id)}
+                                title="Approve Refund"
+                              >
+                                <FiCheck />
+                              </button>
+                              <button 
+                                className="action-icon-btn danger" 
+                                onClick={() => handleRejectRefund(order.id)}
+                                title="Reject Refund"
                               >
                                 <FiX />
                               </button>
@@ -1137,6 +1252,80 @@ const Orders = () => {
                   <button 
                     className="btn-reject-large"
                     onClick={() => handleRejectCancellation(viewingCancellation.id)}
+                  >
+                    <FiX /> Reject Request
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Refund Details Modal */}
+      {viewingRefund && (
+        <div className="modal-overlay" onClick={() => setViewingRefund(null)}>
+          <div className="modal-content-small" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Refund Request</h3>
+              <button className="close-btn" onClick={() => setViewingRefund(null)}><FiX /></button>
+            </div>
+            <div className="modal-body">
+              <div className="cancel-info-box">
+                <div className="detail-row">
+                  <span>Order ID:</span>
+                  <strong>#{viewingRefund.id.substring(0, 10).toUpperCase()}</strong>
+                </div>
+                <div className="detail-row">
+                  <span>Customer:</span>
+                  <strong>{viewingRefund.customerName || 'Customer'}</strong>
+                </div>
+                <div className="detail-row">
+                  <span>Requested On:</span>
+                  <strong>{formatDate(viewingRefund.refundRequest?.requestedAt)}</strong>
+                </div>
+                <div className="reason-row">
+                  <span>Reason for Refund:</span>
+                  <div className="reason-text">
+                    "{viewingRefund.refundRequest?.reason || 'No reason provided'}"
+                  </div>
+                </div>
+                {viewingRefund.refundRequest?.note && (
+                  <div className="reason-row">
+                    <span>Additional Note:</span>
+                    <div className="reason-text">
+                      "{viewingRefund.refundRequest.note}"
+                    </div>
+                  </div>
+                )}
+                {viewingRefund.refundRequest?.photo && (
+                  <div className="reason-row">
+                    <span>Product Photo:</span>
+                    <div className="refund-photo-container" style={{ marginTop: '10px', textAlign: 'center' }}>
+                      <img 
+                        src={viewingRefund.refundRequest.photo} 
+                        alt="Product Issue" 
+                        style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '8px', cursor: 'zoom-in' }}
+                        onClick={() => window.open(viewingRefund.refundRequest.photo, '_blank')}
+                      />
+                      <p style={{ fontSize: '11px', color: '#666', marginTop: '5px' }}>Click image to view full size</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="cancellation-actions-large">
+                <p className="action-hint">Approving will mark order as Returned and initiate refund.</p>
+                <div className="action-buttons-group">
+                  <button 
+                    className="btn-approve-large"
+                    style={{ backgroundColor: '#22c55e' }}
+                    onClick={() => handleApproveRefund(viewingRefund.id)}
+                  >
+                    <FiCheck /> Approve Refund
+                  </button>
+                  <button 
+                    className="btn-reject-large"
+                    onClick={() => handleRejectRefund(viewingRefund.id)}
                   >
                     <FiX /> Reject Request
                   </button>

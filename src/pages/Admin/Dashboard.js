@@ -1,19 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { collection, getDocs, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { collection, getDocs, query, orderBy, limit, onSnapshot, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { FiTrendingUp, FiTrendingDown, FiDollarSign, FiShoppingBag, FiBox, FiUsers, FiFilter, FiShoppingCart } from 'react-icons/fi';
+import { FiTrendingUp, FiTrendingDown, FiDollarSign, FiShoppingBag, FiBox, FiUsers, FiFilter, FiShoppingCart, FiRefreshCcw, FiCheck, FiX } from 'react-icons/fi';
 import './Dashboard.css';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [stats, setStats] = useState({
     totalRevenue: 0,
     totalOrders: 0,
     totalProducts: 0,
     activeCustomers: 0,
     totalWishlistItems: 0,
-    totalCartItems: 0
+    totalCartItems: 0,
+    totalRefundRequests: 0
   });
   const [topProducts, setTopProducts] = useState([]);
   const [recentOrders, setRecentOrders] = useState([]);
@@ -25,8 +27,15 @@ const Dashboard = () => {
   const [orderFilter, setOrderFilter] = useState('All');
   const [showWishlistTable, setShowWishlistTable] = useState(false);
   const [showCartTable, setShowCartTable] = useState(false);
+  const [showRefundTable, setShowRefundTable] = useState(false);
+  const [refundFilter, setRefundFilter] = useState('pending'); // Default to pending as it's an 'analysis' view usually
+  const [reasonModalOpen, setReasonModalOpen] = useState(false);
+  const [customCancellationReasons, setCustomCancellationReasons] = useState([]);
+  const [customRefundReasons, setCustomRefundReasons] = useState([]);
+  const [newReason, setNewReason] = useState({ cancellation: '', refund: '' });
   const wishlistTableRef = useRef(null);
   const cartTableRef = useRef(null);
+  const refundTableRef = useRef(null);
 
   const handleWishlistCardClick = () => {
     setShowWishlistTable(true);
@@ -39,9 +48,14 @@ const Dashboard = () => {
   const handleCartCardClick = () => {
     setShowCartTable(true);
     setShowWishlistTable(false); // Hide the other if open
+    setShowRefundTable(false);
     setTimeout(() => {
       cartTableRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, 100);
+  };
+
+  const handleRefundCardClick = () => {
+    navigate('/admin/refund-requests');
   };
 
 
@@ -57,12 +71,41 @@ const Dashboard = () => {
       
       // Calculate revenue and customers
       const revenue = orders.reduce((sum, order) => sum + (order.total || order.totalAmount || 0), 0);
+      const refundRequests = orders.filter(o => o.cancellationRequest?.status === 'pending' || o.refundRequest?.status === 'pending').length;
+
       setStats(prev => ({
         ...prev,
         totalRevenue: revenue,
         totalOrders: snapshot.size,
-        activeCustomers: new Set(orders.map(o => o.userId)).size
+        activeCustomers: new Set(orders.map(o => o.userId)).size,
+        totalRefundRequests: refundRequests
       }));
+    });
+
+    const unsubscribeReasons = onSnapshot(doc(db, 'settings', 'order_reasons'), (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        setCustomCancellationReasons(data.cancellationReasons || []);
+        setCustomRefundReasons(data.refundReasons || []);
+      } else {
+        // Defaults if none exist
+        setCustomCancellationReasons([
+          "Changed my mind",
+          "Ordered by mistake",
+          "Found a better price",
+          "Item not needed anymore",
+          "Expected delivery date changed",
+          "Other"
+        ]);
+        setCustomRefundReasons([
+          "Product is damaged / broken",
+          "Wrong item received",
+          "Product quality not as expected",
+          "Expired product",
+          "Missing items in package",
+          "Other"
+        ]);
+      }
     });
 
     const unsubscribeProducts = onSnapshot(productsRef, (snapshot) => {
@@ -122,10 +165,140 @@ const Dashboard = () => {
 
     return () => {
       unsubscribeOrders();
+      unsubscribeReasons();
       unsubscribeProducts();
       unsubscribeUsers();
     };
   }, []);
+
+  // Handle query parameter for deep linking to tables
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const view = params.get('view');
+    if (view === 'refund_requests') {
+      navigate('/admin/refund-requests');
+    } else if (view === 'wishlist') {
+      handleWishlistCardClick();
+    } else if (view === 'cart') {
+      handleCartCardClick();
+    }
+  }, [location.search]);
+
+  const handleApproveRefund = async (e, orderId, isCancellation = false) => {
+    e.stopPropagation();
+    if (!window.confirm(`Are you sure you want to approve this ${isCancellation ? 'cancellation' : 'refund'}?`)) return;
+
+    try {
+      const orderRef = doc(db, 'orders', orderId);
+      const updateData = isCancellation ? {
+        status: 'Cancelled',
+        'cancellationRequest.status': 'approved',
+        'cancellationRequest.processedAt': serverTimestamp(),
+        statusUpdatedAt: serverTimestamp()
+      } : {
+        status: 'Returned',
+        'refundRequest.status': 'approved',
+        'refundRequest.processedAt': serverTimestamp(),
+        paymentStatus: 'Refund Initiated',
+        statusUpdatedAt: serverTimestamp()
+      };
+
+      await updateDoc(orderRef, updateData);
+      alert(`${isCancellation ? 'Cancellation' : 'Refund'} approved successfully!`);
+    } catch (error) {
+      console.error("Error approving request:", error);
+      alert("Failed to approve request.");
+    }
+  };
+
+  const handleRejectRefund = async (e, orderId, isCancellation = false) => {
+    e.stopPropagation();
+    const reason = window.prompt(`Reason for rejecting ${isCancellation ? 'cancellation' : 'refund'}?`);
+    if (reason === null) return;
+
+    try {
+      const orderRef = doc(db, 'orders', orderId);
+      const updateData = isCancellation ? {
+        'cancellationRequest.status': 'rejected',
+        'cancellationRequest.rejectionReason': reason,
+        'cancellationRequest.processedAt': serverTimestamp()
+      } : {
+        'refundRequest.status': 'rejected',
+        'refundRequest.rejectionReason': reason,
+        'refundRequest.processedAt': serverTimestamp()
+      };
+
+      await updateDoc(orderRef, updateData);
+      alert(`${isCancellation ? 'Cancellation' : 'Refund'} rejected.`);
+    } catch (error) {
+      console.error("Error rejecting request:", error);
+      alert("Failed to reject request.");
+    }
+  };
+
+  const handleSaveReasons = async () => {
+    try {
+      const reasonsRef = doc(db, 'settings', 'order_reasons');
+      await updateDoc(reasonsRef, {
+        cancellationReasons: customCancellationReasons,
+        refundReasons: customRefundReasons,
+        updatedAt: serverTimestamp()
+      });
+      alert('Reasons updated successfully!');
+      setReasonModalOpen(false);
+    } catch (error) {
+      // If document doesn't exist, use setDoc instead via a different method or just update logic
+      try {
+        const { setDoc } = await import('firebase/firestore');
+        await setDoc(doc(db, 'settings', 'order_reasons'), {
+          cancellationReasons: customCancellationReasons,
+          refundReasons: customRefundReasons,
+          updatedAt: serverTimestamp()
+        });
+        alert('Reasons initialized and updated successfully!');
+        setReasonModalOpen(false);
+      } catch (innerError) {
+        console.error("Error saving reasons:", innerError);
+        alert('Failed to save reasons.');
+      }
+    }
+  };
+
+  const addReason = (type) => {
+    if (!newReason[type].trim()) return;
+    if (type === 'cancellation') {
+      setCustomCancellationReasons([...customCancellationReasons, newReason.cancellation.trim()]);
+    } else {
+      setCustomRefundReasons([...customRefundReasons, newReason.refund.trim()]);
+    }
+    setNewReason({ ...newReason, [type]: '' });
+  };
+
+  const removeReason = (type, index) => {
+    if (type === 'cancellation') {
+      const updated = customCancellationReasons.filter((_, i) => i !== index);
+      setCustomCancellationReasons(updated);
+    } else {
+      const updated = customRefundReasons.filter((_, i) => i !== index);
+      setCustomRefundReasons(updated);
+    }
+  };
+
+  const isToday = (timestamp) => {
+    if (!timestamp) return false;
+    let d;
+    if (timestamp.toDate) {
+      d = timestamp.toDate();
+    } else if (timestamp.seconds) {
+      d = new Date(timestamp.seconds * 1000);
+    } else {
+      d = new Date(timestamp);
+    }
+    const today = new Date();
+    return d.getDate() === today.getDate() &&
+           d.getMonth() === today.getMonth() &&
+           d.getFullYear() === today.getFullYear();
+  };
 
   // Recalculate top products when orders or products change
   useEffect(() => {
@@ -250,6 +423,15 @@ const Dashboard = () => {
       icon: <FiShoppingCart />,
       iconClass: 'blue',
       onClick: handleCartCardClick
+    },
+    {
+      label: 'Refund Requests',
+      value: stats.totalRefundRequests.toString(),
+      trend: 'Pending requests',
+      trendUp: false,
+      icon: <FiRefreshCcw />,
+      iconClass: 'red',
+      onClick: handleRefundCardClick
     }
   ];
 
@@ -318,87 +500,7 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* Charts Section */}
-      <div className="charts-grid">
-        {/* Most Carted Products Visual Chart */}
-        <div className="chart-card">
-          <div className="chart-header">
-            <h3>Most Carted Products Analysis</h3>
-          </div>
-          <div className="chart-wrapper" style={{ padding: '20px', height: '240px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-            <div className="bar-chart-container" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '100%', gap: '10px' }}>
-              {cartData.slice(0, 5).map((item, idx) => {
-                const maxCount = Math.max(...cartData.map(d => d.count), 1);
-                const barHeight = (item.count / maxCount) * 100;
-                return (
-                  <div key={idx} className="bar-group" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                    <div className="bar-label" style={{ fontSize: '12px', fontWeight: 'bold', color: '#0284c7' }}>{item.count}</div>
-                    <div 
-                      className="chart-bar" 
-                      style={{ 
-                        width: '100%', 
-                        height: `${barHeight}%`, 
-                        background: 'linear-gradient(to top, #0284c7, #7dd3fc)', 
-                        borderRadius: '4px 4px 0 0',
-                        transition: 'height 1s ease-out'
-                      }}
-                      title={productNames[item.id]}
-                    ></div>
-                    <div className="bar-name" style={{ fontSize: '10px', color: '#64748b', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
-                      {productNames[item.id] || 'Product'}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
 
-        {/* Most Wishlisted List */}
-        <div className="chart-card">
-          <div className="chart-header">
-            <h3>Most Wishlisted Products</h3>
-          </div>
-          <div className="wishlist-list" style={{ padding: '0 15px', overflowY: 'auto', maxHeight: '240px' }}>
-             {wishlistData.length > 0 ? wishlistData.slice(0, 5).map((item, idx) => (
-                 <div key={idx} className="wishlist-item" style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
-                    <span style={{ fontWeight: 500, color: '#1e293b' }}>#{idx + 1} {productNames[item.id] || `ID: ${item.id.substring(0, 8)}...`}</span>
-                    <span className="count-badge" style={{ background: '#dcfce7', color: '#059669', padding: '2px 8px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                        {item.count} Wishlists
-                    </span>
-                 </div>
-             )) : <p>No wishlist data available.</p>}
-          </div>
-        </div>
-
-        {/* Inventory Overview or Sales Status */}
-        <div className="chart-card">
-          <div className="chart-header">
-            <h3>Inventory Status</h3>
-          </div>
-          <div className="chart-body" style={{ padding: '20px' }}>
-            <div className="inventory-stats" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              <div className="inv-stat-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: '#64748b', fontSize: '0.9rem' }}>Out of Stock Products</span>
-                <span style={{ fontWeight: 'bold', color: '#ef4444' }}>{topProducts.filter(p => !p.stock || p.stock <= 0).length}</span>
-              </div>
-              <div className="inv-stat-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: '#64748b', fontSize: '0.9rem' }}>Low Stock ( &lt; 10 )</span>
-                <span style={{ fontWeight: 'bold', color: '#f59e0b' }}>{topProducts.filter(p => p.stock > 0 && p.stock < 10).length}</span>
-              </div>
-              <div className="inv-stat-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: '#64748b', fontSize: '0.9rem' }}>Healthy Stock</span>
-                <span style={{ fontWeight: 'bold', color: '#059669' }}>{topProducts.filter(p => p.stock >= 10).length}</span>
-              </div>
-            </div>
-            <div className="inv-progress" style={{ marginTop: '20px', height: '10px', background: '#f1f5f9', borderRadius: '5px', overflow: 'hidden', display: 'flex' }}>
-              <div style={{ width: `${(topProducts.filter(p => p.stock >= 10).length / (topProducts.length || 1)) * 100}%`, background: '#059669' }}></div>
-              <div style={{ width: `${(topProducts.filter(p => p.stock > 0 && p.stock < 10).length / (topProducts.length || 1)) * 100}%`, background: '#f59e0b' }}></div>
-              <div style={{ width: `${(topProducts.filter(p => !p.stock || p.stock <= 0).length / (topProducts.length || 1)) * 100}%`, background: '#ef4444' }}></div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Bottom Section */}
       <div className="data-grid">
@@ -626,6 +728,70 @@ const Dashboard = () => {
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* Reasons Edit Modal */}
+      {reasonModalOpen && (
+        <div className="modal-overlay" style={{ zIndex: 99999 }}>
+          <div className="modal-content" style={{ maxWidth: '700px', padding: '24px' }}>
+            <div className="modal-header" style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: 'bold' }}>Customize Order Reasons</h2>
+              <button onClick={() => setReasonModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '24px' }}>&times;</button>
+            </div>
+            
+            <div className="modal-body" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+              <div className="reasons-section" style={{ marginBottom: '30px' }}>
+                <h4 style={{ marginBottom: '10px', color: '#1e293b', fontWeight: '600' }}>Cancellation Reasons</h4>
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                  <input 
+                    type="text" 
+                    placeholder="Add new cancellation reason..." 
+                    value={newReason.cancellation}
+                    onChange={(e) => setNewReason({ ...newReason, cancellation: e.target.value })}
+                    style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0' }}
+                  />
+                  <button onClick={() => addReason('cancellation')} style={{ background: '#27ae60', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer' }}>Add</button>
+                </div>
+                <div className="reasons-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {customCancellationReasons.map((r, i) => (
+                    <div key={i} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '6px 12px', borderRadius: '20px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {r}
+                      <button onClick={() => removeReason('cancellation', i)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 'bold' }}>&times;</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="reasons-section">
+                <h4 style={{ marginBottom: '10px', color: '#1e293b', fontWeight: '600' }}>Refund Reasons</h4>
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                  <input 
+                    type="text" 
+                    placeholder="Add new refund reason..." 
+                    value={newReason.refund}
+                    onChange={(e) => setNewReason({ ...newReason, refund: e.target.value })}
+                    style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0' }}
+                  />
+                  <button onClick={() => addReason('refund')} style={{ background: '#27ae60', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer' }}>Add</button>
+                </div>
+                <div className="reasons-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {customRefundReasons.map((r, i) => (
+                    <div key={i} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '6px 12px', borderRadius: '20px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {r}
+                      <button onClick={() => removeReason('refund', i)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 'bold' }}>&times;</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer" style={{ marginTop: '30px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button onClick={() => setReasonModalOpen(false)} style={{ padding: '10px 20px', background: '#f1f5f9', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>Cancel</button>
+              <button onClick={handleSaveReasons} style={{ padding: '10px 24px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>Save Changes</button>
             </div>
           </div>
         </div>

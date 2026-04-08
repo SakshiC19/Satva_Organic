@@ -242,7 +242,7 @@ const ProductDetail = () => {
 
   const handleQuantityChange = (delta) => {
     const newQuantity = quantity + delta;
-    if (newQuantity >= 1 && newQuantity <= (product?.stock || 999)) {
+    if (newQuantity >= 1 && newQuantity <= (currentStock || 999)) {
       setQuantity(newQuantity);
     }
   };
@@ -285,6 +285,29 @@ const ProductDetail = () => {
     }
 
     return Math.round(finalPrice);
+  };
+
+  const getEffectiveBasePrice = (currPrice, size) => {
+    if (!size || !currPrice) return product?.price || 0;
+    const match = size.match(/(\d+(?:\.\d+)?)\s*([a-zA-Z]+)/);
+    if (!match) return currPrice;
+
+    const value = parseFloat(match[1]);
+    const unit = match[2].toLowerCase();
+    
+    let multiplier = 1;
+    if (unit === 'g' || unit === 'gm' || unit === 'ml') {
+      multiplier = value / 100;
+    } else if (unit === 'kg' || unit === 'l' || unit === 'liter') {
+      multiplier = (value * 1000) / 100;
+    } else if (unit === 'piece' || unit === 'pc' || unit === 'pcs' || unit === 'pack') {
+      return currPrice;
+    }
+    
+    if (multiplier > 0) {
+      return +(currPrice / multiplier).toFixed(2);
+    }
+    return currPrice;
   };
 
   const getCurrentStock = () => {
@@ -598,7 +621,11 @@ const ProductDetail = () => {
               <div className="product-price">
                 <span className="current-price">₹{currentPrice}</span>
                 <span className="unit-price-label">
-                   (₹{product.price} / 100{product.unit === 'ml' || product.unit === 'l' ? 'ml' : 'g'})
+                   {selectedSize && !selectedSize.toLowerCase().includes('piece') && !selectedSize.toLowerCase().includes('pack') ? (
+                     `(₹${getEffectiveBasePrice(currentPrice, selectedSize)} / 100${product.unit === 'ml' || product.unit === 'l' ? 'ml' : 'g'})`
+                   ) : (
+                     product.productForm === 'pack' ? `(₹${currentPrice} / piece)` : `(₹${product.price} / 100${product.unit === 'ml' || product.unit === 'l' ? 'ml' : 'g'})`
+                   )}
                 </span>
                 
                 {product.sizeDiscounts && product.sizeDiscounts[selectedSize] && (
@@ -719,20 +746,48 @@ const ProductDetail = () => {
             )}
 
             <div className="product-actions" ref={productActionsRef}>
-              <button 
-                className={`btn-add-to-cart ${isInCart ? 'in-cart' : ''}`}
-                onClick={handleAddToCart}
-                disabled={currentStock <= 0}
-              >
-                {isInCart ? 'View Basket' : 'Add to Basket'}
-              </button>
-              <button 
-                className="btn-buy-now"
-                onClick={handleBuyNow}
-                disabled={currentStock <= 0}
-              >
-                Buy Now
-              </button>
+              {currentStock > 0 ? (
+                <>
+                  <button 
+                    className={`btn-add-to-cart ${isInCart ? 'in-cart' : ''}`}
+                    onClick={handleAddToCart}
+                  >
+                    {isInCart ? 'View Basket' : 'Add to Basket'}
+                  </button>
+                  <button 
+                    className="btn-buy-now"
+                    onClick={handleBuyNow}
+                  >
+                    Buy Now
+                  </button>
+                </>
+              ) : (
+                <button 
+                  className="btn-notify-me-large"
+                  onClick={async () => {
+                    if (!currentUser) {
+                      alert("Please login to get notified!");
+                      navigate('/login');
+                      return;
+                    }
+                    try {
+                      await addDoc(collection(db, 'stockNotifications'), {
+                        productId: id,
+                        productName: product.name,
+                        userId: currentUser.uid,
+                        userEmail: currentUser.email,
+                        status: 'pending',
+                        createdAt: serverTimestamp()
+                      });
+                      alert("We will notify you once this product is back in stock!");
+                    } catch (error) {
+                      console.error("Error setting notification:", error);
+                    }
+                  }}
+                >
+                  <FiClock /> Notify Me When In Stock
+                </button>
+              )}
               <button 
                 className={`secondary-btn wishlist-inline-btn mobile-action-wishlist ${isItemInWishlist ? 'active' : ''}`} 
                 onClick={handleWishlistToggle}

@@ -4678,3 +4678,53 @@
 {"PINCODE":"416012","AREANAME":"RANKALA","STATION_CODE":"KHR","SUB_BRANCH_CODE":"KHR","DOC_DELIVERY":"YES","PARCEL_DELIVERY":"YES","PROPREMIUM_DELIVERY":"YES","DOC_DELIVERY_SCHEDULE":"DAILY","PARCEL_DELIVERY_SCHEDULE":"DAILY","PRODLYSCHEDULE":"AM/PM","COD_DELIVERY":"NO","ACTIVE":"Y"},
 {"PINCODE":"416012","AREANAME":"SHIVAJI PETH","STATION_CODE":"KHR","SUB_BRANCH_CODE":"KHR","DOC_DELIVERY":"YES","PARCEL_DELIVERY":"YES","PROPREMIUM_DELIVERY":"YES","DOC_DELIVERY_SCHEDULE":"DAILY","PARCEL_DELIVERY_SCHEDULE":"DAILY","PRODLYSCHEDULE":"AM/PM","COD_DELIVERY":"NO","ACTIVE":"Y"}
 ]
+[2026-04-07 13:59:27] Ready to call TPC Action: stock_check | URL: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 13:59:27] Executing cURL now to: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 13:59:27] cURL execution finished in 0.46 seconds. HTTP Status: 200. Effective URL: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 13:59:27] Response Status: 200
+[2026-04-07 13:59:27] JSON Response: [{"Response Data":{"description":"No data found","error":"1"}}]
+[2026-04-07 13:59:27] Ready to call TPC Action: stock_check | URL: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 13:59:27] Executing cURL now to: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 13:59:28] cURL execution finished in 0.46 seconds. HTTP Status: 200. Effective URL: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 13:59:28] Response Status: 200
+[2026-04-07 13:59:28] JSON Response: [{"Response Data":{"description":"No data found","error":"1"}}]
+[2026-04-07 14:00:17] Ready to call TPC Action: stock_check | URL: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 14:00:17] Executing cURL now to: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 14:00:24] cURL execution finished in 7.28 seconds. HTTP Status: 200. Effective URL: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 14:00:24] Response Status: 200
+[2026-04-07 14:00:24] JSON Response: [{"Response Data":{"description":"No data found","error":"1"}}]
+[2026-04-07 14:00:24] Ready to call TPC Action: stock_check | URL: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 14:00:24] Executing cURL now to: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 14:00:25] cURL execution finished in 0.39 seconds. HTTP Status: 200. Effective URL: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 14:00:25] Response Status: 200
+[2026-04-07 14:00:25] JSON Response: [{"Response Data":{"description":"No data found","error":"1"}}]
+[2026-04-07 14:03:41] Ready to call TPC Action: stock_check | URL: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 14:03:41] Executing cURL now to: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 14:03:41] cURL execution finished in 0.38 seconds. HTTP Status: 200. Effective URL: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 14:03:41] Response Status: 200
+[2026-04-07 14:03:41] JSON Response: [{"Response Data":{"description":"No data found","error":"1"}}]
+[2026-04-07 14:04:30] Ready to call TPC Action: stock_check | URL: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 14:04:30] Executing cURL now to: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 14:04:30] cURL execution finished in 0.33 seconds. HTTP Status: 200. Effective URL: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 14:04:30] Response Status: 200
+[2026-04-07 14:04:30] JSON Response: [{"Response Data":{"description":"No data found","error":"1"}}]
+[2026-04-07 14:05:15] Ready to call TPC Action: stock_check | URL: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 14:05:15] Executing cURL now to: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 14:05:15] cURL execution finished in 0.49 seconds. HTTP Status: 200. Effective URL: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 14:05:15] Response Status: 200
+[2026-04-07 14:05:15] JSON Response: [{"Response Data":{"description":"No data found","error":"1"}}]
+[2026-04-07 14:05:15] Ready to call TPC Action: stock_check | URL: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 14:05:15] Executing cURL now to: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 14:05:16] cURL execution finished in 0.45 seconds. HTTP Status: 200. Effective URL: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 14:05:16] Response Status: 200
+[2026-04-07 14:05:16] JSON Response: [{"Response Data":{"description":"No data found","error":"1"}}]
+[2026-04-07 14:10:26] Ready to call TPC Action: stock_check | URL: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 14:10:26] Executing cURL now to: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 14:10:26] cURL execution finished in 0.36 seconds. HTTP Status: 200. Effective URL: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 14:10:26] Response Status: 200
+[2026-04-07 14:10:26] JSON Response: [{"Response Data":{"description":"No data found","error":"1"}}]
+[2026-04-07 14:10:26] Ready to call TPC Action: stock_check | URL: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 14:10:26] Executing cURL now to: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 14:10:26] cURL execution finished in 0.41 seconds. HTTP Status: 200. Effective URL: https://www.tpcglobe.com/TPCWebService/ClientCnoteStock.ashx?client=JSPSAT&tpcpwd=2026%40SATVA
+[2026-04-07 14:10:26] Response Status: 200
+[2026-04-07 14:10:26] JSON Response: [{"Response Data":{"description":"No data found","error":"1"}}]

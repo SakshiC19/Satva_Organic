@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { uploadMultipleImages, deleteImage, getPathFromURL } from '../../services/storageService';
+import { checkAndNotifyBackInStock } from '../../services/notificationService';
 import ImageUpload from '../../components/admin/ImageUpload';
 import { useCategories } from '../../contexts/CategoryContext';
 import { FiSave, FiTrash2, FiArrowLeft } from 'react-icons/fi';
@@ -266,6 +267,35 @@ const EditProduct = () => {
     });
   };
 
+  const handleSizeChange = (index, valueStr, unitStr) => {
+    setFormData(prev => {
+      const newSizes = [...prev.generatedSizes];
+      const newSizeStr = `${valueStr}${unitStr}`;
+      
+      let autoPrice = 0;
+      if (prev.basePrice && valueStr) {
+        let multiplier = 0;
+        const numVal = parseFloat(valueStr);
+        if (!isNaN(numVal)) {
+            const unitLower = unitStr.toLowerCase();
+            if (unitLower === 'g' || unitLower === 'ml') multiplier = numVal / 100;
+            if (unitLower === 'kg' || unitLower === 'l') multiplier = (numVal * 1000) / 100;
+            if (unitLower === 'piece') multiplier = numVal;
+            autoPrice = Math.round(multiplier * parseFloat(prev.basePrice));
+        }
+      }
+
+      newSizes[index] = { 
+        ...newSizes[index], 
+        size: newSizeStr,
+        autoPrice: autoPrice || 0
+      };
+      
+      return { ...prev, generatedSizes: newSizes };
+    });
+  };
+
+
   const toggleSizeField = (index) => {
     updateSizeField(index, 'enabled', !formData.generatedSizes[index].enabled);
   };
@@ -345,6 +375,8 @@ const EditProduct = () => {
       activeSizes.forEach(s => {
         if (s.customPrice) {
           sizePrices[s.size] = parseFloat(s.customPrice);
+        } else if (s.autoPrice !== undefined && s.autoPrice !== null) {
+          sizePrices[s.size] = parseFloat(s.autoPrice);
         }
       });
 
@@ -374,10 +406,16 @@ const EditProduct = () => {
         updatedAt: serverTimestamp()
       };
 
+      // Check if it was out of stock and now is in stock
+      const oldDoc = await getDoc(doc(db, 'products', id));
+      const oldStock = oldDoc.exists() ? (oldDoc.data().stock || 0) : 0;
+      
       // Update product in Firestore
       await updateDoc(doc(db, 'products', id), productData);
 
-      alert('Product updated successfully!');
+      if (oldStock === 0 && productData.stock > 0) {
+        await checkAndNotifyBackInStock(id, productData.name);
+      }
       navigate('/admin/products');
     } catch (error) {
       console.error('Error updating product:', error);
@@ -602,8 +640,42 @@ const EditProduct = () => {
                                     <span className="slider round"></span>
                                 </label>
                             </td>
-                            <td>{item.size}</td>
-                            <td className="text-right disabled-text">{item.autoPrice}</td>
+                            <td>
+                              <div style={{ display: 'flex', gap: '4px', alignItems: 'center', minWidth: '130px' }}>
+                                <input
+                                  type="number"
+                                  value={item.size.match(/(\d+(?:\.\d+)?)/)?.[1] || ''}
+                                  onChange={(e) => handleSizeChange(index, e.target.value, item.size.replace(/[\d.\s]/g, '') || 'g')}
+                                  className="size-price-input compact-input"
+                                  style={{ width: '100%', minWidth: '60px' }}
+                                  disabled={!item.enabled}
+                                  placeholder="0"
+                                />
+                                <select
+                                  value={item.size.replace(/[\d.\s]/g, '') || 'g'}
+                                  onChange={(e) => handleSizeChange(index, item.size.match(/(\d+(?:\.\d+)?)/)?.[1] || '', e.target.value)}
+                                  className="form-select compact-select"
+                                  style={{ padding: '4px 2px', width: 'auto', minWidth: '60px', height: '32px' }}
+                                  disabled={!item.enabled}
+                                >
+                                  <option value="g">g</option>
+                                  <option value="kg">kg</option>
+                                  <option value="ml">ml</option>
+                                  <option value="L">L</option>
+                                  <option value="piece">piece</option>
+                                </select>
+                              </div>
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                value={item.autoPrice}
+                                onChange={(e) => updateSizeField(index, 'autoPrice', e.target.value)}
+                                className="size-price-input compact-input"
+                                disabled={!item.enabled}
+                                style={{ minWidth: '80px' }}
+                              />
+                            </td>
                             <td className="text-right">
                               <input
                                 type="number"

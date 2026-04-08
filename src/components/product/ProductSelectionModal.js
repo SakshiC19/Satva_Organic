@@ -73,7 +73,15 @@ const ProductSelectionModal = ({ product, isOpen, onClose }) => {
     return Math.round(finalPrice);
   };
 
+  const getSpecificStock = () => {
+    if (selectedWeight && product.sizeStocks && product.sizeStocks[selectedWeight] !== undefined) {
+      return product.sizeStocks[selectedWeight];
+    }
+    return product.stock || 0;
+  };
+
   const currentPrice = calculateDynamicPrice(product, selectedWeight);
+  const currentStock = getSpecificStock();
 
   const productImage = images && images.length > 0 
     ? (images[0].url || images[0]) 
@@ -90,7 +98,8 @@ const ProductSelectionModal = ({ product, isOpen, onClose }) => {
       selectedWeight,
       selectedSize: selectedWeight, // Ensure compatibility
       quantity,
-      basePrice: product.price
+      basePrice: product.price,
+      maxStock: currentStock // Pass max stock to cart for validation
     });
     onClose();
     if (window.innerWidth > 768) {
@@ -143,10 +152,29 @@ const ProductSelectionModal = ({ product, isOpen, onClose }) => {
                 <div className="quantity-selector">
                   <button onClick={() => setQuantity(Math.max(1, quantity - 1))}><FiMinus /></button>
                   <span>{quantity}</span>
-                  <button onClick={() => setQuantity(Math.min(stock, quantity + 1))}><FiPlus /></button>
+                  <button 
+                    onClick={() => setQuantity(Math.min(currentStock || 999, quantity + 1))}
+                    disabled={quantity >= (currentStock || 999)}
+                  >
+                    <FiPlus />
+                  </button>
                 </div>
               </div>
             </div>
+
+
+
+            {selectedWeight && currentStock > 0 && currentStock <= 10 && (
+              <div className="stock-limit-msg" style={{ 
+                color: '#ef4444', 
+                fontSize: '0.9rem', 
+                fontWeight: '600', 
+                marginBottom: '10px',
+                textAlign: 'left'
+              }}>
+                Hurry! Only {currentStock} left in stock
+              </div>
+            )}
 
             <div className="modal-action-row">
               <button 

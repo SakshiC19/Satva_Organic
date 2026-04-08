@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuth } from './AuthContext';
 
@@ -24,6 +24,22 @@ export const CartProvider = ({ children }) => {
   const [lastCartUpdatedAt, setLastCartUpdatedAt] = useState(() => {
     return localStorage.getItem('last_cart_updated_at') || null;
   });
+
+  const [shippingConfig, setShippingConfig] = useState({ freeShippingAbove: 500, shippingCharge: 50 });
+
+  // Load shipping configuration with real-time updates
+  useEffect(() => {
+    const docRef = doc(db, 'settings', 'shipping');
+    const unsubscribe = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setShippingConfig(docSnap.data());
+      }
+    }, (error) => {
+      console.error("Error fetching shipping config:", error);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Load cart from Firestore when user logs in
   useEffect(() => {
@@ -102,14 +118,34 @@ export const CartProvider = ({ children }) => {
       const existingItem = prevItems.find(item => 
         item.id === product.id && item.selectedSize === product.selectedSize
       );
+
+      // Get available stock (prefer maxStock if passed, else product.stock)
+      const availableStock = product.maxStock || product.stock || 999;
+      const quantityToAdd = product.quantity || 1;
+
       if (existingItem) {
+        const newQuantity = existingItem.quantity + quantityToAdd;
+        
+        // Validation: cannot exceed stock
+        if (newQuantity > availableStock) {
+          alert(`Only ${availableStock} items available in stock.`);
+          return prevItems;
+        }
+
         return prevItems.map(item =>
           (item.id === product.id && item.selectedSize === product.selectedSize)
-            ? { ...item, quantity: item.quantity + (product.quantity || 1) }
+            ? { ...item, quantity: newQuantity, maxStock: availableStock }
             : item
         );
       }
-      return [...prevItems, { ...product, quantity: product.quantity || 1 }];
+      
+      // Validation for new item
+      if (quantityToAdd > availableStock) {
+        alert(`Only ${availableStock} items available in stock.`);
+        return prevItems;
+      }
+
+      return [...prevItems, { ...product, quantity: quantityToAdd, maxStock: availableStock }];
     });
   };
 
@@ -124,13 +160,24 @@ export const CartProvider = ({ children }) => {
       removeFromCart(productId, selectedSize);
       return;
     }
-    setCartItems(prevItems =>
-      prevItems.map(item =>
+
+    setCartItems(prevItems => {
+      const item = prevItems.find(i => i.id === productId && i.selectedSize === selectedSize);
+      
+      // Use stored maxStock or product.stock if available
+      const availableStock = item?.maxStock || item?.stock || 999;
+
+      if (quantity > availableStock) {
+        alert(`Only ${availableStock} items available in stock.`);
+        return prevItems;
+      }
+
+      return prevItems.map(item =>
         (item.id === productId && item.selectedSize === selectedSize)
           ? { ...item, quantity }
           : item
-      )
-    );
+      );
+    });
   };
 
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -163,7 +210,8 @@ export const CartProvider = ({ children }) => {
     isCartOpen,
     openCart,
     closeCart,
-    toggleCart
+    toggleCart,
+    shippingConfig
   };
 
   return (

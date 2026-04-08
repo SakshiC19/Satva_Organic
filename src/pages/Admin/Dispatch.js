@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDocs, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { 
   FiPackage, FiMapPin, FiPhone, FiUser, FiTruck, 
@@ -15,6 +15,11 @@ const Dispatch = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(8); // Smaller for list panel
+  
+  // Shipping Config State
+  const [showShippingModal, setShowShippingModal] = useState(false);
+  const [shippingConfig, setShippingConfig] = useState({ freeShippingAbove: 500, shippingCharge: 50 });
+  const [savingShipping, setSavingShipping] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -49,7 +54,39 @@ const Dispatch = () => {
   useEffect(() => {
     fetchInspectedOrders();
     checkStock();
+    fetchShippingConfig();
   }, []);
+
+  const fetchShippingConfig = async () => {
+    try {
+      const docRef = doc(db, 'settings', 'shipping');
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        setShippingConfig(docSnap.data());
+      }
+    } catch (error) {
+      console.error("Error fetching shipping config:", error);
+    }
+  };
+
+  const handleSaveShippingConfig = async (e) => {
+    e.preventDefault();
+    setSavingShipping(true);
+    try {
+      await setDoc(doc(db, 'settings', 'shipping'), {
+        freeShippingAbove: Number(shippingConfig.freeShippingAbove),
+        shippingCharge: Number(shippingConfig.shippingCharge),
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+      alert('Shipping configuration updated successfully!');
+      setShowShippingModal(false);
+    } catch (error) {
+      console.error("Error updating shipping config:", error);
+      alert('Failed to update shipping configuration');
+    } finally {
+      setSavingShipping(false);
+    }
+  };
 
   const checkStock = async () => {
     try {
@@ -392,6 +429,15 @@ const Dispatch = () => {
               {cnoteStock.error && <span className="stock-error">!</span>}
             </div>
           )}
+        </div>
+        <div className="header-actions">
+           <button 
+             className="btn btn-primary btn-shipping-config"
+             onClick={() => setShowShippingModal(true)}
+             style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: '#3b82f6', color: 'white', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '600' }}
+           >
+             <FiTruck /> Shipping Charge
+           </button>
         </div>
       </div>
 
@@ -779,6 +825,66 @@ const Dispatch = () => {
           )}
         </div>
       </div>
+
+      {/* Shipping Charge Modal */}
+      {showShippingModal && (
+        <div className="modal-overlay">
+          <div className="shipping-modal" style={{ background: 'white', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '400px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
+            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>
+              <h2 style={{ fontSize: '1.25rem', margin: 0, color: '#1e293b' }}>Shipping Configuration</h2>
+              <button 
+                className="close-btn" 
+                onClick={() => setShowShippingModal(false)}
+                style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}
+              >
+                <FiX />
+              </button>
+            </div>
+            <form onSubmit={handleSaveShippingConfig}>
+              <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '0.9rem', fontWeight: '600', color: '#475569' }}>Free Shipping Above (₹)</label>
+                  <input
+                    type="number"
+                    value={shippingConfig.freeShippingAbove}
+                    onChange={(e) => setShippingConfig({ ...shippingConfig, freeShippingAbove: e.target.value })}
+                    required
+                    min="0"
+                    style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', width: '100%' }}
+                  />
+                </div>
+                <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '0.9rem', fontWeight: '600', color: '#475569' }}>Shipping Charge (below threshold) (₹)</label>
+                  <input
+                    type="number"
+                    value={shippingConfig.shippingCharge}
+                    onChange={(e) => setShippingConfig({ ...shippingConfig, shippingCharge: e.target.value })}
+                    required
+                    min="0"
+                    style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', width: '100%' }}
+                  />
+                </div>
+              </div>
+              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
+                <button 
+                  type="button" 
+                  onClick={() => setShowShippingModal(false)}
+                  style={{ padding: '10px 16px', borderRadius: '8px', background: 'white', border: '1px solid #cbd5e1', color: '#475569', cursor: 'pointer', fontWeight: '600' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={savingShipping}
+                  style={{ padding: '10px 16px', borderRadius: '8px', background: '#3b82f6', border: 'none', color: 'white', cursor: savingShipping ? 'not-allowed' : 'pointer', fontWeight: '600', opacity: savingShipping ? 0.7 : 1 }}
+                >
+                  {savingShipping ? 'Saving...' : 'Save Configuration'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

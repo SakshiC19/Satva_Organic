@@ -27,6 +27,7 @@ import Products from './pages/Admin/Products';
 import AddProduct from './pages/Admin/AddProduct';
 import EditProduct from './pages/Admin/EditProduct';
 import AdminOrders from './pages/Admin/Orders';
+import RefundRequests from './pages/Admin/RefundRequests';
 import HeroBanners from './pages/Admin/HeroBanners';
 import SpecialOffer from './pages/Admin/SpecialOffer';
 import DiscountsAndDeals from './pages/Admin/DiscountsAndDeals';
@@ -125,6 +126,7 @@ function App() {
                   <Route path="products" element={<Products />} />
                   <Route path="products/add" element={<AddProduct />} />
                   <Route path="products/edit/:id" element={<EditProduct />} />
+                  <Route path="refund-requests" element={<RefundRequests />} />
                   <Route path="orders" element={<AdminOrders />} />
                   <Route path="dispatch" element={<Dispatch />} />
                   <Route path="banners" element={<HeroBanners />} />
