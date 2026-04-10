@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { collection, getDocs, query, orderBy, doc, updateDoc, deleteDoc, where, getDoc } from 'firebase/firestore';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { db, auth } from '../../config/firebase';
@@ -454,7 +455,8 @@ const UserReviewsModal = ({ user, onClose }) => {
 const Users = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   const [viewingUser, setViewingUser] = useState(null);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [userOrders, setUserOrders] = useState([]);
@@ -505,6 +507,23 @@ const Users = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Sync searchTerm with URL param 'q'
+  useEffect(() => {
+    const q = searchParams.get('q') || '';
+    if (q !== searchTerm) {
+      setSearchTerm(q);
+    }
+  }, [searchParams]);
+
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+    setSearchParams(prev => {
+      if (value) prev.set('q', value);
+      else prev.delete('q');
+      return prev;
+    }, { replace: true });
   };
 
   const fetchUserDetails = async (user) => {
@@ -908,7 +927,7 @@ const Users = () => {
             type="text"
             placeholder="Search by name, email, phone or ID..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
           />
         </div>
         <div className="filter-group">
