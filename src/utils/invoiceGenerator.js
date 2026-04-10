@@ -276,12 +276,12 @@ export const generateInvoice = (order) => {
   doc.text('Total', startX + 35 + 2, finalY + 5.5);
 
   // CGST total (column 6 position)
-  const cgstColX = startX + 35 + 35 + 10 + 18 + 15 + 18 + 2; // accumulated widths
-  doc.text(totalCgst.toFixed(2), cgstColX + 13, finalY + 5.5, { align: 'right' });
+  const cgstColCenterX = startX + 35 + 35 + 10 + 18 + 15 + 18 + 7.5; // accumulated widths to center of 15-width col
+  doc.text(totalCgst.toFixed(2), cgstColCenterX, finalY + 5.5, { align: 'center' });
 
   // SGST total (column 7 position)
-  const sgstColX = cgstColX + 15;
-  doc.text(totalSgst.toFixed(2), sgstColX + 13, finalY + 5.5, { align: 'right' });
+  const sgstColCenterX = cgstColCenterX + 15; // 15 is the width of CGST column
+  doc.text(totalSgst.toFixed(2), sgstColCenterX, finalY + 5.5, { align: 'center' });
 
   // Grand total (last column)
   doc.text(`Rs. ${subtotal.toFixed(2)}`, startX + fullWidth - 2, finalY + 5.5, { align: 'right' });
@@ -357,10 +357,16 @@ export const generateInvoice = (order) => {
   
   doc.text(`Rs. ${finalTotal.toFixed(2)}`, startX + fullWidth - 2, grandTotalActualY + 5.5, { align: 'right' });
   
+  // Center X for the right-side box (from footerSplitX (135) to startX+fullWidth (196))
+  const rightBoxCenterX = footerSplitX + ((startX + fullWidth) - footerSplitX) / 2;
+
   // Signature (in place of Satva Organics)
   if (signatureBase64) {
     try {
-      doc.addImage(signatureBase64, 'JPEG', startX + fullWidth - 40, grandTotalActualY + 12, 30, 15);
+      const sigWidth = 30;
+      const sigHeight = 15;
+      const sigY = footerY + footerHeight - 28; // Places it with a comfortable gap above the text
+      doc.addImage(signatureBase64, 'JPEG', rightBoxCenterX - (sigWidth / 2), sigY, sigWidth, sigHeight);
     } catch (e) {
       console.error("Error adding signature", e);
     }
@@ -369,7 +375,7 @@ export const generateInvoice = (order) => {
   // Authorized Signatory
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text('Authorized Signatory', startX + fullWidth - 25, footerY + footerHeight - 5, { align: 'center' });
+  doc.text('Authorized Signatory', rightBoxCenterX, footerY + footerHeight - 5, { align: 'center' });
 
   // E & OE
   doc.setFontSize(8);

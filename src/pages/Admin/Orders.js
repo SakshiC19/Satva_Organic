@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { collection, query, orderBy, getDocs, doc, updateDoc, where, onSnapshot, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { 
@@ -16,7 +16,8 @@ import './Orders.css';
 const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   const [activeTab, setActiveTab] = useState('all');
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [selectedOrders, setSelectedOrders] = useState([]);
@@ -65,6 +66,23 @@ const Orders = () => {
 
     return () => unsubscribe();
   }, [location.search]);
+
+  // Sync searchTerm with URL param 'q'
+  useEffect(() => {
+    const q = searchParams.get('q') || '';
+    if (q !== searchTerm) {
+      setSearchTerm(q);
+    }
+  }, [searchParams]);
+
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+    setSearchParams(prev => {
+      if (value) prev.set('q', value);
+      else prev.delete('q');
+      return prev;
+    }, { replace: true });
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -386,14 +404,30 @@ const Orders = () => {
     }
   };
 
-  const filteredOrders = orders.filter(order => {
+  const filteredOrders = orders.filter((order, index) => {
     // Search filter
-    const searchLower = searchTerm.toLowerCase();
+    if (!searchTerm) return true;
+    
+    const searchLower = searchTerm.toLowerCase().trim();
+    const searchWithoutHash = searchLower.startsWith('#') ? searchLower.slice(1) : searchLower;
+    
+    // Display ID is calculated as orders.length - index (since orders is sorted desc)
+    const displayId = String(orders.length - index);
+
     const matchesSearch = 
+      displayId.includes(searchWithoutHash) ||
       order.id.toLowerCase().includes(searchLower) ||
+      (order.orderSerial && String(order.orderSerial).includes(searchWithoutHash)) ||
       (order.customerName || '').toLowerCase().includes(searchLower) ||
       (order.email || '').toLowerCase().includes(searchLower) ||
-      (order.phone || order.phoneNumber || '').includes(searchTerm);
+      (order.phone || order.phoneNumber || order.shippingAddress?.phone || '').includes(searchTerm) ||
+      (order.items || []).some(item => (item.name || '').toLowerCase().includes(searchLower)) ||
+      (order.status || '').toLowerCase().includes(searchLower) ||
+      (order.paymentMethod || '').toLowerCase().includes(searchLower) ||
+      (order.shippingAddress?.city || '').toLowerCase().includes(searchLower) ||
+      (order.shippingAddress?.locality || '').toLowerCase().includes(searchLower) ||
+      (order.shippingAddress?.address || '').toLowerCase().includes(searchLower) ||
+      String(order.totalAmount || order.total || '').includes(searchTerm);
 
     if (!matchesSearch) return false;
 
@@ -497,7 +531,7 @@ const Orders = () => {
               type="text"
               placeholder="Search orders, customers, phone..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
             />
           </div>
           <button 

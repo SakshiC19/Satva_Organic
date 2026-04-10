@@ -15,7 +15,7 @@ const Products = () => {
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   const [filterCategory, setFilterCategory] = useState(initialCategory);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const { categories: contextCategories } = useCategories();
@@ -31,11 +31,28 @@ const Products = () => {
   // Update filterCategory if searchParams change
   useEffect(() => {
     const cat = searchParams.get('category');
+    const q = searchParams.get('q');
+    
     if (cat) {
       setFilterCategory(cat);
-      setCurrentPage(1); // Reset to first page when category changes
+    }
+    if (q !== null && q !== searchTerm) {
+      setSearchTerm(q);
+    }
+    
+    if (cat || q !== null) {
+      setCurrentPage(1);
     }
   }, [searchParams]);
+
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+    setSearchParams(prev => {
+      if (value) prev.set('q', value);
+      else prev.delete('q');
+      return prev;
+    }, { replace: true });
+  };
 
   // Reset to first page when search term or category filter changes
   useEffect(() => {
@@ -136,7 +153,7 @@ const Products = () => {
             type="text"
             placeholder="Search products..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
           />
         </div>
 
