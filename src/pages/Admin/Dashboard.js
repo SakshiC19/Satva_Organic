@@ -15,19 +15,22 @@ const Dashboard = () => {
     activeCustomers: 0,
     totalWishlistItems: 0,
     totalCartItems: 0,
-    totalRefundRequests: 0
+    totalRefundRequests: 0,
+    totalStockNotifications: 0
   });
   const [topProducts, setTopProducts] = useState([]);
   const [recentOrders, setRecentOrders] = useState([]);
   const [wishlistData, setWishlistData] = useState([]);
   const [cartData, setCartData] = useState([]);
   const [users, setUsers] = useState([]);
+  const [stockNotifData, setStockNotifData] = useState([]);
   const [productNames, setProductNames] = useState({});
   const [loading, setLoading] = useState(true);
   const [orderFilter, setOrderFilter] = useState('All');
   const [showWishlistTable, setShowWishlistTable] = useState(false);
   const [showCartTable, setShowCartTable] = useState(false);
   const [showRefundTable, setShowRefundTable] = useState(false);
+  const [showStockNotifTable, setShowStockNotifTable] = useState(false);
   const [refundFilter, setRefundFilter] = useState('pending'); // Default to pending as it's an 'analysis' view usually
   const [reasonModalOpen, setReasonModalOpen] = useState(false);
   const [customCancellationReasons, setCustomCancellationReasons] = useState([]);
@@ -36,6 +39,7 @@ const Dashboard = () => {
   const wishlistTableRef = useRef(null);
   const cartTableRef = useRef(null);
   const refundTableRef = useRef(null);
+  const stockNotifTableRef = useRef(null);
 
   const handleWishlistCardClick = () => {
     setShowWishlistTable(true);
@@ -56,6 +60,15 @@ const Dashboard = () => {
 
   const handleRefundCardClick = () => {
     navigate('/admin/refund-requests');
+  };
+
+  const handleStockNotifCardClick = () => {
+    setShowStockNotifTable(true);
+    setShowCartTable(false);
+    setShowWishlistTable(false);
+    setTimeout(() => {
+        stockNotifTableRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
   };
 
 
@@ -163,11 +176,32 @@ const Dashboard = () => {
       }));
     });
 
+    const unsubscribeStockNotifs = onSnapshot(query(collection(db, 'stockNotifications'), where('status', '==', 'pending')), (snapshot) => {
+        const notifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const counts = {};
+        notifs.forEach(n => {
+            const key = `${n.productId}_${n.selectedSize || 'All'}`;
+            if (!counts[key]) {
+                counts[key] = {
+                    productId: n.productId,
+                    name: n.productName,
+                    size: n.selectedSize || 'All',
+                    count: 0
+                };
+            }
+            counts[key].count++;
+        });
+        const sorted = Object.values(counts).sort((a, b) => b.count - a.count);
+        setStockNotifData(sorted);
+        setStats(prev => ({ ...prev, totalStockNotifications: notifs.length }));
+    });
+
     return () => {
       unsubscribeOrders();
       unsubscribeReasons();
       unsubscribeProducts();
       unsubscribeUsers();
+      unsubscribeStockNotifs();
     };
   }, []);
 
@@ -432,6 +466,15 @@ const Dashboard = () => {
       icon: <FiRefreshCcw />,
       iconClass: 'red',
       onClick: handleRefundCardClick
+    },
+    {
+      label: 'Waiting for Stock',
+      value: stats.totalStockNotifications.toString(),
+      trend: 'Customers to notify',
+      trendUp: true,
+      icon: <FiClock />,
+      iconClass: 'orange',
+      onClick: handleStockNotifCardClick
     }
   ];
 
@@ -712,7 +755,7 @@ const Dashboard = () => {
                           </td>
                           <td>
                             <span className="count-badge" style={{ background: '#dcfce7', color: '#059669', padding: '2px 8px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                              {user.wishlist.length} Items
+                               {user.wishlist.length} Items
                             </span>
                           </td>
                           <td>{formatDate(user.lastWishlistUpdatedAt || user.updatedAt)}</td>
@@ -723,6 +766,74 @@ const Dashboard = () => {
                     <tr>
                       <td colSpan="4" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
                         No active customer wishlists found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stock Notifications Section */}
+      {showStockNotifTable && (
+        <div className="data-grid" style={{ marginTop: '30px' }} ref={stockNotifTableRef}>
+          <div className="admin-table-container" style={{ gridColumn: '1 / -1' }}>
+            <div className="list-header" style={{ padding: '24px 24px 0 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3>Stock Waitlist Analysis</h3>
+              <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                <span style={{ fontSize: '13px', color: '#64748b' }}>
+                    {stockNotifData.length} Products being tracked
+                </span>
+                <button 
+                    onClick={() => setShowStockNotifTable(false)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', fontSize: '14px', fontWeight: 'bold' }}
+                >
+                    Close
+                </button>
+              </div>
+            </div>
+            <div className="admin-table-wrapper">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Product Name</th>
+                    <th>Specific Size</th>
+                    <th>Waiting Customers</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stockNotifData.length > 0 ? (
+                    stockNotifData.map((item, index) => (
+                      <tr key={index}>
+                        <td>{item.name}</td>
+                        <td>
+                            <span style={{ background: '#f1f5f9', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>
+                                {item.size}
+                            </span>
+                        </td>
+                        <td>
+                          <span className="count-badge" style={{ background: '#fef3c7', color: '#d97706', padding: '2px 8px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                            {item.count} Customers
+                          </span>
+                        </td>
+                        <td>
+                          <button 
+                            className="btn-tiny"
+                            onClick={() => navigate(`/admin/product/edit/${item.productId}`)}
+                            style={{ background: '#27ae60', color: 'white', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}
+                          >
+                            Update Stock
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="4" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                        No pending stock notifications.
                       </td>
                     </tr>
                   )}

@@ -408,13 +408,32 @@ const EditProduct = () => {
 
       // Check if it was out of stock and now is in stock
       const oldDoc = await getDoc(doc(db, 'products', id));
-      const oldStock = oldDoc.exists() ? (oldDoc.data().stock || 0) : 0;
+      const oldData = oldDoc.exists() ? oldDoc.data() : {};
+      const oldStock = oldData.stock || 0;
+      const oldSizeStocks = oldData.sizeStocks || {};
       
       // Update product in Firestore
       await updateDoc(doc(db, 'products', id), productData);
 
+      // Trigger notifications for total stock or specific sizes
       if (oldStock === 0 && productData.stock > 0) {
-        await checkAndNotifyBackInStock(id, productData.name);
+        // If it was completely out of stock, check for notifications (general or for specific sizes that are now in stock)
+        for (const [size, stock] of Object.entries(productData.sizeStocks || {})) {
+          if (stock > 0) {
+            await checkAndNotifyBackInStock(id, productData.name, size);
+          }
+        }
+        // Also trigger general notification if not using size-specific logic elsewhere
+        if (!productData.sizeStocks || Object.keys(productData.sizeStocks).length === 0) {
+          await checkAndNotifyBackInStock(id, productData.name);
+        }
+      } else if (productData.stock > 0) {
+        // Total stock was already > 0, but maybe some individual sizes became available
+        for (const [size, stock] of Object.entries(productData.sizeStocks || {})) {
+          if (stock > 0 && (oldSizeStocks[size] === 0 || oldSizeStocks[size] === undefined)) {
+            await checkAndNotifyBackInStock(id, productData.name, size);
+          }
+        }
       }
       navigate('/admin/products');
     } catch (error) {

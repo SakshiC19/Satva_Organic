@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { logoBase64 } from './logo';
+import { signatureBase64 } from './signature';
 
 export const generateInvoice = (order) => {
   const doc = new jsPDF();
@@ -287,7 +288,7 @@ export const generateInvoice = (order) => {
   
   // --- Footer Section ---
   const footerY = finalY + totalRowHeight;
-  const footerHeight = 60;
+  const footerHeight = 75;
   
   // Outer Footer Box
   doc.rect(startX, footerY, fullWidth, footerHeight);
@@ -329,24 +330,42 @@ export const generateInvoice = (order) => {
   doc.setFont('helvetica', 'normal');
   doc.text(totalSgst.toFixed(2), startX + fullWidth - 2, sgstRowY + 5.5, { align: 'right' });
 
+  const discount = order.discount || 0;
+  const codCharge = order.codCharge || 0;
+
+  // COD Charge Row (If applicable)
+  const codRowY = sgstRowY + grandTotalBoxHeight;
+  let finalGrandTotalY = codRowY;
+  
+  if (codCharge > 0) {
+    doc.line(footerSplitX, codRowY + grandTotalBoxHeight, startX + fullWidth, codRowY + grandTotalBoxHeight);
+    doc.setFont('helvetica', 'bold');
+    doc.text('COD Handling:', footerSplitX + 2, codRowY + 5.5);
+    doc.setFont('helvetica', 'normal');
+    doc.text(codCharge.toFixed(2), startX + fullWidth - 2, codRowY + 5.5, { align: 'right' });
+    finalGrandTotalY = codRowY + grandTotalBoxHeight;
+  }
+
   // Grand Total Row
-  const grandTotalActualY = sgstRowY + grandTotalBoxHeight;
+  const grandTotalActualY = finalGrandTotalY;
   doc.line(footerSplitX, grandTotalActualY + grandTotalBoxHeight, startX + fullWidth, grandTotalActualY + grandTotalBoxHeight);
   
   doc.setFont('helvetica', 'bold');
   doc.text('Grand Total:', footerSplitX + 2, grandTotalActualY + 5.5);
   
-  const discount = order.discount || 0;
-  const finalTotal = subtotal + deliveryCharge - discount;
+  const finalTotal = subtotal + deliveryCharge + codCharge - discount;
   
   doc.text(`Rs. ${finalTotal.toFixed(2)}`, startX + fullWidth - 2, grandTotalActualY + 5.5, { align: 'right' });
   
-  // Satva Organics Text (shifted down to accommodate extra rows)
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Satva Organics', startX + fullWidth - 25, grandTotalActualY + 20, { align: 'center' });
+  // Signature (in place of Satva Organics)
+  if (signatureBase64) {
+    try {
+      doc.addImage(signatureBase64, 'JPEG', startX + fullWidth - 40, grandTotalActualY + 12, 30, 15);
+    } catch (e) {
+      console.error("Error adding signature", e);
+    }
+  }
 
-  
   // Authorized Signatory
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');

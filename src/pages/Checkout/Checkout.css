@@ -2370,3 +2370,15 @@
     box-shadow: none;
     cursor: initial;
 }
+/* COD Charge Styles */
+.payment-option-labels {
+    display: flex;
+    flex-direction: column;
+}
+
+.cod-charge-text {
+    font-size: 11px;
+    color: #d32f2f;
+    font-weight: 500;
+    margin-top: 2px;
+}

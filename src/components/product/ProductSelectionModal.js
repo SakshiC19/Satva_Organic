@@ -1,16 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { FiX, FiShoppingCart, FiMinus, FiPlus, FiHeart } from 'react-icons/fi';
+import { FiX, FiShoppingCart, FiMinus, FiPlus, FiHeart, FiClock } from 'react-icons/fi';
 import { useCart } from '../../contexts/CartContext';
 import { useWishlist } from '../../contexts/WishlistContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { db } from '../../config/firebase';
+import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import './ProductSelectionModal.css';
 
 const ProductSelectionModal = ({ product, isOpen, onClose }) => {
   const { addToCart, openCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
+  const { currentUser } = useAuth();
   const [selectedWeight, setSelectedWeight] = useState(null);
   const [error, setError] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  const [isNotifying, setIsNotifying] = useState(false);
+  const [notified, setNotified] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -191,13 +197,63 @@ const ProductSelectionModal = ({ product, isOpen, onClose }) => {
               >
                 View Details
               </button>
-              <button 
-                className={`modal-add-btn ${!selectedWeight ? 'disabled' : ''}`} 
-                onClick={handleAddToCart}
-                disabled={!selectedWeight}
-              >
-                <FiShoppingCart /> Add to Basket
-              </button>
+              
+              {selectedWeight && currentStock === 0 ? (
+                <button 
+                  className={`modal-notify-btn ${notified ? 'notified' : ''}`}
+                  onClick={async () => {
+                    if (!currentUser) {
+                      alert("Please login to get notified!");
+                      return;
+                    }
+                    setIsNotifying(true);
+                    try {
+                      // Check if already exists
+                      const q = query(
+                        collection(db, 'stockNotifications'),
+                        where('productId', '==', product.id),
+                        where('userId', '==', currentUser.uid),
+                        where('selectedSize', '==', selectedWeight),
+                        where('status', '==', 'pending')
+                      );
+                      const snapshot = await getDocs(q);
+
+                      if (!snapshot.empty) {
+                        setNotified(true);
+                        alert("You're already on the list!");
+                        return;
+                      }
+
+                      await addDoc(collection(db, 'stockNotifications'), {
+                        productId: product.id,
+                        productName: product.name,
+                        selectedSize: selectedWeight,
+                        userId: currentUser.uid,
+                        userEmail: currentUser.email,
+                        status: 'pending',
+                        createdAt: serverTimestamp()
+                      });
+                      setNotified(true);
+                      alert("We'll notify you when this size is back!");
+                    } catch (err) {
+                      console.error("Error setting notification:", err);
+                    } finally {
+                      setIsNotifying(false);
+                    }
+                  }}
+                  disabled={isNotifying || notified}
+                >
+                  <FiClock /> {notified ? 'Notified' : (isNotifying ? 'Setting...' : 'Notify Me')}
+                </button>
+              ) : (
+                <button 
+                  className={`modal-add-btn ${!selectedWeight || currentStock === 0 ? 'disabled' : ''}`} 
+                  onClick={handleAddToCart}
+                  disabled={!selectedWeight || currentStock === 0}
+                >
+                  <FiShoppingCart /> Add to Basket
+                </button>
+              )}
               <button 
                 className={`modal-wishlist-btn ${isInWishlist(product.id) ? 'active' : ''} ${!selectedWeight ? 'disabled' : ''}`} 
                 onClick={(e) => {
