@@ -602,11 +602,6 @@ const OrderDetails = () => {
                   Track Order
                 </button>
               )}
-              {(order.status?.toLowerCase() === 'delivered' || order.status?.toLowerCase() === 'cancelled') && (
-                <button className="btn-primary-outline full-width" onClick={() => navigate('/shop')}>
-                  <FiPackage /> Reorder Items
-                </button>
-              )}
             </div>
 
             <div className="order-card support-card-new">

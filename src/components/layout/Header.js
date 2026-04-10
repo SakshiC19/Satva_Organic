@@ -123,6 +123,11 @@ const Header = () => {
         setShowSuggestions(false);
         setIsSearchFocused(false);
       }
+
+      // Close notification dropdown if clicked outside
+      if (activeMenu === 'notifications' && !event.target.closest('.notification-item')) {
+        setActiveMenu(null);
+      }
     };
 
     if (activeMenu || showSuggestions || isSearchFocused) {
@@ -424,6 +429,47 @@ const Header = () => {
                 )}
               </div>
             </div>
+
+            {/* Notifications (Desktop) */}
+            {currentUser && (
+              <div className="action-item notification-item desktop-only">
+                <div 
+                  className="notification-bell-wrapper"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveMenu(activeMenu === 'notifications' ? null : 'notifications');
+                  }}
+                >
+                  <FiBell />
+                  {notifications.length > 0 && <span className="notification-count">{notifications.length}</span>}
+                </div>
+                
+                {/* Desktop Notification Dropdown */}
+                <div className={`notifications-dropdown ${activeMenu === 'notifications' ? 'show' : ''}`} onClick={(e) => e.stopPropagation()}>
+                  <div className="notif-dropdown-header">
+                    <h4>Notifications</h4>
+                  </div>
+                  <div className="notif-dropdown-list">
+                    {notifications.length > 0 ? (
+                      notifications.map(n => (
+                        <div key={n.id} className="notif-dropdown-item" onClick={() => { markAsRead(n.id); if(n.link) navigate(n.link); setActiveMenu(null); }}>
+                          <div className="notif-icon-box in-stock"><FiPackage /></div>
+                          <div className="notif-info">
+                            <p className="notif-msg">{n.message}</p>
+                            <span className="notif-time">Just now</span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="notif-empty-state">
+                        <FiBell size={24} />
+                        <p>No new notifications</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Wishlist */}
             <Link to="/account/wishlist" className="action-item wishlist-item">

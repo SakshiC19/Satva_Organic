@@ -46,6 +46,7 @@ const ProductDetail = () => {
   const [showFixedFooter, setShowFixedFooter] = useState(true);
   const [showMobilePolicy, setShowMobilePolicy] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const productActionsRef = useRef(null);
 
   // Touch swipe state for mobile image gallery
@@ -137,6 +138,10 @@ const ProductDetail = () => {
   useEffect(() => {
     fetchProduct();
     fetchReviews();
+    
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -771,9 +776,25 @@ const ProductDetail = () => {
                       return;
                     }
                     try {
+                      // Check if already exists
+                      const q = query(
+                        collection(db, 'stockNotifications'),
+                        where('productId', '==', id),
+                        where('userId', '==', currentUser.uid),
+                        where('selectedSize', '==', selectedSize),
+                        where('status', '==', 'pending')
+                      );
+                      const snapshot = await getDocs(q);
+                      
+                      if (!snapshot.empty) {
+                        alert("You're already on the list! We'll notify you soon.");
+                        return;
+                      }
+
                       await addDoc(collection(db, 'stockNotifications'), {
                         productId: id,
                         productName: product.name,
+                        selectedSize: selectedSize,
                         userId: currentUser.uid,
                         userEmail: currentUser.email,
                         status: 'pending',
@@ -782,6 +803,7 @@ const ProductDetail = () => {
                       alert("We will notify you once this product is back in stock!");
                     } catch (error) {
                       console.error("Error setting notification:", error);
+                      alert("Something went wrong. Please try again.");
                     }
                   }}
                 >
@@ -952,124 +974,163 @@ const ProductDetail = () => {
           </div>
 
           <div className="tabs-content">
-            {activeTab === 'description' && (
-              <div className="tab-pane description-pane">
-                <div className="description-section">
-                  <h4 className="section-title">🌿 Product Overview</h4>
-                  <p>{product.description || 'No description available.'}</p>
+            <div className={`tab-pane description-pane ${isMobile ? 'accordion-item' : ''} ${activeTab === 'description' ? 'active' : ''}`}>
+              {isMobile && (
+                <div className="mobile-accordion-header" onClick={() => setActiveTab(activeTab === 'description' ? '' : 'description')}>
+                  <span>🌿 Product Description</span>
+                  {activeTab === 'description' ? <FiMinus /> : <FiPlus />}
                 </div>
-                
-                {product.benefits && product.benefits.length > 0 && (
+              )}
+              {(activeTab === 'description' || (!isMobile && activeTab === 'description')) && (
+                <div className="tab-content-body">
                   <div className="description-section">
-                    <h4 className="section-title">✅ Key Benefits</h4>
-                    <ul className="benefits-list">
-                      {product.benefits.map((benefit, index) => (
-                        <li key={index}>{benefit}</li>
-                      ))}
+                    <h4 className="section-title">Product Overview</h4>
+                    <p>{product.description || 'No description available.'}</p>
+                  </div>
+                  
+                  {product.benefits && product.benefits.length > 0 && (
+                    <div className="description-section">
+                      <h4 className="section-title">✅ Key Benefits</h4>
+                      <ul className="benefits-list">
+                        {product.benefits.map((benefit, index) => (
+                          <li key={index}>{benefit}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {product.longDescription && (
+                    <div className="description-section">
+                      <p>{product.longDescription}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className={`tab-pane additional-info-pane ${isMobile ? 'accordion-item' : ''} ${activeTab === 'additional' ? 'active' : ''}`}>
+              {isMobile && (
+                <div className="mobile-accordion-header" onClick={() => setActiveTab(activeTab === 'additional' ? '' : 'additional')}>
+                  <span>📊 Additional Information</span>
+                  {activeTab === 'additional' ? <FiMinus /> : <FiPlus />}
+                </div>
+              )}
+              {(activeTab === 'additional' || (!isMobile && activeTab === 'additional')) && (
+                <div className="tab-content-body">
+                  <h3 className="section-title desktop-only-title">Technical Specifications</h3>
+                  <table className="info-table">
+                    <tbody>
+                      <tr>
+                        <th>Net Weight</th>
+                        <td>{selectedSize || product.weight || 'N/A'}</td>
+                      </tr>
+                      {product.ingredients && (
+                        <tr>
+                          <th>Ingredients</th>
+                          <td>{product.ingredients}</td>
+                        </tr>
+                      )}
+                      <tr>
+                        <th>Shelf Life</th>
+                        <td>{product.shelfLife || '12 Months'}</td>
+                      </tr>
+                      <tr>
+                        <th>Storage Instructions</th>
+                        <td>{product.storageInstructions || 'Store in a cool & dry place'}</td>
+                      </tr>
+                      <tr>
+                        <th>FSSAI License No</th>
+                        <td>{product.fssaiNo || '21523068000676'}</td>
+                      </tr>
+                      <tr>
+                        <th>Country of Origin</th>
+                        <td>India</td>
+                      </tr>
+                      <tr>
+                        <th>Category</th>
+                        <td>{product.category || 'Healthy Life Powders'}</td>
+                      </tr>
+                      {product.subcategory && (
+                        <tr>
+                          <th>Sub-category</th>
+                          <td>{product.subcategory}</td>
+                        </tr>
+                      )}
+                      <tr>
+                        <th>Manufacturer</th>
+                        <td>{product.manufacturer || 'Satva Organics'}</td>
+                      </tr>
+                      <tr>
+                        <th>Packed On</th>
+                        <td>{product.packedOn || '02/2024'}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className={`tab-pane shipping-pane ${isMobile ? 'accordion-item' : ''} ${activeTab === 'shipping' ? 'active' : ''}`}>
+              {isMobile && (
+                <div className="mobile-accordion-header" onClick={() => setActiveTab(activeTab === 'shipping' ? '' : 'shipping')}>
+                  <span>📦 Shipping Info</span>
+                  {activeTab === 'shipping' ? <FiMinus /> : <FiPlus />}
+                </div>
+              )}
+              {(activeTab === 'shipping' || (!isMobile && activeTab === 'shipping')) && (
+                <div className="tab-content-body">
+                  <h3 className="section-title desktop-only-title">📦 Shipping Info</h3>
+                  <div className="shipping-info-content">
+                    <p>We ensure your organic products reach you in the best condition.</p>
+                    <ul className="info-list">
+                      <li>Standard delivery: 3-5 business days.</li>
+                      <li>Free shipping on all orders above ₹499.</li>
+                      <li>Carefully packed in eco-friendly packaging.</li>
+                      <li>Tracking link provided via SMS/Email once dispatched.</li>
                     </ul>
                   </div>
-                )}
-
-                {product.longDescription && (
-                  <div className="description-section">
-                    <p>{product.longDescription}</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {activeTab === 'additional' && (
-              <div className="tab-pane">
-                <h3 className="section-title">Technical Specifications</h3>
-                <table className="info-table">
-                  <tbody>
-                    <tr>
-                      <th>Net Weight</th>
-                      <td>{selectedSize || product.weight || 'N/A'}</td>
-                    </tr>
-                    {product.ingredients && (
-                      <tr>
-                        <th>Ingredients</th>
-                        <td>{product.ingredients}</td>
-                      </tr>
-                    )}
-                    <tr>
-                      <th>Shelf Life</th>
-                      <td>{product.shelfLife || '12 Months'}</td>
-                    </tr>
-                    <tr>
-                      <th>Storage Instructions</th>
-                      <td>{product.storageInstructions || 'Store in a cool & dry place'}</td>
-                    </tr>
-                    <tr>
-                      <th>FSSAI License No</th>
-                      <td>{product.fssaiNo || '21523068000676'}</td>
-                    </tr>
-                    <tr>
-                      <th>Country of Origin</th>
-                      <td>India</td>
-                    </tr>
-                    <tr>
-                      <th>Category</th>
-                      <td>{product.category || 'Healthy Life Powders'}</td>
-                    </tr>
-                    {product.subcategory && (
-                      <tr>
-                        <th>Sub-category</th>
-                        <td>{product.subcategory}</td>
-                      </tr>
-                    )}
-                    <tr>
-                      <th>Manufacturer</th>
-                      <td>{product.manufacturer || 'Satva Organics'}</td>
-                    </tr>
-                    <tr>
-                      <th>Packed On</th>
-                      <td>{product.packedOn || '02/2024'}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {activeTab === 'shipping' && (
-              <div className="tab-pane shipping-pane">
-                <h3 className="section-title">📦 Shipping Info</h3>
-                <div className="shipping-info-content">
-                  <p>We ensure your organic products reach you in the best condition.</p>
-                  <ul className="info-list">
-                    <li>Standard delivery: 3-5 business days.</li>
-                    <li>Free shipping on all orders above ₹499.</li>
-                    <li>Carefully packed in eco-friendly packaging.</li>
-                    <li>Tracking link provided via SMS/Email once dispatched.</li>
-                  </ul>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
-            {activeTab === 'refund' && (
-              <div className="tab-pane refund-pane">
-                <h3 className="section-title">🔁 Refund & Replacement Policy</h3>
-                <div className="refund-info-content">
-                  <ul className="info-list compact">
-                    <li>Damaged products must be reported within 2 days.</li>
-                    <li>Replacement only (no resale items).</li>
-                    <li>Natural products – no taste/texture based returns.</li>
-                  </ul>
-                  <div className="policy-link-wrapper">
-                    <Link to="/refund-policy" className="read-full-policy-link">
-                      👉 Read full policy
-                    </Link>
+            <div className={`tab-pane refund-pane ${isMobile ? 'accordion-item' : ''} ${activeTab === 'refund' ? 'active' : ''}`}>
+              {isMobile && (
+                <div className="mobile-accordion-header" onClick={() => setActiveTab(activeTab === 'refund' ? '' : 'refund')}>
+                  <span>🔁 Refund & Replacement Policy</span>
+                  {activeTab === 'refund' ? <FiMinus /> : <FiPlus />}
+                </div>
+              )}
+              {(activeTab === 'refund' || (!isMobile && activeTab === 'refund')) && (
+                <div className="tab-content-body">
+                  <h3 className="section-title desktop-only-title">🔁 Refund & Replacement Policy</h3>
+                  <div className="refund-info-content">
+                    <ul className="info-list compact">
+                      <li>Damaged products must be reported within 2 days.</li>
+                      <li>Replacement only (no resale items).</li>
+                      <li>Natural products – no taste/texture based returns.</li>
+                    </ul>
+                    <div className="policy-link-wrapper">
+                      <Link to="/refund-policy" className="read-full-policy-link">
+                        👉 Read full policy
+                      </Link>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
-            {activeTab === 'reviews' && (
-              <div className="tab-pane">
-                <h3>Customer Reviews</h3>
-                <div className="review-form-container">
-                  <h4>Write a Review</h4>
+            <div className={`tab-pane reviews-pane ${isMobile ? 'accordion-item' : ''} ${activeTab === 'reviews' ? 'active' : ''}`}>
+              {isMobile && (
+                <div className="mobile-accordion-header" onClick={() => setActiveTab(activeTab === 'reviews' ? '' : 'reviews')}>
+                  <span>⭐ Customer Reviews</span>
+                  {activeTab === 'reviews' ? <FiMinus /> : <FiPlus />}
+                </div>
+              )}
+              {(activeTab === 'reviews' || (!isMobile && activeTab === 'reviews')) && (
+                <div className="tab-content-body">
+                  <h3 className="desktop-only-title">Customer Reviews</h3>
+                  <div className="review-form-container">
+                    <h4>Write a Review</h4>
                   <form className="review-form" onSubmit={handleSubmitReview}>
                     <div className="form-group">
                       <label>Your Rating</label>
@@ -1173,6 +1234,7 @@ const ProductDetail = () => {
         </button>
       </div>
     </div>
+  </div>
   );
 };
 

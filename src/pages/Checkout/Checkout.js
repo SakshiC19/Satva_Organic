@@ -31,39 +31,12 @@ const Checkout = () => {
   const { cartItems, cartTotal, gstTotal, updateQuantity, removeFromCart, calculateTotal, shippingConfig } = useCart();
   const navigate = useNavigate();
 
-  // Calculate grand total (same as CartDrawer)
-  const itemTotal = cartTotal || 0;
-  const freeAbove = shippingConfig?.freeShippingAbove !== undefined ? shippingConfig.freeShippingAbove : 500;
-  const shipCharge = shippingConfig?.shippingCharge !== undefined ? shippingConfig.shippingCharge : 50;
-  const deliveryCharge = (itemTotal >= freeAbove || itemTotal === 0) ? 0 : parseFloat(shipCharge);
-  
-  const shippingCharge = 0; // Removed shipping charge
-  const smallCartCharge = 0; // Removed small basket charge
-  const roundedGst = 0; // GST already included in price
-  // Gross = base price before 5% GST; GST amount = 5% portion
-  const grossAmount = Math.round(itemTotal / 1.05);
-  const gstAmount = itemTotal - grossAmount;
-  const grandTotal = itemTotal > 0 ? (itemTotal + deliveryCharge) : 0;
-
-
   const cleanImageUrl = (url) => {
     if (!url || typeof url !== 'string') return '';
     // Prevent Private Network Access errors for localhost/127.0.0.1
     if (url.includes('localhost') || url.includes('127.0.0.1')) return '';
     return url;
   };
-
-  // Safety check and image cleaning for cartTotal
-  const safeCartTotal = grandTotal;
-  const safeCartItems = (cartItems || []).map(item => ({
-    ...item,
-    image: cleanImageUrl(item.image),
-    images: (item.images || []).map(img => {
-      if (typeof img === 'string') return cleanImageUrl(img);
-      return { ...img, url: cleanImageUrl(img.url) };
-    })
-  }));
-
   const [activeStep, setActiveStep] = useState(1);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -81,6 +54,32 @@ const Checkout = () => {
   const [showMobilePayment, setShowMobilePayment] = useState(false);
   const [showPriceBreakdown, setShowPriceBreakdown] = useState(false);
   const [showShippingDetails, setShowShippingDetails] = useState(false);
+
+  // Calculate grand total (same as CartDrawer)
+  const itemTotal = cartTotal || 0;
+  const freeAbove = shippingConfig?.freeShippingAbove !== undefined ? shippingConfig.freeShippingAbove : 500;
+  const shipCharge = shippingConfig?.shippingCharge !== undefined ? shippingConfig.shippingCharge : 50;
+  const deliveryCharge = (itemTotal >= freeAbove || itemTotal === 0) ? 0 : parseFloat(shipCharge);
+  
+  const shippingCharge = 0; // Removed shipping charge
+  const smallCartCharge = 0; // Removed small basket charge
+  const roundedGst = 0; // GST already included in price
+  // Gross = base price before 5% GST; GST amount = 5% portion
+  const grossAmount = Math.round(itemTotal / 1.05);
+  const gstAmount = itemTotal - grossAmount;
+  const codCharge = selectedPaymentMethod === 'cod' ? 15 : 0;
+  const grandTotal = itemTotal > 0 ? (itemTotal + deliveryCharge + codCharge) : 0;
+
+  // Safety check and image cleaning for cartTotal
+  const safeCartTotal = grandTotal;
+  const safeCartItems = (cartItems || []).map(item => ({
+    ...item,
+    image: cleanImageUrl(item.image),
+    images: (item.images || []).map(img => {
+      if (typeof img === 'string') return cleanImageUrl(img);
+      return { ...img, url: cleanImageUrl(img.url) };
+    })
+  }));
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -306,6 +305,8 @@ const Checkout = () => {
       },
       items: sanitizedItems,
       totalAmount: grandTotal || 0,
+      deliveryCharge: deliveryCharge || 0,
+      codCharge: codCharge || 0,
       gstTotal: roundedGst > 0 ? roundedGst : 0,
       paymentMethod: selectedPaymentMethod,
       status: 'Pending',
@@ -698,6 +699,12 @@ const Checkout = () => {
                             <span>Delivery charge</span>
                             <span>{deliveryCharge === 0 ? <span className="green-text">FREE</span> : `₹${deliveryCharge}`}</span>
                           </div>
+                          {selectedPaymentMethod === 'cod' && (
+                            <div className="bill-row">
+                              <span>COD Handling charge</span>
+                              <span>₹15</span>
+                            </div>
+                          )}
                         </div>
                       )}
                       
@@ -773,6 +780,12 @@ const Checkout = () => {
                         <span>Delivery Charges</span>
                         <span className={deliveryCharge === 0 ? "green-text" : ""}>{deliveryCharge === 0 ? "FREE" : `₹${deliveryCharge}`}</span>
                       </div>
+                      {selectedPaymentMethod === 'cod' && (
+                        <div className="price-row">
+                          <span>COD Handling Charges</span>
+                          <span>₹15</span>
+                        </div>
+                      )}
                       <div className="price-row total">
                         <span>Total Payable</span>
                         <span>₹{grandTotal.toLocaleString()}</span>
@@ -796,7 +809,10 @@ const Checkout = () => {
                           <div className={`payment-method-group ${selectedPaymentMethod === 'cod' ? 'active' : ''}`}>
                             <div className="payment-option" onClick={() => setSelectedPaymentMethod('cod')}>
                               <input type="radio" checked={selectedPaymentMethod === 'cod'} readOnly />
-                              <span>Cash on Delivery</span>
+                              <div className="payment-option-labels">
+                                <span>Cash on Delivery</span>
+                                <span className="cod-charge-text">Handling charges ₹15</span>
+                              </div>
                             </div>
                           </div>
                         )}
@@ -1235,7 +1251,10 @@ const Checkout = () => {
                           onChange={() => isCodAvailable && setSelectedPaymentMethod('cod')}
                           disabled={!isCodAvailable}
                         />
-                        <span>Cash on Delivery</span>
+                        <div className="payment-option-labels">
+                          <span>Cash on Delivery</span>
+                          <span className="cod-charge-text">Handling charges ₹15 apply</span>
+                        </div>
                         {!isCodAvailable && (
                           <span className="cod-unavailable-badge">Not Available</span>
                         )}
@@ -1315,6 +1334,13 @@ const Checkout = () => {
                 <span>Delivery Charges</span>
                 <span className={deliveryCharge === 0 ? "green-text" : ""}>{deliveryCharge === 0 ? "FREE" : `₹${deliveryCharge}`}</span>
               </div>
+
+              {selectedPaymentMethod === 'cod' && (
+                <div className="price-row">
+                  <span>COD Handling Charges</span>
+                  <span>₹15</span>
+                </div>
+              )}
 
               <div className="price-divider"></div>
 
