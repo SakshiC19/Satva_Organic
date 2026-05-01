@@ -41,6 +41,50 @@ const ProductQuickView = ({ product, onClose }) => {
     return product.stock || 0;
   };
 
+  const calculatePrice = (basePrice, size) => {
+    if (!size || !basePrice) return basePrice || 0;
+    
+    if (product.sizePrices && product.sizePrices[size]) {
+      return parseFloat(product.sizePrices[size]);
+    }
+
+    const match = size.match(/(\d+(?:\.\d+)?)\s*([a-zA-Z]+)/);
+    if (!match) return basePrice;
+
+    const value = parseFloat(match[1]);
+    const unit = match[2].toLowerCase();
+    
+    let multiplier = 1;
+    if (unit === 'g' || unit === 'gm' || unit === 'ml') {
+      multiplier = value / 100;
+    } else if (unit === 'kg' || unit === 'l' || unit === 'liter') {
+      multiplier = (value * 1000) / 100;
+    } else if (unit === 'pc' || unit === 'pcs' || unit === 'pack') {
+      multiplier = value;
+    }
+    
+    let finalPrice = basePrice * multiplier;
+
+    if (product.sizeDiscounts && product.sizeDiscounts[size]) {
+      const sizeDiscount = parseFloat(product.sizeDiscounts[size]);
+      if (!isNaN(sizeDiscount) && sizeDiscount > 0) {
+        finalPrice = finalPrice * (1 - sizeDiscount / 100);
+      }
+    }
+
+    return Math.round(finalPrice);
+  };
+
+  const defaultSizeForDisplay = selectedSize || (packingSizes && packingSizes.length > 0 ? packingSizes[0] : (product.weight || ''));
+  const currentPrice = calculatePrice(price, defaultSizeForDisplay);
+  
+  let effectiveOriginalPrice = originalPrice;
+  const displayDiscount = typeof discount === 'object' ? discount?.value : (parseFloat(discount) || 0);
+  if (!effectiveOriginalPrice && displayDiscount > 0) {
+    effectiveOriginalPrice = price / (1 - (displayDiscount / 100));
+  }
+  const currentOriginalPrice = calculatePrice(effectiveOriginalPrice, defaultSizeForDisplay);
+
   const currentStock = getCurrentStock();
 
   const handleQuantityChange = (type) => {
@@ -59,7 +103,9 @@ const ProductQuickView = ({ product, onClose }) => {
     addToCart({
       ...product,
       quantity,
+      price: currentPrice,
       selectedSize: selectedSize || (packingSizes && packingSizes.length > 0 ? packingSizes[0] : 'Standard'),
+      basePrice: price,
       maxStock: currentStock // Pass max stock to cart for validation
     });
     onClose();
@@ -109,9 +155,9 @@ const ProductQuickView = ({ product, onClose }) => {
 
             {/* Price */}
             <div className="quick-view-price">
-              <span className="current-price">₹{price}</span>
-              {originalPrice && (
-                <span className="original-price">₹{originalPrice}</span>
+              <span className="current-price">₹{currentPrice}</span>
+              {currentOriginalPrice > currentPrice && (
+                <span className="original-price">₹{currentOriginalPrice}</span>
               )}
             </div>
 

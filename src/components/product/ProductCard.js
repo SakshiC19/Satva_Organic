@@ -106,6 +106,12 @@ const ProductCard = ({
 
   const calculatePrice = (basePrice, size) => {
     if (!size || !basePrice) return basePrice || 0;
+    
+    // Check for explicit price override first (consistent with ProductDetail.js)
+    if (product.sizePrices && product.sizePrices[size]) {
+      return parseFloat(product.sizePrices[size]);
+    }
+
     const match = size.match(/(\d+(?:\.\d+)?)\s*([a-zA-Z]+)/);
     if (!match) return basePrice;
 
@@ -121,7 +127,17 @@ const ProductCard = ({
       multiplier = value;
     }
     
-    return Math.round(basePrice * multiplier);
+    let finalPrice = basePrice * multiplier;
+
+    // Check for size-specific discounts (consistent with ProductDetail.js)
+    if (product.sizeDiscounts && product.sizeDiscounts[size]) {
+      const sizeDiscount = parseFloat(product.sizeDiscounts[size]);
+      if (!isNaN(sizeDiscount) && sizeDiscount > 0) {
+        finalPrice = finalPrice * (1 - sizeDiscount / 100);
+      }
+    }
+
+    return Math.round(finalPrice);
   };
 
   const defaultSize = product.packingSizes?.[0] || product.weight || '250g';
@@ -216,7 +232,7 @@ const ProductCard = ({
 
         <div className="product-price-container">
           <div className="price-main-row">
-            <span className="current-price">₹{price}</span>
+            <span className="current-price">₹{displayPrice}</span>
             {effectiveOriginalPrice > 0 && displayDiscount > 0 && (
               <div className="discount-pill">-{displayDiscount}%</div>
             )}
@@ -228,10 +244,10 @@ const ProductCard = ({
             </div>
           )}
           
-          {effectiveOriginalPrice > 0 && (effectiveOriginalPrice - price) > 0 && (
+          {effectiveOriginalPrice > 0 && (displayOriginalPrice - displayPrice) > 0 && (
             <div className="price-secondary-row">
-              <span className="original-price">₹{Math.round(effectiveOriginalPrice)}</span>
-              <span className="savings-text">You save ₹{Math.round(effectiveOriginalPrice - price)}</span>
+              <span className="original-price">₹{displayOriginalPrice}</span>
+              <span className="savings-text">You save ₹{displayOriginalPrice - displayPrice}</span>
             </div>
           )}
         </div>
