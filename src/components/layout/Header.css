@@ -503,7 +503,8 @@
         display: none;
     }
 
-    .action-item.login-item.desktop-only {
+    .action-item.login-item.desktop-only,
+    .action-item.notification-item.desktop-only {
         display: none !important;
     }
 
