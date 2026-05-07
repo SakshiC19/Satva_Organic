@@ -10,7 +10,7 @@ import './Products.css';
 
 const Products = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const initialCategory = searchParams.get('category') || 'all';
 
   const [products, setProducts] = useState([]);
