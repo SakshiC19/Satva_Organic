@@ -137,6 +137,52 @@
     border-color: #16a34a;
 }
 
+/* Mobile Swipe Buttons */
+.swipe-btn-mobile {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 38px;
+    height: 38px;
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    display: none;
+    /* Only visible on mobile */
+    align-items: center;
+    justify-content: center;
+    color: #16a34a;
+    font-size: 24px;
+    z-index: 20;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    transition: all 0.25s ease;
+    padding: 0;
+}
+
+.swipe-btn-mobile:active {
+    background: #fff;
+    transform: translateY(-50%) scale(0.9);
+}
+
+.swipe-btn-mobile.prev {
+    left: 12px;
+}
+
+.swipe-btn-mobile.next {
+    right: 12px;
+}
+
+@media (max-width: 768px) {
+    .swipe-btn-mobile {
+        display: flex;
+    }
+
+    .image-swipe-dots {
+        display: flex;
+    }
+}
+
 .image-thumbnails {
     display: flex;
     flex-direction: column;
@@ -260,10 +306,20 @@
     color: #1e293b;
 }
 
+.original-price {
+    font-size: 20px;
+    text-decoration: line-through !important;
+    color: #94a3b8;
+    font-weight: 500;
+    margin-left: 8px;
+    display: inline-block;
+}
+
 .unit-price-label {
     font-size: 16px;
     color: #64748b;
     font-weight: 500;
+    margin-left: 12px;
 }
 
 .tax-info {
@@ -279,6 +335,16 @@
     border-radius: 4px;
     font-size: 14px;
     font-weight: 700;
+}
+
+.discount-badge-premium {
+    background: #ecfdf5;
+    color: #10b981;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    margin-left: 12px;
 }
 
 .stock-status-inline {
@@ -1322,6 +1388,10 @@
 
     .current-price {
         font-size: 24px;
+    }
+
+    .original-price {
+        font-size: 16px;
     }
 
     .amount-option-container {

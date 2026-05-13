@@ -74,15 +74,15 @@ const Home = () => {
         ...doc.data()
       }));
       
-      // Filter products with discounts for Flash Deals section
+      // Filter products only if they have an explicit "deal" type set (Flash Deal, Special, Festival)
       const deals = productsList.filter(product => 
-        product.discount && parseFloat(product.discount) > 0
+        product.deal && product.deal.type && parseFloat(product.discount) > 0
       );
       setFlashDeals(deals);
       
-      // Filter out products with discounts for featured section (or keep as mixed, but preserving previous logic of "productsWithoutDeals")
+      // Featured products should be everything else
       const productsWithoutDeals = productsList.filter(product => 
-        !product.discount || parseFloat(product.discount) === 0
+        !product.deal?.type
       );
       
       // Shuffle products based on current day for daily rotation
