@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { doc, getDoc, addDoc, collection, serverTimestamp, updateDoc, increment, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { FiHeart, FiMinus, FiPlus, FiCheck, FiStar, FiX, FiTruck, FiRefreshCw, FiPackage, FiShare2 } from 'react-icons/fi';
+import { FiHeart, FiMinus, FiPlus, FiCheck, FiStar, FiX, FiTruck, FiRefreshCw, FiPackage, FiShare2, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { BsTruck, BsArrowRepeat, BsShieldCheck, BsClockHistory, BsSearch, BsTree, BsFileText, BsArrowRight } from 'react-icons/bs';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -53,6 +53,18 @@ const ProductDetail = () => {
   const touchStartX = useRef(null);
   const touchEndX = useRef(null);
 
+  const productImages = product?.images || (product?.image ? [{ url: product.image }] : []);
+
+  const nextImage = () => {
+    if (productImages.length === 0) return;
+    setSelectedImage((prev) => (prev + 1) % productImages.length);
+  };
+
+  const prevImage = () => {
+    if (productImages.length === 0) return;
+    setSelectedImage((prev) => (prev - 1 + productImages.length) % productImages.length);
+  };
+
   const handleTouchStart = (e) => {
     touchStartX.current = e.changedTouches[0].clientX;
   };
@@ -63,10 +75,10 @@ const ProductDetail = () => {
     if (Math.abs(diff) > 40) { // minimum swipe distance
       if (diff > 0) {
         // swiped left -> next image
-        setSelectedImage(prev => (prev + 1) % productImages.length);
+        nextImage();
       } else {
         // swiped right -> prev image
-        setSelectedImage(prev => (prev - 1 + productImages.length) % productImages.length);
+        prevImage();
       }
     }
   };
@@ -148,11 +160,10 @@ const ProductDetail = () => {
   // Autofill pincode from user profile
   useEffect(() => {
     const autofillPincode = async () => {
-      // Only check pincode automatically if it's an exotic vegetable
-      const isExoticVegetable = product?.category?.toLowerCase().includes('exotic') || 
-                               product?.category?.toLowerCase().includes('vegetable basket');
+      // Check pincode automatically for all products
+      const shouldCheckAutomatically = true;
       
-      if (currentUser && isExoticVegetable) {
+      if (currentUser && shouldCheckAutomatically) {
         try {
           const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
           if (userDoc.exists()) {
@@ -255,12 +266,59 @@ const ProductDetail = () => {
   const calculateDynamicPrice = (prod, size) => {
     if (!size || !prod) return prod?.price || 0;
     
-    // Check for explicit price override first
+    // Get base price: use explicit sizePrices if available, otherwise auto-calculate
+    let basePrice;
+    if (prod.sizePrices && prod.sizePrices[size]) {
+      basePrice = parseFloat(prod.sizePrices[size]);
+    } else {
+      // Fallback to auto-calculation based on base price
+      const match = size.match(/(\d+(?:\.\d+)?)\s*([a-zA-Z]+)/);
+      if (!match) return prod.price;
+
+      const value = parseFloat(match[1]);
+      const unit = match[2].toLowerCase();
+      
+      let multiplier = 1;
+      
+      // Base unit is 100g or 100ml
+      if (unit === 'g' || unit === 'gm' || unit === 'gms' || unit === 'ml' || unit === 'mls') {
+        multiplier = value / 100;
+      } else if (unit === 'kg' || unit === 'l' || unit === 'liter' || unit === 'kgs') {
+        multiplier = (value * 1000) / 100;
+      } else if (unit === 'pc' || unit === 'pcs' || unit === 'pack') {
+         multiplier = value; 
+      } else {
+        return prod.price;
+      }
+
+      basePrice = prod.price * multiplier;
+    }
+
+    // Always apply discounts on top of the base price
+    if (prod.sizeDiscounts && prod.sizeDiscounts[size]) {
+      const discount = parseFloat(prod.sizeDiscounts[size]);
+      if (!isNaN(discount) && discount > 0) {
+        basePrice = basePrice * (1 - discount / 100);
+      }
+    } else {
+      // Apply site-wide discount if no size-specific discount exists
+      const siteDiscount = typeof prod.discount === 'object' ? prod.discount?.value : parseFloat(prod.discount);
+      if (!isNaN(siteDiscount) && siteDiscount > 0) {
+        basePrice = basePrice * (1 - siteDiscount / 100);
+      }
+    }
+
+    return Math.round(basePrice);
+  };
+
+  const calculateOriginalPrice = (prod, size) => {
+    if (!size || !prod) return prod?.price || 0;
+    
+    // If there's an explicit size price set, that IS the original (pre-discount) price
     if (prod.sizePrices && prod.sizePrices[size]) {
       return parseFloat(prod.sizePrices[size]);
     }
 
-    // Fallback to auto-calculation based on base price
     const match = size.match(/(\d+(?:\.\d+)?)\s*([a-zA-Z]+)/);
     if (!match) return prod.price;
 
@@ -268,11 +326,9 @@ const ProductDetail = () => {
     const unit = match[2].toLowerCase();
     
     let multiplier = 1;
-    
-    // Base unit is 100g or 100ml
-    if (unit === 'g' || unit === 'gm' || unit === 'ml') {
+    if (unit === 'g' || unit === 'gm' || unit === 'gms' || unit === 'ml' || unit === 'mls') {
       multiplier = value / 100;
-    } else if (unit === 'kg' || unit === 'l' || unit === 'liter') {
+    } else if (unit === 'kg' || unit === 'l' || unit === 'liter' || unit === 'kgs') {
       multiplier = (value * 1000) / 100;
     } else if (unit === 'pc' || unit === 'pcs' || unit === 'pack') {
        multiplier = value; 
@@ -280,16 +336,7 @@ const ProductDetail = () => {
       return prod.price;
     }
 
-    let finalPrice = prod.price * multiplier;
-
-    if (prod.sizeDiscounts && prod.sizeDiscounts[size]) {
-      const discount = parseFloat(prod.sizeDiscounts[size]);
-      if (!isNaN(discount) && discount > 0) {
-        finalPrice = finalPrice * (1 - discount / 100);
-      }
-    }
-
-    return Math.round(finalPrice);
+    return Math.round(prod.price * multiplier);
   };
 
   const getEffectiveBasePrice = (currPrice, size) => {
@@ -326,12 +373,13 @@ const ProductDetail = () => {
   const currentStock = getCurrentStock();
 
   const currentPrice = product ? calculateDynamicPrice(product, selectedSize) : 0;
+  const originalPrice = product ? calculateOriginalPrice(product, selectedSize) : 0;
+  const hasDiscount = originalPrice > (currentPrice + 1);
 
   const handleAddToCart = () => {
     if (!product) return;
 
-    const isExoticVegetable = product.category?.toLowerCase().includes('exotic') || 
-                             product.category?.toLowerCase().includes('vegetable basket');
+    const isExoticVegetable = true;
 
     if (isExoticVegetable) {
       if (!currentUser) {
@@ -366,8 +414,7 @@ const ProductDetail = () => {
   const handleBuyNow = () => {
     if (!product) return;
 
-    const isExoticVegetable = product.category?.toLowerCase().includes('exotic') || 
-                             product.category?.toLowerCase().includes('vegetable basket');
+    const isExoticVegetable = true;
 
     if (isExoticVegetable) {
       if (!currentUser) {
@@ -504,7 +551,6 @@ const ProductDetail = () => {
     );
   }
 
-  const productImages = product.images || [{ url: product.image }];
   const currentImage = productImages[selectedImage]?.url || productImages[selectedImage] || product.image;
 
   return (
@@ -540,16 +586,26 @@ const ProductDetail = () => {
               style={{ cursor: productImages.length > 1 ? 'grab' : 'default' }}
             >
               <img src={currentImage} alt={product.name} />
+              
               {productImages.length > 1 && (
-                <div className="image-swipe-dots">
-                  {productImages.map((_, i) => (
-                    <span
-                      key={i}
-                      className={`swipe-dot ${i === selectedImage ? 'active' : ''}`}
-                      onClick={() => setSelectedImage(i)}
-                    />
-                  ))}
-                </div>
+                <>
+                  <button className="swipe-btn-mobile prev" onClick={prevImage}>
+                    <FiChevronLeft />
+                  </button>
+                  <button className="swipe-btn-mobile next" onClick={nextImage}>
+                    <FiChevronRight />
+                  </button>
+                  
+                  <div className="image-swipe-dots">
+                    {productImages.map((_, i) => (
+                      <span
+                        key={i}
+                        className={`swipe-dot ${i === selectedImage ? 'active' : ''}`}
+                        onClick={() => setSelectedImage(i)}
+                      />
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -625,17 +681,13 @@ const ProductDetail = () => {
             <div className="product-price-group">
               <div className="product-price">
                 <span className="current-price">₹{currentPrice}</span>
-                <span className="unit-price-label">
-                   {selectedSize && !selectedSize.toLowerCase().includes('piece') && !selectedSize.toLowerCase().includes('pack') ? (
-                     `(₹${getEffectiveBasePrice(currentPrice, selectedSize)} / 100${product.unit === 'ml' || product.unit === 'l' ? 'ml' : 'g'})`
-                   ) : (
-                     product.productForm === 'pack' ? `(₹${currentPrice} / piece)` : `(₹${product.price} / 100${product.unit === 'ml' || product.unit === 'l' ? 'ml' : 'g'})`
-                   )}
-                </span>
+                {hasDiscount && (
+                  <span className="original-price">₹{originalPrice}</span>
+                )}
                 
                 {product.sizeDiscounts && product.sizeDiscounts[selectedSize] && (
-                   <span className="discount-badge">
-                      {product.sizeDiscounts[selectedSize]}% OFF
+                   <span className="discount-badge-premium">
+                      -{product.sizeDiscounts[selectedSize]}%
                    </span>
                 )}
                 
@@ -643,13 +695,21 @@ const ProductDetail = () => {
                   const discVal = typeof product.discount === 'object' ? product.discount?.value : product.discount;
                   if (discVal > 0 && !product.sizeDiscounts?.[selectedSize]) {
                     return (
-                      <span className="discount-badge">
-                        {discVal}% OFF
+                      <span className="discount-badge-premium">
+                        -{discVal}%
                       </span>
                     );
                   }
                   return null;
                 })()}
+
+                <span className="unit-price-label">
+                   {selectedSize && !selectedSize.toLowerCase().includes('piece') && !selectedSize.toLowerCase().includes('pack') ? (
+                     `(₹${getEffectiveBasePrice(currentPrice, selectedSize)} / 100${product.unit === 'ml' || product.unit === 'l' ? 'ml' : 'g'})`
+                   ) : (
+                     product.productForm === 'pack' ? `(₹${currentPrice} / piece)` : `(₹${product.price} / 100${product.unit === 'ml' || product.unit === 'l' ? 'ml' : 'g'})`
+                   )}
+                </span>
               </div>
               <div className="tax-info">Inclusive of all taxes</div>
             </div>
@@ -891,8 +951,7 @@ const ProductDetail = () => {
               )}
             </div>
 
-            {(product.category?.toLowerCase().includes('exotic') || 
-              product.category?.toLowerCase().includes('vegetable basket')) && (
+            {true && (
               <div className="pincode-check-section">
                 <label className="option-label">Check Delivery Availability</label>
                 <div className="pincode-input-group">
@@ -1059,6 +1118,10 @@ const ProductDetail = () => {
                       <tr>
                         <th>Manufacturer</th>
                         <td>{product.manufacturer || 'Satva Organics'}</td>
+                      </tr>
+                      <tr>
+                        <th>Packed By</th>
+                        <td>{product.packedBy || 'Satva Organics'}</td>
                       </tr>
                       <tr>
                         <th>Packed On</th>

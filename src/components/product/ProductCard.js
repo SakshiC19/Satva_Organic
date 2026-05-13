@@ -119,9 +119,9 @@ const ProductCard = ({
     const unit = match[2].toLowerCase();
     
     let multiplier = 1;
-    if (unit === 'g' || unit === 'gm' || unit === 'ml') {
+    if (unit === 'g' || unit === 'gm' || unit === 'gms' || unit === 'ml' || unit === 'mls') {
       multiplier = value / 100;
-    } else if (unit === 'kg' || unit === 'l' || unit === 'liter') {
+    } else if (unit === 'kg' || unit === 'l' || unit === 'liter' || unit === 'kgs') {
       multiplier = (value * 1000) / 100;
     } else if (unit === 'pc' || unit === 'pcs' || unit === 'pack') {
       multiplier = value;
@@ -135,21 +135,42 @@ const ProductCard = ({
       if (!isNaN(sizeDiscount) && sizeDiscount > 0) {
         finalPrice = finalPrice * (1 - sizeDiscount / 100);
       }
+    } else {
+      // Apply site-wide discount if no size-specific discount exists
+      const siteDiscount = typeof product.discount === 'object' ? product.discount?.value : parseFloat(product.discount);
+      if (!isNaN(siteDiscount) && siteDiscount > 0) {
+        finalPrice = finalPrice * (1 - siteDiscount / 100);
+      }
     }
 
     return Math.round(finalPrice);
   };
 
+  const calculateOriginalPrice = (basePrice, size) => {
+    if (!size || !basePrice) return basePrice || 0;
+    
+    const match = size.match(/(\d+(?:\.\d+)?)\s*([a-zA-Z]+)/);
+    if (!match) return basePrice;
+
+    const value = parseFloat(match[1]);
+    const unit = match[2].toLowerCase();
+    
+    let multiplier = 1;
+    if (unit === 'g' || unit === 'gm' || unit === 'gms' || unit === 'ml' || unit === 'mls') {
+      multiplier = value / 100;
+    } else if (unit === 'kg' || unit === 'l' || unit === 'liter' || unit === 'kgs') {
+      multiplier = (value * 1000) / 100;
+    } else if (unit === 'pc' || unit === 'pcs' || unit === 'pack') {
+      multiplier = value;
+    }
+    
+    return Math.round(basePrice * multiplier);
+  };
+
   const defaultSize = product.packingSizes?.[0] || product.weight || '250g';
   const displayPrice = calculatePrice(price, defaultSize);
-  const displayDiscount = typeof discount === 'object' ? discount?.value : (parseFloat(discount) || 0);
-  
-  let effectiveOriginalPrice = originalPrice;
-  if (!effectiveOriginalPrice && displayDiscount > 0) {
-    effectiveOriginalPrice = price / (1 - (displayDiscount / 100));
-  }
-
-  const displayOriginalPrice = calculatePrice(effectiveOriginalPrice, defaultSize);
+  const displayOriginalPrice = calculateOriginalPrice(price, defaultSize);
+  const hasDiscount = displayOriginalPrice > (displayPrice + 1);
 
   const productImage = images && images.length > 0
     ? (images[0].url || images[0])
@@ -233,8 +254,13 @@ const ProductCard = ({
         <div className="product-price-container">
           <div className="price-main-row">
             <span className="current-price">₹{displayPrice}</span>
-            {effectiveOriginalPrice > 0 && displayDiscount > 0 && (
-              <div className="discount-pill">-{displayDiscount}%</div>
+            {hasDiscount && (
+              <span className="original-price">₹{displayOriginalPrice}</span>
+            )}
+            {hasDiscount && (
+              <div className="discount-pill">
+                -{Math.round(((displayOriginalPrice - displayPrice) / displayOriginalPrice) * 100)}%
+              </div>
             )}
           </div>
           
@@ -244,9 +270,8 @@ const ProductCard = ({
             </div>
           )}
           
-          {effectiveOriginalPrice > 0 && (displayOriginalPrice - displayPrice) > 0 && (
+          {hasDiscount && (
             <div className="price-secondary-row">
-              <span className="original-price">₹{displayOriginalPrice}</span>
               <span className="savings-text">You save ₹{displayOriginalPrice - displayPrice}</span>
             </div>
           )}
