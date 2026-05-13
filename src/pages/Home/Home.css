@@ -796,7 +796,7 @@
 
     .hero-content-slider {
         text-align: left;
-        padding: 20px;
+        padding: 16px;
         width: 100%;
         height: 100%;
         display: flex;
@@ -808,69 +808,82 @@
     }
 
     .hero-title-slider {
-        font-size: 24px;
-        margin-bottom: 6px;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        font-size: 20px;
+        margin-bottom: 4px;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+        font-weight: 800;
+        line-height: 1.2;
     }
 
     .hero-subtitle-slider {
-        font-size: 13px;
-        margin-bottom: 16px;
-        line-height: 1.4;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-        color: rgba(255, 255, 255, 0.9);
+        font-size: 12px;
+        margin-bottom: 12px;
+        line-height: 1.3;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+        color: rgba(255, 255, 255, 0.95);
+        max-width: 85%;
     }
 
     .hero-btn-slider {
-        padding: 8px 20px;
-        font-size: 13px;
-        border-radius: 8px;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    }
-
-    .hero-swiper .swiper-pagination {
-        text-align: right !important;
-        padding-right: 16px !important;
-        bottom: 15px !important;
-        width: auto !important;
-        left: auto !important;
-        right: 0 !important;
-    }
-
-    .hero-swiper .swiper-pagination-bullet {
-        margin: 0 4px !important;
-    }
-
-    .view-all-link {
-        font-size: 13px;
+        padding: 6px 16px;
+        font-size: 12px;
+        border-radius: 6px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
     }
 
     .promo-banner-modern {
-        padding: 12px 10px;
-        min-height: 100px;
-        flex-direction: column;
-        align-items: flex-start;
+        padding: 16px;
+        min-height: 120px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        border-radius: 16px;
     }
 
     .promo-content {
-        max-width: 100%;
+        position: relative;
+        z-index: 2;
+        max-width: 70%;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .promo-badge {
+        font-size: 9px;
+        padding: 3px 8px;
+        width: fit-content;
+        margin-bottom: 4px;
     }
 
     .promo-title {
         font-size: 16px;
-        margin-bottom: 2px;
+        margin-bottom: 4px;
         line-height: 1.2;
+        font-weight: 800;
+        color: #1a1a1a;
     }
 
     .promo-text {
         font-size: 11px;
         margin-bottom: 8px;
         line-height: 1.3;
+        color: #444;
+        font-weight: 500;
     }
 
     .promo-btn {
-        padding: 6px 12px;
-        font-size: 11px;
+        padding: 6px 14px;
+        font-size: 12px;
+        font-weight: 700;
+        border-radius: 6px;
+        background: #fff;
+        color: #27ae60;
+        border: none;
+        width: fit-content;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        margin-top: 4px;
     }
 
     .promo-visual {
@@ -881,7 +894,7 @@
         flex-direction: row;
         flex-wrap: wrap;
         gap: 8px;
-        padding: 0 12px;
+        padding: 0 16px;
     }
 
     .flash-title-group {
@@ -1010,29 +1023,39 @@
 /* Mobile Vertical Spacing Optimization */
 @media (max-width: 768px) {
     .categories-quick {
-        padding: 12px 0;
+        padding: 16px 0;
+    }
+
+    .category-card-compact {
+        height: 160px;
+        /* Consistent height on mobile */
+        border-radius: 20px !important;
+    }
+
+    .category-image-wrapper {
+        border-radius: 20px !important;
     }
 
     .flash-deals {
-        padding: 12px 0;
-        margin-top: 4px;
+        padding: 16px 0;
+        margin-top: 8px;
     }
 
     .featured-products {
-        padding: 12px 0;
+        padding: 16px 0;
     }
 
     .promo-banner-section {
-        padding: 8px 0;
+        padding: 12px 0;
     }
 
     .section-header-compact {
-        margin-bottom: 8px;
-        padding: 4px 0;
+        margin-bottom: 12px;
+        padding: 4px 16px;
     }
 
     .container-fluid {
-        padding: 0 12px;
+        padding: 0 16px;
     }
 
     .home-page-modern {
@@ -1045,14 +1068,15 @@
     }
 
     .promo-banner-modern {
-        padding: 16px 14px;
-        min-height: 110px;
+        padding: 20px;
+        min-height: 120px;
         flex-direction: row;
         align-items: center;
     }
 
     .promo-title {
-        font-size: 18px;
+        font-size: 20px;
+        font-weight: 800;
     }
 
     .promo-visual {
@@ -1060,7 +1084,7 @@
     }
 
     .promo-banner-image-only img {
-        max-height: 220px;
+        max-height: 200px;
         object-fit: cover;
     }
 }

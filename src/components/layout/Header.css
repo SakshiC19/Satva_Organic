@@ -1696,3 +1696,28 @@
     margin-top: 12px;
     font-size: 13px;
 }
+
+/* 360px optimization */
+@media (max-width: 400px) {
+    .search-wrapper-mobile {
+        width: 140px;
+        padding: 0 8px;
+    }
+
+    .search-input-mobile {
+        font-size: 12px;
+    }
+
+    .header-container {
+        gap: 8px;
+        padding: 0 10px;
+    }
+
+    .logo-image {
+        height: 34px;
+    }
+
+    .header-actions {
+        gap: 12px;
+    }
+}
